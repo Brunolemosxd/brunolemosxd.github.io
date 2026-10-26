@@ -5278,8 +5278,10 @@ async function compartilharReciboDireto(tipo) {
     const margin = 12, width = 210 - margin * 2;
     const pxPerPage = canvas.width * ((297 - margin * 2) / width);
     let y = 0, page = 0;
+    let blocos = []; try { blocos = medirBlocosAtomicos(papel, canvas); } catch (_) {}
     while (y < canvas.height) {
-      const partHeight = Math.min(pxPerPage, canvas.height - y);
+      let partHeight = Math.min(pxPerPage, canvas.height - y);
+      if (y + partHeight < canvas.height - 1) partHeight = escolherCortePDF(y, y + partHeight, blocos, y + pxPerPage * 0.45) - y;
       const part = document.createElement('canvas');
       part.width = canvas.width; part.height = Math.ceil(partHeight);
       part.getContext('2d').drawImage(canvas, 0, y, canvas.width, partHeight, 0, 0, canvas.width, partHeight);
@@ -6674,6 +6676,29 @@ function baixarBlobOrcamento(blob, nome) {
   setTimeout(function(){ URL.revokeObjectURL(u); }, 4000);
 }
 
+// Mede os blocos pequenos do documento (linhas de tabela, títulos, parágrafos, assinatura...) para o PDF
+// nunca cortar uma página no meio de um deles (antes a assinatura e a linha podiam ser cortadas ao meio).
+function medirBlocosAtomicos(alvo, canvas) {
+  const r0 = alvo.getBoundingClientRect(), f = canvas.width / (r0.width || 1), lista = [];
+  alvo.querySelectorAll('*').forEach(function(el){
+    const r = el.getBoundingClientRect(), h = r.height;
+    if (h < 2 || h > 190) return;
+    const tag = el.tagName;
+    if (tag === 'TD' || tag === 'TH' || tag === 'SPAN' || tag === 'B' || tag === 'STRONG' || tag === 'BR' || tag === 'TBODY' || tag === 'THEAD') return;
+    lista.push([(r.top - r0.top) * f, (r.bottom - r0.top) * f]);
+  });
+  return lista;
+}
+function escolherCortePDF(y, fim, blocos, minimo) {
+  let c = fim;
+  for (let i = 0; i < 60; i++) {
+    let achou = null;
+    for (let k = 0; k < blocos.length; k++) { const b = blocos[k]; if (b[0] < c - 1 && b[1] > c + 1 && (achou === null || b[0] < achou)) achou = b[0]; }
+    if (achou === null) break;
+    c = achou;
+  }
+  return c > minimo ? c : fim;
+}
 async function gerarArquivoOrcamento(tipo) {
   const o = orcamentos.find(x => x.id === ultimoOrcamentoId) || orcamentos[orcamentos.length - 1];
   if (!o) throw new Error('Orçamento não encontrado');
@@ -6714,8 +6739,10 @@ async function gerarArquivoOrcamento(tipo) {
   const contentH = pageH - margin * 2;
   const pxPerPage = canvas.width * (contentH / contentW);
   let y = 0, page = 0;
+  let blocos = []; try { blocos = medirBlocosAtomicos(alvo, canvas); } catch (_) {}
   while (y < canvas.height) {
-    const h = Math.min(pxPerPage, canvas.height - y);
+    let h = Math.min(pxPerPage, canvas.height - y);
+    if (y + h < canvas.height - 1) h = escolherCortePDF(y, y + h, blocos, y + pxPerPage * 0.45) - y;
     const part = document.createElement('canvas');
     part.width = canvas.width;
     part.height = Math.ceil(h);
@@ -7879,18 +7906,26 @@ document.addEventListener('DOMContentLoaded',()=>{renderRecibosSalvos();atualiza
         + (pode ? '<button type="button" id="orcapro-ent-share" style="' + bt + 'background:#f4c430;color:#10202b">Compartilhar</button>' : '')
         + '<button type="button" id="orcapro-ent-wa" style="' + bt + 'background:#16a34a;color:#fff">Enviar pelo WhatsApp</button>'
         + '<button type="button" id="orcapro-ent-dl" style="' + bt + 'background:#1d4ed8;color:#fff">Baixar ' + rotulo + '</button>'
+        + '<button type="button" id="orcapro-ent-open" style="' + bt + 'background:#334155;color:#fff">Abrir ' + rotulo + ' para ver e compartilhar</button>'
         + '<button type="button" id="orcapro-ent-close" style="padding:12px;border:1px solid rgba(255,255,255,.2);border-radius:12px;background:transparent;color:#fff;font-weight:600">Fechar</button>'
         + '</div></div>';
       document.body.appendChild(ov);
       var msg = ov.querySelector('#orcapro-ent-msg');
-      var emApp = /FBAN|FBAV|Instagram|WhatsApp|Line\/|MicroMessenger|; wv\)|GSA\//i.test(navigator.userAgent || '');
+      var emApp = /FBAN|FBAV|Instagram|WhatsApp|Line\/|MicroMessenger|; wv\)|GSA\//i.test(navigator.userAgent || ''), samsung = /SamsungBrowser/i.test(navigator.userAgent || '');
       msg.textContent = pode ? 'Toque em Compartilhar para escolher o WhatsApp, e-mail ou outro aplicativo.'
         : 'O ' + rotulo + ' foi gerado, mas este aparelho não envia o arquivo direto. Toque em "Enviar pelo WhatsApp": o arquivo é baixado e o WhatsApp abre; lá, toque no clipe e escolha o arquivo ' + file.name + ' (pasta Downloads).'
-          + (emApp ? ' Dica: você abriu o OrçaPRO dentro de outro aplicativo. Para compartilhar direto, toque nos 3 pontinhos e escolha "Abrir no Chrome".' : '');
+          + (samsung && !emApp ? ' Dica: no navegador da Samsung o envio direto de arquivo costuma falhar. Instalar e usar o Chrome resolve; ou toque em "Baixar" e depois compartilhe o arquivo pela notificação de download.' : '') + (emApp ? ' Dica: você abriu o OrçaPRO dentro de outro aplicativo. Para compartilhar direto, toque nos 3 pontinhos e escolha "Abrir no Chrome".' : '');
       function fechar(){ ov.remove(); resolve('fechado'); }
       ov.addEventListener('click', function(ev){ if (ev.target === ov) fechar(); });
       ov.querySelector('#orcapro-ent-close').onclick = fechar;
       ov.querySelector('#orcapro-ent-dl').onclick = function(){ baixar(file); msg.textContent = 'Arquivo baixado: ' + file.name + '.'; };
+      ov.querySelector('#orcapro-ent-open').onclick = function(){
+        var u = URL.createObjectURL(file), w = null;
+        try { w = window.open(u, '_blank'); } catch (e) {}
+        if (!w) { baixar(file); msg.textContent = 'Seu navegador bloqueou a abertura. O arquivo foi baixado: abra-o em Downloads (ou pela notificação) e use o botão de compartilhar do visualizador.'; }
+        else msg.textContent = 'Aberto em outra aba. Use o menu do navegador (compartilhar) para enviar ao WhatsApp.';
+        setTimeout(function(){ URL.revokeObjectURL(u); }, 60000);
+      };
       ov.querySelector('#orcapro-ent-wa').onclick = function(){
         baixar(file);
         var w = null;
