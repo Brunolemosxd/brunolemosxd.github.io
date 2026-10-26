@@ -5245,7 +5245,7 @@ function compartilharReciboPDF(acaoInicial='preview') {
    <button type="button" class="back" onclick="window.close()">Voltar</button>
   </div><div class="receipt-export-status">Confira o recibo abaixo. Escolha PDF ou PNG para abrir o compartilhamento; se o aparelho não aceitar compartilhar arquivo, o arquivo será baixado para anexar no WhatsApp.</div>
   ${papel.outerHTML}
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"><\/script><script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"><\/script>
+  <script src="html2canvas.min.js" onerror="this.onerror=null;var s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';document.head.appendChild(s)"><\/script><script src="jspdf.umd.min.js" onerror="this.onerror=null;var s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';document.head.appendChild(s)"><\/script>
   <script>
   async function exportarRecibo(tipo,compartilhar,btn){
    const alvo=document.querySelector('.recibo-papel'),botoes=document.querySelector('.receipt-export-actions'),status=document.querySelector('.receipt-export-status');
