@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="color-scheme" content="dark light">
+  <meta http-equiv="Content-Security-Policy" content="object-src 'none'; base-uri 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
   <meta name="theme-color" content="#0B1C2C">
   <link rel="manifest" href="manifest.json">
   <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
@@ -4294,7 +4296,7 @@ function itemRowHTML(n) {
     <div class="qty-price">
       <div>
         <label>Qtd</label>
-        <input type="number" inputmode="decimal" min="0" step="any" value="1" class="item-qtd">
+        <input type="text" inputmode="decimal" autocomplete="off" value="1" class="item-qtd" aria-label="Quantidade (aceita vírgula, ex.: 2,5)">
       </div>
       <div>
         <label>Valor unit.</label>
@@ -4657,14 +4659,14 @@ function removerItemRecibo(index) { reciboItens.splice(index,1); if (!reciboIten
 function atualizarItemRecibo(index, key, value) {
   if (!reciboItens[index]) return;
   if (key === 'valor') reciboItens[index][key] = Math.max(0, parseBRL(value));
-  else if (key === 'qtd') reciboItens[index][key] = Math.max(0, Number(String(value).replace(',','.')) || 0);
+  else if (key === 'qtd') reciboItens[index][key] = parseQtd(value);
   else reciboItens[index][key] = value;
   const totalEl = document.getElementById('recibo-itens-total-'+index);
   if (totalEl) totalEl.textContent = formatarMoedaRecibo(reciboItens[index].qtd * reciboItens[index].valor);
 }
 function renderizarItensRecibo() {
   const host = document.getElementById('recibo-itens-editor'); if (!host) return;
-  host.innerHTML = reciboItens.map((it,i) => `<div class="item-edit-row"><input aria-label="Descrição do item" value="${escaparHtmlRecibo(it.descricao)}" placeholder="Descrição" oninput="atualizarItemRecibo(${i},'descricao',this.value)"><input aria-label="Quantidade" type="number" inputmode="decimal" min="0" step="any" value="${it.qtd}" oninput="atualizarItemRecibo(${i},'qtd',this.value)"><input aria-label="Valor unitário" class="money-input" type="text" inputmode="numeric" autocomplete="off" placeholder="R$ 0,00" value="${it.valor ? fmtBRL(it.valor) : ''}" oninput="atualizarItemRecibo(${i},'valor',this.value)"><button type="button" class="remove-item" aria-label="Remover item" onclick="removerItemRecibo(${i})">×</button></div><small>Subtotal: <span id="recibo-itens-total-${i}">${formatarMoedaRecibo(it.qtd*it.valor)}</span></small>`).join('');
+  host.innerHTML = reciboItens.map((it,i) => `<div class="item-edit-row"><input aria-label="Descrição do item" value="${escaparHtmlRecibo(it.descricao)}" placeholder="Descrição" oninput="atualizarItemRecibo(${i},'descricao',this.value)"><input aria-label="Quantidade" type="text" inputmode="decimal" autocomplete="off" value="${fmtQtd(Number(it.qtd)||0)}" oninput="atualizarItemRecibo(${i},'qtd',this.value)"><input aria-label="Valor unitário" class="money-input" type="text" inputmode="numeric" autocomplete="off" placeholder="R$ 0,00" value="${it.valor ? fmtBRL(it.valor) : ''}" oninput="atualizarItemRecibo(${i},'valor',this.value)"><button type="button" class="remove-item" aria-label="Remover item" onclick="removerItemRecibo(${i})">×</button></div><small>Subtotal: <span id="recibo-itens-total-${i}">${formatarMoedaRecibo(it.qtd*it.valor)}</span></small>`).join('');
 }
 function formatarMoedaRecibo(v) { return (Number(v)||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'}); }
 function escaparHtmlRecibo(v) { return String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
@@ -4784,7 +4786,7 @@ function atualizarReciboBase() {
   if (itemsWrap && itemsBody) {
     if (usaItens) {
       itemsWrap.classList.remove('hidden');
-      itemsBody.innerHTML=reciboItens.map(it=>`<tr><td>${escaparHtmlRecibo(it.descricao||'—')}</td><td>${Number(it.qtd)||0}</td><td>${formatarMoedaRecibo(it.valor)}</td><td>${formatarMoedaRecibo((Number(it.qtd)||0)*(Number(it.valor)||0))}</td></tr>`).join('');
+      itemsBody.innerHTML=reciboItens.map(it=>`<tr><td>${escaparHtmlRecibo(it.descricao||'—')}</td><td>${fmtQtd(Number(it.qtd)||0)}</td><td>${formatarMoedaRecibo(it.valor)}</td><td>${formatarMoedaRecibo((Number(it.qtd)||0)*(Number(it.valor)||0))}</td></tr>`).join('');
       const total=reciboItens.reduce((sum,it)=>sum+(Number(it.qtd)||0)*(Number(it.valor)||0),0); set('prev-total-itens',formatarMoedaRecibo(total));
       const valorInput=document.getElementById('rec-valor'); if(valorInput && total>0 && !valorInput.dataset.manualOverride){valorInput.value=total.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});set('prev-valor-topo','R$ '+valorInput.value);const exEl=document.getElementById('rec-extenso');if(exEl){exEl.value=dinheiroPorExtenso(parseBRL(valorInput.value));set('prev-extenso',exEl.value);}}
     } else { itemsWrap.classList.add('hidden'); itemsBody.innerHTML=''; }
@@ -5212,13 +5214,16 @@ function salvarPerfil() {
 
 async function carregarBibliotecaRecibo(url, globalName) {
   if (window[globalName]) return;
-  await new Promise((resolve, reject) => {
+  const carregar = src => new Promise(resolve => {
     const script = document.createElement('script');
-    script.src = url;
-    script.onload = resolve;
-    script.onerror = () => reject(new Error('Não foi possível carregar a biblioteca de exportação.'));
+    script.src = src;
+    script.onload = () => resolve(true);
+    script.onerror = () => { script.remove(); resolve(false); };
     document.head.appendChild(script);
   });
+  // primeiro a cópia que fica no próprio site (mais rápida e funciona com internet fraca), depois a CDN
+  const local = globalName === 'jspdf' ? 'jspdf.umd.min.js' : 'html2canvas.min.js';
+  if (!(await carregar(local)) || !window[globalName]) await carregar(url);
   if (!window[globalName]) throw new Error('Biblioteca de exportação indisponível.');
 }
 
@@ -5594,10 +5599,15 @@ function resetarDescontoOrcamento() {
   ['orc-desc-pct', 'orc-desc-val'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
   definirTipoDesconto('pct');
 }
+function parseQtd(v) {   // aceita 2,5 ou 2.5 (vírgula é o normal no Brasil)
+  const n = Number(String(v == null ? '' : v).trim().replace(/\s/g, '').replace(',', '.'));
+  return isFinite(n) && n > 0 ? n : 0;
+}
+function fmtQtd(q) { const n = Number(q); return isFinite(n) ? String(Math.round(n * 10000) / 10000).replace('.', ',') : String(q == null ? '' : q); }
 function subtotalOrcamento() {
   let total = 0;
   document.querySelectorAll('#itens-container .item-row').forEach(r => {
-    const q = parseFloat(r.querySelector('.item-qtd').value) || 0;
+    const q = parseQtd(r.querySelector('.item-qtd').value);
     total += q * parseBRL(r.querySelector('.item-valor').value);
   });
   return total;
@@ -5686,7 +5696,7 @@ function salvarOrcamento() {
     desc: r.querySelector('.item-desc').value.trim(),
     detalhes: ((r.querySelector('.item-detalhes') || {}).value || '').trim(),
     unidade: (r.querySelector('.unit.active') || {}).textContent || 'un',
-    qtd: parseFloat(r.querySelector('.item-qtd').value) || 0,
+    qtd: parseQtd(r.querySelector('.item-qtd').value),
     valor: parseBRL(r.querySelector('.item-valor').value)
   })).filter(i => i.desc || i.valor > 0);
   if (!itens.length) { alert('Adicione pelo menos um item (descrição ou valor) para salvar o orçamento.'); return; }
@@ -5787,7 +5797,7 @@ function oeLerItens() {
     desc: r.querySelector('.oe-i-desc').value.trim(),
     detalhes: r.querySelector('.oe-i-det').value.trim(),
     unidade: r.querySelector('.oe-i-un').value || 'un',
-    qtd: parseFloat(String(r.querySelector('.oe-i-qtd').value).replace(',', '.')) || 0,
+    qtd: parseQtd(r.querySelector('.oe-i-qtd').value),
     valor: parseBRL(r.querySelector('.oe-i-val').value)
   })).filter(i => i.desc || i.valor > 0);
 }
@@ -6306,7 +6316,7 @@ function montarHTMLModeloSimples3(o, emp, logoImg, assinaturaSrc, assinaturaOn, 
   const itens = o.itens || [];
   const linhas = itens.map(i => {
     const sub = Number(i.qtd || 0) * Number(i.valor || 0);
-    return `<tr style="page-break-inside:avoid"><td style="${cel};text-align:center">${esc(i.qtd)}${i.unidade && i.unidade !== 'un' ? ' ' + esc(i.unidade) : ''}</td><td style="${cel}">${esc(i.desc || 'Item')}${i.detalhes ? `<div style="font-size:12px;color:#444;margin-top:2px">${esc(i.detalhes).replace(/\n/g, '<br>')}</div>` : ''}</td><td style="${cel}">${dinheiro(i.valor)}</td><td style="${cel}">${dinheiro(sub)}</td></tr>`;
+    return `<tr style="page-break-inside:avoid"><td style="${cel};text-align:center">${esc(fmtQtd(i.qtd))}${i.unidade && i.unidade !== 'un' ? ' ' + esc(i.unidade) : ''}</td><td style="${cel}">${esc(i.desc || 'Item')}${i.detalhes ? `<div style="font-size:12px;color:#444;margin-top:2px">${esc(i.detalhes).replace(/\n/g, '<br>')}</div>` : ''}</td><td style="${cel}">${dinheiro(i.valor)}</td><td style="${cel}">${dinheiro(sub)}</td></tr>`;
   }).join('');
   let vazias = '';
   for (let k = itens.length; k < 10; k++) vazias += `<tr><td style="${cel};height:20px">&nbsp;</td><td style="${cel}"></td><td style="${cel}"></td><td style="${cel}"></td></tr>`;
@@ -6372,7 +6382,7 @@ function montarHTMLModeloSimples2(o, emp, logoImg, assinaturaSrc, assinaturaOn, 
   const th = 'padding:9px 8px;font-size:13px;font-weight:600;text-align:left;border-top:1px solid #777;border-bottom:1px solid #777;background:#f4f4f4';
   const linhas = (o.itens || []).map(i => {
     const sub = Number(i.qtd || 0) * Number(i.valor || 0);
-    return `<tr style="page-break-inside:avoid"><td style="padding:10px 8px;text-align:center;vertical-align:top;border-bottom:1px solid #bbb">${esc(i.qtd)}${i.unidade && i.unidade !== 'un' ? ' ' + esc(i.unidade) : ''}</td><td style="padding:10px 8px;vertical-align:top;border-bottom:1px solid #bbb;font-size:14px">${esc(i.desc || 'Item')}</td><td style="padding:10px 8px;vertical-align:top;border-bottom:1px solid #bbb;font-size:13px;color:#222">${i.detalhes ? esc(i.detalhes).replace(/\n/g, '<br>') : ''}</td><td style="padding:10px 8px;vertical-align:top;text-align:right;border-bottom:1px solid #bbb;font-size:14px">${moeda(i.valor)}</td><td style="padding:10px 8px;vertical-align:top;text-align:right;border-bottom:1px solid #bbb;font-size:14px">${moeda(sub)}</td></tr>`;
+    return `<tr style="page-break-inside:avoid"><td style="padding:10px 8px;text-align:center;vertical-align:top;border-bottom:1px solid #bbb">${esc(fmtQtd(i.qtd))}${i.unidade && i.unidade !== 'un' ? ' ' + esc(i.unidade) : ''}</td><td style="padding:10px 8px;vertical-align:top;border-bottom:1px solid #bbb;font-size:14px">${esc(i.desc || 'Item')}</td><td style="padding:10px 8px;vertical-align:top;border-bottom:1px solid #bbb;font-size:13px;color:#222">${i.detalhes ? esc(i.detalhes).replace(/\n/g, '<br>') : ''}</td><td style="padding:10px 8px;vertical-align:top;text-align:right;border-bottom:1px solid #bbb;font-size:14px">${moeda(i.valor)}</td><td style="padding:10px 8px;vertical-align:top;text-align:right;border-bottom:1px solid #bbb;font-size:14px">${moeda(sub)}</td></tr>`;
   }).join('') || '<tr><td colspan="5" style="padding:12px 8px;font-size:13px">Itens não informados</td></tr>';
   const subtotal = Number(o.subtotal || 0) || (o.itens || []).reduce((t, i) => t + Number(i.qtd || 0) * Number(i.valor || 0), 0);
   const desc = Number(o.descontoValor) > 0 ? Number(o.descontoValor) : 0;
@@ -6457,7 +6467,7 @@ function montarHTMLModeloSimples(o, emp, logoImg, assinaturaSrc, assinaturaOn, b
       <div style="border:1px solid #111;padding:16px 12px;text-align:center"><div style="font-weight:700;font-size:15px">${esc(i.desc || 'Item')}</div>${i.detalhes ? `<div style="font-size:14px;margin-top:4px">${esc(i.detalhes)}</div>` : ''}</div>
       <table style="width:100%;border-collapse:collapse;font-size:14px;table-layout:fixed">
         <tr><th style="${th}">Quantidade:</th><th style="${th}">Valor unitário:</th><th style="${th}">${temVista ? 'Valor a Prazo:' : 'Valor total:'}</th>${temVista ? `<th style="${th}">Valor à Vista:</th>` : ''}</tr>
-        <tr><td style="${td}">${esc(i.qtd)} ${esc(i.unidade || 'un')}</td><td style="${td}">${moeda(i.valor)}</td><td style="${td}">${moeda(prazo)}</td>${temVista ? `<td style="${td}">${moeda(vista(prazo))}</td>` : ''}</tr>
+        <tr><td style="${td}">${esc(fmtQtd(i.qtd))} ${esc(i.unidade || 'un')}</td><td style="${td}">${moeda(i.valor)}</td><td style="${td}">${moeda(prazo)}</td>${temVista ? `<td style="${td}">${moeda(vista(prazo))}</td>` : ''}</tr>
       </table></div>`;
   }).join('') || '<p style="margin-top:22px">Itens não informados</p>';
   const totalPrazo = Number(o.total || 0);
@@ -6513,7 +6523,7 @@ function montarHTMLDocumentoOrcamento(o) {
   const logoFonte = (o.logo !== undefined && o.logo !== null) ? o.logo : logoOrcamentoData;
   const logo = logoFonte ? `<img src="${logoFonte}" style="max-width:145px;max-height:80px;object-fit:contain">` : '';
   const assinatura = assinaturaOn ? `<img src="${assinaturaSrc}" style="max-width:180px;max-height:70px;object-fit:contain;display:block;margin:0 auto 4px">` : '';
-  const itens = (o.itens || []).map(i => `<tr><td>${escaparHTMLOrc(i.desc)}${i.detalhes ? '<br><span style="color:#64748b;font-size:11px">' + escaparHTMLOrc(i.detalhes) + '</span>' : ''}</td><td>${escaparHTMLOrc(i.qtd)} ${escaparHTMLOrc(i.unidade)}</td><td>${Number(i.valor||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}</td><td>${(Number(i.qtd||0)*Number(i.valor||0)).toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}</td></tr>`).join('');
+  const itens = (o.itens || []).map(i => `<tr><td>${escaparHTMLOrc(i.desc)}${i.detalhes ? '<br><span style="color:#64748b;font-size:11px">' + escaparHTMLOrc(i.detalhes) + '</span>' : ''}</td><td>${escaparHTMLOrc(fmtQtd(i.qtd))} ${escaparHTMLOrc(i.unidade)}</td><td>${Number(i.valor||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}</td><td>${(Number(i.qtd||0)*Number(i.valor||0)).toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}</td></tr>`).join('');
   const total = Number(o.total||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
   const data = o.data ? new Date(o.data+'T12:00:00').toLocaleDateString('pt-BR') : new Date().toLocaleDateString('pt-BR');
   const proposta = false;
@@ -7178,6 +7188,7 @@ function editarClienteCard(card){
     if(el.matches('#rec-rg,#rec-rg-cliente'))el.value=digs(el.value,9);
     if(el.matches('.item-valor,#rec-valor'))el.value=el.value.replace(/[^0-9.,R$ \-]/g,'');
     if(el.matches('.item-qtd,#orc-validade,#perfil-validade'))el.value=el.value.replace(/[^0-9.,]/g,'');
+    if(el.matches('.item-qtd,.oe-i-qtd')){const t=el.value.replace('.',',');const i=t.indexOf(',');el.value=i<0?t:t.slice(0,i+1)+t.slice(i+1).replace(/,/g,'');}
   });
   document.addEventListener('focusout',function(e){const el=e.target;if(!el||!el.matches('input'))return;
     if(el.matches('#perfil-documento,#rec-cpf,#rec-cpf-cliente')){const d=digs(el.value,14);if(d&&d.length!==11&&d.length!==14){el.setCustomValidity('Informe um CPF com 11 dígitos ou CNPJ com 14 dígitos.');el.reportValidity();}else el.setCustomValidity('');}
@@ -7258,6 +7269,12 @@ function bkChaves(){
   } catch (_) {}
   return r;
 }
+function bkChaveOk(k){
+  const incl = k.indexOf('orcapro_') === 0 || k === 'assinaturaDigital' || k === 'profession' || k === 'professionChosenV2';
+  const excl = k === 'orcapro_aparelho_id' || k.indexOf('orcapro_backup') === 0 || k.indexOf('orcapro_perfil_inicial_') === 0 || /compartilhados_total$/.test(k) || /^orcapro_(plano|pro_ativo)$/.test(k);
+  return incl && !excl && k.length < 80;
+}
+function bkChavesValidas(){ return []; }
 function bkRefs(){
   const db = firestoreOrca(), gid = googleIdOrca();
   if (!db || !gid) return null;
@@ -7313,8 +7330,10 @@ async function restaurarBackupOrca(pedirConfirmacao){
     const quando = bkDataTexto(m.data().atualizado);
     if (pedirConfirmacao !== false && !confirm('Restaurar o backup de ' + quando + '?\n\nOs dados deste celular serão substituídos pelos do backup.')) return false;
     bkMsg('Restaurando…');
-    const partes = m.data().partes || {}, dados = {};
+    const partes = m.data().partes || {}, dados = {}, validas = bkChavesValidas();
     for (const k of Object.keys(partes)) {
+      if (validas.indexOf(k) < 0 && !bkChaveOk(k)) continue;
+      if (!(partes[k] >= 1 && partes[k] <= 40)) continue;
       let s = '';
       for (let i = 0; i < partes[k]; i++) { const d = await R.itens.doc(k + '__' + i).get(); if (!d.exists) throw new Error('faltando'); s += d.data().v; }
       dados[k] = s;
@@ -7638,7 +7657,7 @@ function renderRecibosSalvos(){
   const resumo=document.getElementById('recibos-plano-resumo');if(resumo)resumo.textContent=usuarioTemPro()?'Plano Pro ativo: compartilhamentos ilimitados':'Plano gratuito: até 10 downloads/compartilhamentos de recibos e 10 de orçamentos';
   const host=document.getElementById('lista-recibos-salvos');if(!host)return;
   if(!recibosSalvos.length){host.innerHTML='<div class="recibos-vazio"><i class="fas fa-receipt"></i><p><strong>Nenhum recibo salvo ainda</strong></p><p>Crie e salve um recibo para consultá-lo ou editá-lo depois. O limite gratuito conta quando você toca em compartilhar.</p><button class="btn-yellow-sm" onclick="abrirModelosRecibo()">+ Criar primeiro recibo</button></div>';return}
-  host.innerHTML=recibosSalvos.slice().sort((a,b)=>(b.atualizadoEm||b.criadoEm||0)-(a.atualizadoEm||a.criadoEm||0)).map(r=>'<article class="recibo-salvo-card"><div class="recibos-resumo-icon"><i class="fas fa-file-invoice"></i></div><div class="recibo-salvo-info"><strong>#'+esc(r.numero||'—')+' · '+esc(r.cliente||'Sem nome')+'</strong><p>'+esc(r.modelo||'Recibo')+' · '+esc(fmtData(r.data)||r.data||'')+'</p><div class="recibo-salvo-valor">'+fmtBRL(r.valor||0)+'</div><div class="recibo-salvo-actions"><button onclick="editarReciboSalvo(\''+String(r.id)+'\')"><i class="fas fa-pen"></i> Abrir / editar</button><button onclick="exportarReciboSalvo(\''+String(r.id)+'\')"><i class="fas fa-share"></i> Abrir para compartilhar</button><button class="delete" onclick="excluirReciboSalvo(\''+String(r.id)+'\')"><i class="fas fa-trash"></i> Excluir</button></div></div></article>').join('');
+  host.innerHTML=recibosSalvos.slice().sort((a,b)=>(b.atualizadoEm||b.criadoEm||0)-(a.atualizadoEm||a.criadoEm||0)).map(r=>'<article class="recibo-salvo-card"><div class="recibos-resumo-icon"><i class="fas fa-file-invoice"></i></div><div class="recibo-salvo-info"><strong>#'+esc(r.numero||'—')+' · '+esc(r.cliente||'Sem nome')+'</strong><p>'+esc(r.modelo||'Recibo')+' · '+esc(fmtData(r.data)||r.data||'')+'</p><div class="recibo-salvo-valor">'+fmtBRL(r.valor||0)+'</div><div class="recibo-salvo-actions"><button onclick="editarReciboSalvo(\''+String(r.id).replace(/[^\w-]/g,'')+'\')"><i class="fas fa-pen"></i> Abrir / editar</button><button onclick="exportarReciboSalvo(\''+String(r.id).replace(/[^\w-]/g,'')+'\')"><i class="fas fa-share"></i> Abrir para compartilhar</button><button class="delete" onclick="excluirReciboSalvo(\''+String(r.id).replace(/[^\w-]/g,'')+'\')"><i class="fas fa-trash"></i> Excluir</button></div></div></article>').join('');
 }
 function editarReciboSalvo(id){
   const r=lerRecibosSalvos().find(x=>String(x.id)===String(id));if(!r)return;
@@ -7794,8 +7813,10 @@ document.addEventListener('DOMContentLoaded',()=>{renderRecibosSalvos();atualiza
         + '</div></div>';
       document.body.appendChild(ov);
       var msg = ov.querySelector('#orcapro-ent-msg');
+      var emApp = /FBAN|FBAV|Instagram|WhatsApp|Line\/|MicroMessenger|; wv\)|GSA\//i.test(navigator.userAgent || '');
       msg.textContent = pode ? 'Toque em Compartilhar para escolher o WhatsApp, e-mail ou outro aplicativo.'
-        : 'Este aparelho não permite compartilhar o arquivo direto. Use o WhatsApp abaixo: o arquivo é baixado e a conversa abre para você anexá-lo.';
+        : 'O ' + rotulo + ' foi gerado, mas este aparelho não envia o arquivo direto. Toque em "Enviar pelo WhatsApp": o arquivo é baixado e o WhatsApp abre; lá, toque no clipe e escolha o arquivo ' + file.name + ' (pasta Downloads).'
+          + (emApp ? ' Dica: você abriu o OrçaPRO dentro de outro aplicativo. Para compartilhar direto, toque nos 3 pontinhos e escolha "Abrir no Chrome".' : '');
       function fechar(){ ov.remove(); resolve('fechado'); }
       ov.addEventListener('click', function(ev){ if (ev.target === ov) fechar(); });
       ov.querySelector('#orcapro-ent-close').onclick = fechar;
@@ -7803,7 +7824,7 @@ document.addEventListener('DOMContentLoaded',()=>{renderRecibosSalvos();atualiza
       ov.querySelector('#orcapro-ent-wa').onclick = function(){
         baixar(file);
         var w = null;
-        try { w = window.open('https://wa.me/?text=' + encodeURIComponent('Olá! Segue o arquivo ' + file.name + ' do OrçaPRO.'), '_blank'); } catch (e) {}
+        try { w = window.open('https://wa.me/?text=' + encodeURIComponent('Olá! Estou enviando o arquivo ' + file.name + ' (gerado pelo OrçaPRO). Vou anexá-lo agora nesta conversa.'), '_blank'); } catch (e) {}
         msg.textContent = 'Arquivo baixado. No WhatsApp, toque no clipe e escolha ' + file.name + ' (pasta Downloads).' + (w ? '' : ' Abra o WhatsApp manualmente.');
       };
       var sh = ov.querySelector('#orcapro-ent-share');
