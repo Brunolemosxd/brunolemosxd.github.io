@@ -4133,6 +4133,7 @@ function iniciarFirebaseAuth() {
     if (!cfgOk || !window.firebase || !firebase.apps) return false;
     if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
     firebaseAuthReady = true;
+    try { firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL); } catch (_) {}   // mantém o login neste aparelho
     firebase.auth().onAuthStateChanged(async user => {
       if (!user) { cota = null; try { pararSessaoUnica(); } catch (_) {} try { atualizarBarraGratuita(); } catch (_) {} return; }
       currentUser.name = user.displayName || user.phoneNumber || (user.email ? user.email.split('@')[0] : 'Usuário');
@@ -6918,6 +6919,7 @@ document.addEventListener('DOMContentLoaded', () => {
     localStorage.setItem('professionChosenV2', '1');
   }
   showScreen('screen-login');
+  try { iniciarFirebaseAuth(); } catch (_) {}   // se já houver login salvo, entra direto
 });
 
   </script>
