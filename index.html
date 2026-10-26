@@ -3268,6 +3268,14 @@ body.light .btn-remove-item{color:#b91c1c}
               <button type="button" class="btn-outline" onclick="copiarCodigoUsuario()">Copiar</button>
               <p>Informe este código ao suporte quando precisar de ajuda com o seu plano.</p>
             </div>
+            <div id="perfil-backup" class="perfil-codigo" style="display:none;grid-template-columns:1fr">
+              <b style="font-size:1rem;letter-spacing:0">Backup na nuvem</b>
+              <div id="backup-bloq"><p>Guarde seus orçamentos, recibos, clientes e logo na sua conta e recupere tudo ao trocar de celular. Disponível no plano Pro.</p></div>
+              <div id="backup-acoes" style="display:none">
+                <p id="backup-status">Seus dados são salvos automaticamente.</p>
+                <div style="display:flex;gap:8px;margin-top:8px"><button type="button" class="btn-outline" style="margin:0" onclick="fazerBackupOrca(true)">Salvar agora</button><button type="button" class="btn-outline" style="margin:0" onclick="restaurarBackupOrca()">Restaurar</button></div>
+              </div>
+            </div>
             <button class="btn-outline" onclick="goToEditProfile()">
               <i class="fas fa-pencil-alt"></i> Editar perfil
             </button>
@@ -3949,15 +3957,16 @@ const LEGAL_TEXTOS = {
 <li><b>Seus clientes e documentos:</b> nome, telefone e endereço dos seus clientes, itens, valores e condições dos orçamentos e recibos que você cria.</li>
 <li><b>Login:</b> ao entrar com Google, o app recebe seu nome, e-mail e um identificador da conta.</li>
 <li><b>Plano e controle de uso:</b> guardamos no servidor (Google Firebase/Firestore) o identificador da sua conta Google, quantos documentos gratuitos você já baixou ou compartilhou, o seu plano e qual celular está usando a conta no momento. Cada conta recebe um código (derivado do identificador) que você pode informar ao suporte; o responsável pelo OrçaPRO vê, em um painel interno, apenas esse código, a data de cadastro, os contadores e o plano, sem nome nem e-mail. Esse registro de contagem não é apagado ao excluir a conta, para impedir fraude no limite gratuito; ele não contém seu nome, e-mail nem os seus documentos.</li>
+<li><b>Backup na nuvem (somente plano Pro):</b> se você tiver o Pro, uma cópia dos dados do item acima (perfil, clientes, orçamentos, recibos, logotipo e assinatura) é guardada no servidor (Google Firebase/Firestore), ligada à sua conta, para você recuperar tudo ao trocar de celular. Só você acessa essa cópia, e o painel interno do responsável pelo OrçaPRO não mostra esses dados. Usuários do plano gratuito não têm cópia no servidor.</li>
 <li><b>Sugestões de modelo:</b> se você enviar uma sugestão pelo app, usamos a foto ou print e o texto que você escolher enviar. Só é enviado se você tocar em enviar.</li>
 </ul>
 <h3>2. Para que usamos</h3>
 <p>Apenas para o app funcionar: montar os PDFs e imagens dos seus documentos, mostrar seus dados de empresa neles, controlar o limite do plano gratuito e identificar sua conta quando você entra. A conta funciona em um celular por vez. Não vendemos seus dados e não usamos publicidade.</p>
 <h3>3. Onde os dados ficam</h3>
-<p>Perfil, clientes, orçamentos e recibos ficam guardados no seu aparelho, dentro do app. Os documentos são gerados no próprio aparelho. Se você desinstalar o app ou limpar os dados dele, essas informações são perdidas.</p>
+<p>Perfil, clientes, orçamentos e recibos ficam guardados no seu aparelho, dentro do app. Os documentos são gerados no próprio aparelho. No plano gratuito, se você desinstalar o app ou limpar os dados dele, essas informações são perdidas. No plano Pro, a cópia na nuvem permite recuperá-las.</p>
 <h3>4. Com quem compartilhamos</h3>
 <ul>
-<li><b>Google (Firebase Authentication):</b> processa o login com Google e guarda os dados da conta de acesso. O Firestore guarda o plano, a contagem de usos gratuitos e o controle de celular ativo.</li>
+<li><b>Google (Firebase Authentication):</b> processa o login com Google e guarda os dados da conta de acesso. O Firestore guarda o plano, a contagem de usos gratuitos, o controle de celular ativo e, para quem tem Pro, o backup.</li>
 <li><b>Bibliotecas de terceiros</b> (Google/Firebase e Cloudflare) são carregadas pela internet e podem receber seu endereço IP.</li>
 <li><b>FormSubmit (envio de e-mail):</b> quando você envia uma sugestão de modelo, a foto/print e o texto passam por esse serviço e chegam por e-mail ao responsável pelo OrçaPRO.</li>
 <li><b>WhatsApp e outros apps:</b> o PDF ou a imagem só sai do app quando você toca em compartilhar e escolhe o destinatário.</li>
@@ -3965,7 +3974,7 @@ const LEGAL_TEXTOS = {
 <h3>5. Dados dos seus clientes</h3>
 <p>Ao cadastrar dados de terceiros, você é responsável por ter autorização para usá-los. Use esses dados somente para os orçamentos e recibos que você emite.</p>
 <h3>6. Por quanto tempo e como excluir</h3>
-<p>Mantemos os dados enquanto você usar o app. Para apagar tudo, vá em <b>Perfil &gt; Excluir minha conta</b>: o app remove os dados guardados no aparelho, o controle de celular ativo e a sua conta de login (apenas a contagem anônima de usos gratuitos é mantida, para evitar fraude). Se não conseguir acessar o app, peça a exclusão pelo e-mail <b>brunolemosxd@gmail.com</b> (assunto: Excluir conta OrçaPRO) ou pela página pública de exclusão de conta (<b>brunolemosxd.github.io/excluir-conta.html</b>). Atendemos o pedido em até 30 dias.</p>
+<p>Mantemos os dados enquanto você usar o app. Para apagar tudo, vá em <b>Perfil &gt; Excluir minha conta</b>: o app remove os dados guardados no aparelho, o controle de celular ativo, a cópia de backup na nuvem (se houver) e a sua conta de login (apenas a contagem anônima de usos gratuitos é mantida, para evitar fraude). Se não conseguir acessar o app, peça a exclusão pelo e-mail <b>brunolemosxd@gmail.com</b> (assunto: Excluir conta OrçaPRO) ou pela página pública de exclusão de conta (<b>brunolemosxd.github.io/excluir-conta.html</b>). Atendemos o pedido em até 30 dias.</p>
 <h3>7. Seus direitos</h3>
 <p>Você pode pedir confirmação de que tratamos seus dados, acesso, correção, anonimização ou eliminação, informação sobre compartilhamento e revogar consentimentos. Para exercer esses direitos, escreva para <b>brunolemosxd@gmail.com</b> ou use o botão <b>Ajuda</b> do app.</p>
 <h3>8. Segurança</h3>
@@ -6788,7 +6797,7 @@ async function fazerLogout() {
 async function excluirMinhaConta() {
   const ok = confirm(
     'Excluir minha conta?\n\n' +
-    'Isso apaga permanentemente todos os dados deste aparelho:\n' +
+    'Isso apaga permanentemente todos os dados deste aparelho e o backup na nuvem (se você tiver):\n' +
     '• Perfil e dados da empresa\n' +
     '• Clientes\n' +
     '• Orçamentos e recibos salvos\n' +
@@ -6811,6 +6820,7 @@ async function excluirMinhaConta() {
       const user = firebase.auth().currentUser;
       try { await liberarSessaoUnica(); } catch (_) {}
       if (user) {
+        try { await apagarBackupOrca(); } catch (_) {}
         try {
           await user.delete();
         } catch (err) {
@@ -7229,6 +7239,148 @@ function atualizarTelasPlano(){
   try { atualizarAcessoVisualizacaoRecibo(); } catch (_) {}
   try { renderRecibosSalvos(); } catch (_) {}
   try { atualizarCodigoUsuario(); } catch (_) {}
+  try { atualizarCartaoBackup(); } catch (_) {}
+}
+// ===== Backup na nuvem (somente Pro) =====
+const BK_PARTE = 300000;      // caracteres por pedaço (cada registro do Firestore aceita até 1 MB)
+const BK_MAX = 9e6;           // tamanho máximo do backup (caracteres)
+let bkOcupado = false, bkTimer = null, bkAvisouRestaurar = false;
+function bkChaves(){
+  const r = [];
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (!k) continue;
+      const incl = k.indexOf('orcapro_') === 0 || k === 'assinaturaDigital' || k === 'profession' || k === 'professionChosenV2';
+      const excl = k === 'orcapro_aparelho_id' || k.indexOf('orcapro_backup') === 0 || k.indexOf('orcapro_perfil_inicial_') === 0 || /compartilhados_total$/.test(k) || /^orcapro_(plano|pro_ativo)$/.test(k);
+      if (incl && !excl) r.push(k);
+    }
+  } catch (_) {}
+  return r;
+}
+function bkRefs(){
+  const db = firestoreOrca(), gid = googleIdOrca();
+  if (!db || !gid) return null;
+  const meta = db.collection('backups').doc(gid);
+  return { db, gid, meta, itens: meta.collection('itens') };
+}
+function bkMsg(t, erro){
+  const el = document.getElementById('backup-status'); if (el) { el.textContent = t; el.style.color = erro ? 'var(--danger,#EF4444)' : ''; }
+}
+function bkDataTexto(ts){
+  try { const ms = ts && ts.toMillis ? ts.toMillis() : 0; return ms ? new Date(ms).toLocaleString('pt-BR') : ''; } catch (_) { return ''; }
+}
+async function fazerBackupOrca(manual){
+  if (bkOcupado) return false;
+  const R = bkRefs();
+  if (!R || !usuarioTemPro()) { if (manual) bkMsg('O backup na nuvem é do plano Pro.', true); return false; }
+  bkOcupado = true; if (manual) bkMsg('Salvando backup…');
+  try {
+    const dados = {}; let total = 0;
+    bkChaves().forEach(k => { const v = localStorage.getItem(k); if (v != null) { dados[k] = v; total += v.length + k.length; } });
+    if (total > BK_MAX) throw new Error('grande');
+    const antigo = await R.meta.get();
+    const velhos = antigo.exists ? (antigo.data().partes || {}) : {};
+    const novos = {}; const ops = [];
+    Object.keys(dados).forEach(k => {
+      const v = dados[k], n = Math.max(1, Math.ceil(v.length / BK_PARTE)); novos[k] = n;
+      for (let i = 0; i < n; i++) ops.push({ id: k + '__' + i, v: v.slice(i * BK_PARTE, (i + 1) * BK_PARTE) });
+    });
+    const apagar = [];
+    Object.keys(velhos).forEach(k => { for (let i = (novos[k] || 0); i < velhos[k]; i++) apagar.push(k + '__' + i); });
+    // grava em lotes pequenos
+    const todas = ops.map(o => ({ t: 's', o })).concat(apagar.map(id => ({ t: 'd', id })));
+    for (let i = 0; i < todas.length; i += 20) {
+      const b = R.db.batch();
+      todas.slice(i, i + 20).forEach(x => { if (x.t === 's') b.set(R.itens.doc(x.o.id), { v: x.o.v }); else b.delete(R.itens.doc(x.id)); });
+      await b.commit();
+    }
+    await R.meta.set({ partes: novos, atualizado: firebase.firestore.FieldValue.serverTimestamp(), aparelho: idAparelhoOrca(), tam: total });
+    try { localStorage.setItem('orcapro_backup_ok_' + R.gid, String(Date.now())); } catch (_) {}
+    const m = await R.meta.get(); bkMsg('Último backup: ' + (bkDataTexto(m.data().atualizado) || 'agora'));
+    return true;
+  } catch (e) {
+    console.warn('Backup:', e);
+    bkMsg(e && e.message === 'grande' ? 'Seus dados ficaram grandes demais para o backup. Apague fotos ou modelos antigos.' : 'Não consegui salvar o backup. Verifique a internet e tente de novo.', true);
+    return false;
+  } finally { bkOcupado = false; }
+}
+async function restaurarBackupOrca(pedirConfirmacao){
+  const R = bkRefs(); if (!R) return false;
+  try {
+    const m = await R.meta.get();
+    if (!m.exists) { bkMsg('Você ainda não tem backup na nuvem.', true); return false; }
+    const quando = bkDataTexto(m.data().atualizado);
+    if (pedirConfirmacao !== false && !confirm('Restaurar o backup de ' + quando + '?\n\nOs dados deste celular serão substituídos pelos do backup.')) return false;
+    bkMsg('Restaurando…');
+    const partes = m.data().partes || {}, dados = {};
+    for (const k of Object.keys(partes)) {
+      let s = '';
+      for (let i = 0; i < partes[k]; i++) { const d = await R.itens.doc(k + '__' + i).get(); if (!d.exists) throw new Error('faltando'); s += d.data().v; }
+      dados[k] = s;
+    }
+    bkChaves().forEach(k => { try { localStorage.removeItem(k); } catch (_) {} });
+    Object.keys(dados).forEach(k => { try { localStorage.setItem(k, dados[k]); } catch (_) {} });
+    try { localStorage.setItem('orcapro_backup_ok_' + R.gid, String(Date.now())); } catch (_) {}
+    alert('Backup restaurado! O app vai recarregar.');
+    location.reload(); return true;
+  } catch (e) { console.warn('Restaurar:', e); bkMsg('Não consegui restaurar. Tente de novo com internet boa.', true); return false; }
+}
+async function apagarBackupOrca(){
+  const R = bkRefs(); if (!R) return;
+  try {
+    const m = await R.meta.get();
+    if (m.exists) {
+      const partes = m.data().partes || {}, ids = [];
+      Object.keys(partes).forEach(k => { for (let i = 0; i < partes[k]; i++) ids.push(k + '__' + i); });
+      for (let i = 0; i < ids.length; i += 20) { const b = R.db.batch(); ids.slice(i, i + 20).forEach(id => b.delete(R.itens.doc(id))); await b.commit(); }
+      await R.meta.delete();
+    }
+  } catch (e) { console.warn('Apagar backup:', e); }
+}
+function agendarBackupAuto(){
+  const R = bkRefs(); if (!R || !usuarioTemPro() || !localStorage.getItem('orcapro_backup_ok_' + R.gid)) return;
+  clearTimeout(bkTimer); bkTimer = setTimeout(() => { fazerBackupOrca(false); }, 20000);
+}
+// qualquer gravação de dados do app agenda um backup automático (20 s depois da última mudança)
+(function(){
+  try {
+    const orig = Storage.prototype.setItem;
+    Storage.prototype.setItem = function(k, v){
+      const r = orig.apply(this, arguments);
+      try { if (this === window.localStorage && typeof k === 'string' && bkChaves().indexOf(k) >= 0) agendarBackupAuto(); } catch (_) {}
+      return r;
+    };
+  } catch (_) {}
+})();
+async function verificarBackupAposCota(){
+  const R = bkRefs();
+  atualizarCartaoBackup();
+  if (!R || !usuarioTemPro()) return;
+  try {
+    const m = await R.meta.get(), flag = localStorage.getItem('orcapro_backup_ok_' + R.gid);
+    if (m.exists) {
+      bkMsg('Último backup: ' + bkDataTexto(m.data().atualizado));
+      const outro = m.data().aparelho && m.data().aparelho !== idAparelhoOrca();
+      if ((!flag || outro) && !bkAvisouRestaurar) {
+        bkAvisouRestaurar = true;
+        if (confirm('Encontramos um backup seu de ' + bkDataTexto(m.data().atualizado) + '.\n\nQuer restaurar os dados neste celular?\n\nOK = restaurar. Cancelar = manter como está.')) { await restaurarBackupOrca(false); return; }
+        if (!flag) return;
+      }
+      if (flag && !outro) agendarBackupAuto();
+    } else if (!flag) {
+      await fazerBackupOrca(false);   // primeiro backup, automático
+    }
+  } catch (e) { console.warn('Verificar backup:', e); }
+}
+function atualizarCartaoBackup(){
+  const c = document.getElementById('perfil-backup'); if (!c) return;
+  const logado = !!googleIdOrca();
+  c.style.display = logado ? '' : 'none';
+  const pro = usuarioTemPro();
+  const a = document.getElementById('backup-acoes'), b = document.getElementById('backup-bloq');
+  if (a) a.style.display = pro ? '' : 'none';
+  if (b) b.style.display = pro ? 'none' : '';
 }
 async function carregarCotaOrca(){
   const db = firestoreOrca(), gid = googleIdOrca();
@@ -7247,6 +7399,7 @@ async function carregarCotaOrca(){
     }
   } catch (e) { console.warn('Não consegui ler o plano:', e); cota = null; }
   atualizarTelasPlano();
+  try { verificarBackupAposCota(); } catch (_) {}
 }
 // Código do usuário (8 letras/números derivados do ID da conta; não revela nome nem e-mail)
 async function codigoUsuarioOrca(gid){
