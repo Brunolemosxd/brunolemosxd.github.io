@@ -1498,6 +1498,16 @@ body {
   line-height: 1.4;
 }
 
+.pix-erro{color:#EF4444;font-size:12px;margin:4px 0 0;min-height:0}
+.pix-erro:empty{display:none}
+input.pix-invalido{border-color:#EF4444!important}
+.pix-campo{margin:8px 0}
+.pix-campo label{margin-top:4px}
+.pix-qr-area{margin:8px 0;text-align:center}
+.pix-qr-area img{max-width:150px;max-height:150px;object-fit:contain;background:#fff;padding:6px;border-radius:8px;display:block;margin:0 auto 8px}
+.pix-linha{display:flex;gap:8px;align-items:center;margin:8px 0}
+.pix-linha select{flex:0 0 46%;min-width:0}
+.pix-linha input{flex:1 1 auto;min-width:0}
 .hint-sm {
   font-size: 11px;
   color: var(--text-muted);
@@ -3414,8 +3424,29 @@ body.light .btn-remove-item{color:#b91c1c}
             <button class="pay-opt">À vista</button>
             <button class="pay-opt">30% entrada</button>
             <button class="pay-opt">Por etapas...</button>
+            <button class="pay-opt">Pix</button>
+            <button class="pay-opt">Cartão de débito</button>
             <button class="pay-opt">Cartão de crédito</button>
             <button class="pay-opt active">Texto livre</button>
+          </div>
+          <div id="orc-pix-box" style="display:none;margin:10px 0">
+            <label for="orc-pix-tipo">Tipo da chave Pix</label>
+            <div class="pix-linha">
+              <select id="orc-pix-tipo" aria-label="Tipo da chave Pix"><option value="">Escolha o tipo…</option><option>CPF</option><option>CNPJ</option><option>E-mail</option><option>Telefone</option><option>Chave aleatória</option></select>
+              <input type="text" id="orc-pix-chave" autocomplete="off" placeholder="Chave Pix" aria-label="Chave Pix">
+            </div>
+            <p class="pix-erro" id="orc-pix-erro" role="alert"></p>
+            <p class="hint-sm">Escolha o tipo: a chave vem do seu Perfil e o campo só aceita o formato certo.</p>
+            <label style="display:flex;gap:8px;align-items:center;margin-top:10px;font-weight:500"><input type="checkbox" id="orc-pix-qr-usar" style="width:auto"> Mostrar QR Code do Pix no orçamento</label>
+            <div class="pix-qr-area" id="orc-pix-qr-area" style="display:none">
+              <img id="orc-pix-qr-img" alt="QR Code do Pix">
+              <p class="hint-sm" id="orc-pix-qr-info"></p>
+              <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:6px">
+                <button type="button" class="btn-dark-sm" id="orc-pix-qr-perfil-btn" onclick="orcUsarQrPerfil()">Usar o do Perfil</button>
+                <button type="button" class="btn-dark-sm" onclick="document.getElementById('orc-pix-qr-file').click()">Enviar outro agora</button>
+              </div>
+              <input type="file" id="orc-pix-qr-file" accept="image/*" style="display:none" onchange="orcEnviarQrPix(event)">
+            </div>
           </div>
           <div id="orc-cartao-box" style="display:none;margin:10px 0">
             <label for="orc-cartao-parcelas">Em quantas vezes no cartão de crédito?</label>
@@ -3870,8 +3901,16 @@ body.light .btn-remove-item{color:#b91c1c}
           </div>
           <input type="text" placeholder='Ex: 50% entrada, 50% na entrega, ou A'>
 
-          <label>Chave PIX (opcional)</label>
-          <input type="text" id="perfil-pix" placeholder="CPF, e-mail, telefone ou chave aleatória">
+          <label>Chaves Pix (opcional)</label>
+          <p class="hint-sm">Deixe salvas todas as suas chaves. Na hora do orçamento ou do recibo, o app preenche a chave certa para você.</p>
+          <input type="hidden" id="perfil-pix">
+          <div class="pix-campo"><label for="perfil-pix-cpf">CPF</label><input type="text" id="perfil-pix-cpf" data-pix-tipo="CPF" autocomplete="off"><p class="pix-erro"></p></div>
+          <div class="pix-campo"><label for="perfil-pix-cnpj">CNPJ</label><input type="text" id="perfil-pix-cnpj" data-pix-tipo="CNPJ" autocomplete="off"><p class="pix-erro"></p></div>
+          <div class="pix-campo"><label for="perfil-pix-email">E-mail</label><input type="text" id="perfil-pix-email" data-pix-tipo="E-mail" autocomplete="off"><p class="pix-erro"></p></div>
+          <div class="pix-campo"><label for="perfil-pix-tel">Telefone</label><input type="text" id="perfil-pix-tel" data-pix-tipo="Telefone" autocomplete="off"><p class="pix-erro"></p></div>
+          <div class="pix-campo"><label for="perfil-pix-aleat">Chave aleatória</label><input type="text" id="perfil-pix-aleat" data-pix-tipo="Chave aleatória" autocomplete="off"><p class="pix-erro"></p></div>
+          <label for="perfil-pix-principal">Chave principal (a que aparece no PDF)</label>
+          <select id="perfil-pix-principal"><option value="">Automática (a primeira preenchida)</option><option>CPF</option><option>CNPJ</option><option>E-mail</option><option>Telefone</option><option>Chave aleatória</option></select>
 
           <label>QR Code do Pix (opcional)</label>
           <p class="hint-sm">Envie a imagem do QR Code do seu Pix (print do app do banco). Ele aparece no PDF do orçamento para o cliente pagar.</p>
@@ -4388,6 +4427,7 @@ function usarSugestao(btn) {
 }
 
 // Se o usuário digitar à mão, o chip só fica amarelo se o texto for igual a ele
+document.addEventListener('input', e => { if (e.target && e.target.id === 'rec-pix-chave' && typeof atualizarRecibo === 'function') atualizarRecibo(); });
 document.addEventListener('input', e => {
   if (e.target && e.target.classList && e.target.classList.contains('item-desc')) {
     const row = e.target.closest('.item-row');
@@ -4616,6 +4656,9 @@ function reciboFormaCompleta() {
   const forma = v('rec-forma-pagamento');
   const wrap = document.getElementById('rec-parcelas-wrap');
   if (wrap) wrap.style.display = forma === 'Cartão de crédito' ? '' : 'none';
+  const pw = document.getElementById('rec-pix-wrap'); if (pw) pw.style.display = forma === 'Pix' ? '' : 'none';
+  { const pci = document.getElementById('rec-pix-chave'), pts = document.getElementById('rec-pix-tipo'); if (pci && pci.dataset.pixTipo === undefined) pixAplicarTipo(pci, pts ? pts.value : ''); }
+  if (forma === 'Pix') { const ch = v('rec-pix-chave'), tp = v('rec-pix-tipo'); return ch ? 'Pix (' + (tp || 'chave') + '): ' + ch : (tp ? 'Pix (' + tp + ')' : 'Pix'); }
   if (forma !== 'Cartão de crédito') return forma;
   const n = parseInt(v('rec-parcelas'), 10) || 1;
   if (n <= 1) return forma + ' (à vista)';
@@ -4623,7 +4666,7 @@ function reciboFormaCompleta() {
   return forma + ' em ' + n + 'x' + (valor > 0 ? ' de ' + fmtBRL(valor / n) : '');
 }
 document.addEventListener('change', function(e) {
-  if (e.target && (e.target.id === 'rec-forma-pagamento' || e.target.id === 'rec-parcelas') && typeof atualizarRecibo === 'function') atualizarRecibo();
+  if (e.target && (e.target.id === 'rec-forma-pagamento' || e.target.id === 'rec-parcelas' || e.target.id === 'rec-pix-chave') && typeof atualizarRecibo === 'function') atualizarRecibo();
 });
 function montarCamposEspecificosRecibo(nome) {
   const host = document.getElementById('recibo-campos-especificos');
@@ -4636,7 +4679,7 @@ function montarCamposEspecificosRecibo(nome) {
     html += `<div class="specific-field"><label>Assinatura digital</label><div class="pj-sign-box"><canvas id="pj-ass-canvas" width="360" height="130"></canvas></div><p class="hint">Desenhe sua assinatura com o dedo. Se não desenhar, usamos a assinatura salva no seu Perfil, se houver.</p><div class="ass-acoes"><button type="button" class="btn-dark-sm" onclick="usarAssinaturaPerfilPJ()">Usar assinatura do perfil</button><button type="button" class="btn-dark-sm" onclick="desfazerAssinaturaPJ()">↶ Desfazer</button><button type="button" class="btn-dark-sm" onclick="limparAssinaturaPJ()">Limpar assinatura</button><button type="button" class="btn-dark-sm" onclick="document.getElementById('pj-ass-upload').click()">Importar PNG</button><input type="file" id="pj-ass-upload" accept="image/png" style="display:none" onchange="importarAssinaturaPJ(event)"></div><p class="ass-padrao">Para importar: PNG de até 2 MB, mínimo 300×80 px, formato horizontal, assinatura escura em fundo branco ou transparente.</p></div>`;
   }
   if (nome === 'Recibo de Pagamento' || nome === 'Comprovante de Pagamento' || nome === 'Recibo de Pagamento Digital') {
-    html += `<div class="specific-field"><label for="rec-forma-pagamento">Forma de pagamento</label><select id="rec-forma-pagamento"><option value="">Selecione...</option><option>Pix</option><option>Dinheiro</option><option>Transferência bancária</option><option>Cartão de débito</option><option>Cartão de crédito</option><option>Boleto</option><option>Cheque</option><option>Outro</option></select></div><div class="specific-field" id="rec-parcelas-wrap" style="display:none"><label for="rec-parcelas">Parcelas no cartão de crédito</label><select id="rec-parcelas"><option value="1">À vista (1x)</option><option value="2">2x</option><option value="3">3x</option><option value="4">4x</option><option value="5">5x</option><option value="6">6x</option><option value="7">7x</option><option value="8">8x</option><option value="9">9x</option><option value="10">10x</option><option value="11">11x</option><option value="12">12x</option></select></div>`;
+    html += `<div class="specific-field"><label for="rec-forma-pagamento">Forma de pagamento</label><select id="rec-forma-pagamento"><option value="">Selecione...</option><option>Pix</option><option>Dinheiro</option><option>Transferência bancária</option><option>Cartão de débito</option><option>Cartão de crédito</option><option>Boleto</option><option>Cheque</option><option>Outro</option></select></div><div class="specific-field" id="rec-pix-wrap" style="display:none"><label for="rec-pix-tipo">Chave Pix</label><div class="pix-linha"><select id="rec-pix-tipo" aria-label="Tipo da chave Pix"><option value="">Tipo da chave…</option><option>CPF</option><option>CNPJ</option><option>E-mail</option><option>Telefone</option><option>Chave aleatória</option></select><input type="text" id="rec-pix-chave" autocomplete="off" placeholder="Chave Pix" aria-label="Chave Pix"></div><p class="pix-erro" id="rec-pix-erro" role="alert"></p></div><div class="specific-field" id="rec-parcelas-wrap" style="display:none"><label for="rec-parcelas">Parcelas no cartão de crédito</label><select id="rec-parcelas"><option value="1">À vista (1x)</option><option value="2">2x</option><option value="3">3x</option><option value="4">4x</option><option value="5">5x</option><option value="6">6x</option><option value="7">7x</option><option value="8">8x</option><option value="9">9x</option><option value="10">10x</option><option value="11">11x</option><option value="12">12x</option></select></div>`;
     html += `<div class="specific-field"><label for="rec-status-pagamento">Situação</label><select id="rec-status-pagamento"><option>Pagamento recebido</option><option>Pagamento parcial</option><option>Quitação total</option></select></div>`;
     html += field('rec-transacao','Código/identificador da transação (opcional)','ID da transação');
   }
@@ -4654,7 +4697,7 @@ function montarCamposEspecificosRecibo(nome) {
   }
   if (nome === 'Recibo Térmico') {
     html += field('rec-cpf-cliente','CPF/CNPJ do cliente (opcional)','000.000.000-00');
-    html += `<div class="specific-field"><label for="rec-forma-pagamento">Forma de pagamento</label><select id="rec-forma-pagamento"><option value="">Não informar</option><option>Pix</option><option>Dinheiro</option><option>Transferência bancária</option><option>Cartão de débito</option><option>Cartão de crédito</option><option>Boleto</option></select></div><div class="specific-field" id="rec-parcelas-wrap" style="display:none"><label for="rec-parcelas">Parcelas no cartão de crédito</label><select id="rec-parcelas"><option value="1">À vista (1x)</option><option value="2">2x</option><option value="3">3x</option><option value="4">4x</option><option value="5">5x</option><option value="6">6x</option><option value="7">7x</option><option value="8">8x</option><option value="9">9x</option><option value="10">10x</option><option value="11">11x</option><option value="12">12x</option></select></div>`;
+    html += `<div class="specific-field"><label for="rec-forma-pagamento">Forma de pagamento</label><select id="rec-forma-pagamento"><option value="">Não informar</option><option>Pix</option><option>Dinheiro</option><option>Transferência bancária</option><option>Cartão de débito</option><option>Cartão de crédito</option><option>Boleto</option></select></div><div class="specific-field" id="rec-pix-wrap" style="display:none"><label for="rec-pix-tipo">Chave Pix</label><div class="pix-linha"><select id="rec-pix-tipo" aria-label="Tipo da chave Pix"><option value="">Tipo da chave…</option><option>CPF</option><option>CNPJ</option><option>E-mail</option><option>Telefone</option><option>Chave aleatória</option></select><input type="text" id="rec-pix-chave" autocomplete="off" placeholder="Chave Pix" aria-label="Chave Pix"></div><p class="pix-erro" id="rec-pix-erro" role="alert"></p></div><div class="specific-field" id="rec-parcelas-wrap" style="display:none"><label for="rec-parcelas">Parcelas no cartão de crédito</label><select id="rec-parcelas"><option value="1">À vista (1x)</option><option value="2">2x</option><option value="3">3x</option><option value="4">4x</option><option value="5">5x</option><option value="6">6x</option><option value="7">7x</option><option value="8">8x</option><option value="9">9x</option><option value="10">10x</option><option value="11">11x</option><option value="12">12x</option></select></div>`;
     html += field('rec-mensagem-termico','Mensagem no final (opcional)','Obrigado pela preferência!');
   }
   if (nome === 'Recibo com Logo') html += `<p class="hint" style="margin-top:10px">Use o campo de logotipo abaixo para personalizar o recibo.</p>`;
@@ -5276,6 +5319,7 @@ function baixarArquivoRecibo(blob, nome) {
 async function compartilharReciboDireto(tipo) {
   const papel = document.getElementById('recibo-papel');
   if (!papel) { alert('Preencha/abra o recibo antes de compartilhar.'); return; }
+  { const er = recPixErroGeral(); if (er) { alert('Confira a chave Pix: ' + er); const ci = document.getElementById('rec-pix-chave'); if (ci) { pixMostrarErro(ci); ci.focus(); } return; } }
   const nomeCliente = (document.getElementById('rec-cliente') || {}).value || '';
   const contatoCliente = (document.getElementById('rec-contato') || {}).value || '';
   if (typeof window.orcaUpsertCliente === 'function' && nomeCliente.trim() && contatoCliente.trim()) {
@@ -5733,6 +5777,148 @@ function atualizarTotalOrcamento() {
   if (typeof atualizarCartaoOrc === 'function') atualizarCartaoOrc();
   return d.total;
 }
+// ---- Pix: tipo da chave + chave preenchida com os dados do Perfil ----
+const PIX_TIPOS = ['CPF', 'CNPJ', 'E-mail', 'Telefone', 'Chave aleatória'];
+const PIX_KEYS = { 'CPF': 'orcapro_pix_cpf', 'CNPJ': 'orcapro_pix_cnpj', 'E-mail': 'orcapro_pix_email', 'Telefone': 'orcapro_pix_tel', 'Chave aleatória': 'orcapro_pix_aleat' };
+const pixDig = x => String(x == null ? '' : x).replace(/\D/g, '');
+function cpfValido(c) {
+  const d = pixDig(c); if (d.length !== 11 || /^(\d)\1+$/.test(d)) return false;
+  for (let t = 9; t < 11; t++) { let sm = 0; for (let i = 0; i < t; i++) sm += d[i] * (t + 1 - i); const dv = ((sm * 10) % 11) % 10; if (dv !== +d[t]) return false; }
+  return true;
+}
+function cnpjValido(c) {
+  const d = pixDig(c); if (d.length !== 14 || /^(\d)\1+$/.test(d)) return false;
+  for (let t = 12; t < 14; t++) { let sm = 0, p = t - 7; for (let i = 0; i < t; i++) { sm += d[i] * p--; if (p < 2) p = 9; } const dv = sm % 11 < 2 ? 0 : 11 - (sm % 11); if (dv !== +d[t]) return false; }
+  return true;
+}
+function pixMascara(tipo, v) {
+  v = String(v == null ? '' : v);
+  if (tipo === 'CPF') { const d = pixDig(v).slice(0, 11); let r = d.slice(0, 3); if (d.length > 3) r += '.' + d.slice(3, 6); if (d.length > 6) r += '.' + d.slice(6, 9); if (d.length > 9) r += '-' + d.slice(9); return r; }
+  if (tipo === 'CNPJ') { const d = pixDig(v).slice(0, 14); let r = d.slice(0, 2); if (d.length > 2) r += '.' + d.slice(2, 5); if (d.length > 5) r += '.' + d.slice(5, 8); if (d.length > 8) r += '/' + d.slice(8, 12); if (d.length > 12) r += '-' + d.slice(12); return r; }
+  if (tipo === 'Telefone') { const d = pixDig(v).slice(0, 11); if (!d) return ''; if (d.length <= 2) return '(' + d; if (d.length <= 6) return '(' + d.slice(0, 2) + ') ' + d.slice(2); if (d.length <= 10) return '(' + d.slice(0, 2) + ') ' + d.slice(2, 6) + '-' + d.slice(6); return '(' + d.slice(0, 2) + ') ' + d.slice(2, 7) + '-' + d.slice(7); }
+  if (tipo === 'E-mail') return v.replace(/\s/g, '').toLowerCase().slice(0, 77);
+  if (tipo === 'Chave aleatória') { const h = v.toLowerCase().replace(/[^0-9a-f]/g, '').slice(0, 32); return [h.slice(0, 8), h.slice(8, 12), h.slice(12, 16), h.slice(16, 20), h.slice(20)].filter(Boolean).join('-'); }
+  return v;
+}
+function pixErro(tipo, v) {   // '' = ok (ou vazio)
+  v = String(v == null ? '' : v).trim(); if (!v) return '';
+  if (tipo === 'CPF') return cpfValido(v) ? '' : 'CPF inválido. Confira os 11 números.';
+  if (tipo === 'CNPJ') return cnpjValido(v) ? '' : 'CNPJ inválido. Confira os 14 números.';
+  if (tipo === 'E-mail') return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v) ? '' : 'E-mail inválido. Exemplo: nome@email.com';
+  if (tipo === 'Telefone') { const d = pixDig(v), ddd = +d.slice(0, 2); return (d.length === 10 || (d.length === 11 && d[2] === '9')) && ddd >= 11 && ddd <= 99 ? '' : 'Telefone inválido. Use DDD + número, ex.: (51) 99999-9999';
+  }
+  if (tipo === 'Chave aleatória') return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(v) ? '' : 'Chave aleatória inválida. São 32 letras/números, ex.: 123e4567-e89b-12d3-a456-426614174000';
+  return '';
+}
+const PIX_PLACEHOLDER = { 'CPF': '000.000.000-00', 'CNPJ': '00.000.000/0000-00', 'E-mail': 'nome@email.com', 'Telefone': '(00) 00000-0000', 'Chave aleatória': '00000000-0000-0000-0000-000000000000' };
+function pixAplicarTipo(inp, tipo) {
+  if (!inp) return;
+  inp.dataset.pixTipo = tipo || '';
+  inp.disabled = !tipo;
+  inp.placeholder = tipo ? PIX_PLACEHOLDER[tipo] : 'Escolha o tipo primeiro';
+  inp.setAttribute('inputmode', (tipo === 'CPF' || tipo === 'CNPJ' || tipo === 'Telefone') ? 'numeric' : tipo === 'E-mail' ? 'email' : 'text');
+  inp.setAttribute('autocapitalize', 'off');
+}
+function pixMostrarErro(inp) {
+  const tipo = inp.dataset.pixTipo, msg = tipo ? pixErro(tipo, inp.value) : '';
+  const alvo = inp.id === 'orc-pix-chave' ? document.getElementById('orc-pix-erro') : inp.id === 'rec-pix-chave' ? document.getElementById('rec-pix-erro') : (inp.closest('.pix-campo') || document).querySelector('.pix-erro');
+  if (alvo) alvo.textContent = msg;
+  inp.classList.toggle('pix-invalido', !!msg);
+  return msg;
+}
+function chavePixPorTipo(tipo) {
+  const lg = k => { try { return (localStorage.getItem(k) || '').trim(); } catch (_) { return ''; } };
+  const salva = lg(PIX_KEYS[tipo]); if (salva) return pixMascara(tipo, salva);
+  const docP = pixDig(lg('orcapro_perfil_documento')), pixP = lg('orcapro_perfil_pix'), emailL = (typeof currentUser !== 'undefined' && currentUser && currentUser.email) || '';
+  if (tipo === 'CPF') return docP.length === 11 ? pixMascara('CPF', docP) : '';
+  if (tipo === 'CNPJ') return docP.length === 14 ? pixMascara('CNPJ', docP) : '';
+  if (tipo === 'E-mail') return pixErro('E-mail', pixP) === '' && pixP ? pixP : emailL;
+  if (tipo === 'Telefone') { const t = pixDig(lg('orcapro_perfil_whatsapp')).replace(/^55(?=\d{10,11}$)/, ''); return pixMascara('Telefone', t); }
+  if (tipo === 'Chave aleatória') return pixErro('Chave aleatória', pixP) === '' && pixP ? pixP : '';
+  return '';
+}
+function detectarTipoPix(c) {
+  c = String(c || '').trim(); if (!c) return '';
+  if (c.indexOf('@') > 0) return 'E-mail';
+  if (/^[0-9a-f]{8}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{12}$/i.test(c)) return 'Chave aleatória';
+  const d = pixDig(c);
+  if (d.length === 14) return 'CNPJ';
+  if (d.length === 11) return cpfValido(d) && !/\(/.test(c) ? 'CPF' : 'Telefone';
+  if (d.length === 10 || d.length === 13 || d.length === 12) return 'Telefone';
+  return '';
+}
+function textoPix(tipo, chave) {
+  tipo = String(tipo || '').trim(); chave = String(chave || '').trim();
+  if (!tipo && !chave) return 'Pix';
+  return 'Pix' + (tipo ? ' (' + tipo + ')' : '') + (chave ? ': ' + chave : '');
+}
+// máscara em tempo real + validação ao sair do campo
+document.addEventListener('input', function(e) {
+  const el = e.target; if (!el || !el.dataset || !el.dataset.pixTipo) return;
+  const m = pixMascara(el.dataset.pixTipo, el.value); if (m !== el.value) el.value = m;
+  if (el.classList.contains('pix-invalido')) pixMostrarErro(el);
+});
+document.addEventListener('focusout', function(e) { const el = e.target; if (el && el.dataset && el.dataset.pixTipo) pixMostrarErro(el); });
+function pixPreencherPorTipo(pre) {
+  const sel = document.getElementById(pre + '-pix-tipo'), inp = document.getElementById(pre + '-pix-chave'); if (!sel || !inp) return;
+  pixAplicarTipo(inp, sel.value);
+  inp.value = sel.value ? chavePixPorTipo(sel.value) : '';
+  pixMostrarErro(inp);
+  if (sel.value && !inp.value) inp.focus();
+}
+function orcPixErroGeral() {   // validação do Pix do orçamento ('' = pode salvar)
+  const tipo = (document.getElementById('orc-pix-tipo') || {}).value || '', ch = ((document.getElementById('orc-pix-chave') || {}).value || '').trim();
+  const qr = !!(document.getElementById('orc-pix-qr-usar') || {}).checked && !!orcQrPixAtual();
+  if (!tipo && !qr) return 'Escolha o tipo da chave Pix (CPF, CNPJ, e-mail, telefone ou chave aleatória) ou marque o QR Code.';
+  if (tipo && !ch) return 'Preencha a chave Pix do tipo ' + tipo + ', ou escolha outro tipo.';
+  const er = tipo ? pixErro(tipo, ch) : ''; return er;
+}
+function recPixErroGeral() {
+  const forma = (document.getElementById('rec-forma-pagamento') || {}).value || ''; if (forma !== 'Pix') return '';
+  const tipo = (document.getElementById('rec-pix-tipo') || {}).value || '', ch = ((document.getElementById('rec-pix-chave') || {}).value || '').trim();
+  if (!tipo && !ch) return '';
+  if (tipo && !ch) return 'Preencha a chave Pix do tipo ' + tipo + ', ou deixe o tipo em branco.';
+  if (!tipo && ch) return 'Escolha o tipo da chave Pix.';
+  return pixErro(tipo, ch);
+}
+// ---- QR Code do Pix no orçamento ----
+let orcPixQrTemp = '';
+function orcQrPixAtual() {
+  if (orcPixQrTemp) return orcPixQrTemp;
+  try { return localStorage.getItem('orcapro_perfil_pix_qr') || ''; } catch (_) { return ''; }
+}
+function atualizarQrPixOrc() {
+  const area = document.getElementById('orc-pix-qr-area'), usar = document.getElementById('orc-pix-qr-usar'); if (!area || !usar) return;
+  let perfil = ''; try { perfil = localStorage.getItem('orcapro_perfil_pix_qr') || ''; } catch (_) {}
+  const atual = orcQrPixAtual(), img = document.getElementById('orc-pix-qr-img'), info = document.getElementById('orc-pix-qr-info'), bp = document.getElementById('orc-pix-qr-perfil-btn');
+  area.style.display = usar.checked ? '' : 'none';
+  if (img) { if (atual) { img.src = atual; img.style.display = ''; } else { img.removeAttribute('src'); img.style.display = 'none'; } }
+  if (info) info.textContent = orcPixQrTemp ? 'QR Code enviado agora (vale só para este orçamento).' : perfil ? 'Usando o QR Code salvo no seu Perfil.' : 'Você ainda não tem QR Code no Perfil. Envie um agora.';
+  if (bp) bp.style.display = (orcPixQrTemp && perfil) ? '' : 'none';
+}
+function orcUsarQrPerfil() { orcPixQrTemp = ''; atualizarQrPixOrc(); }
+function orcEnviarQrPix(event) {
+  const file = event && event.target && event.target.files && event.target.files[0]; if (!file) return;
+  if (!file.type || !file.type.startsWith('image/')) { alert('Escolha um arquivo de imagem (PNG ou JPG).'); return; }
+  if (file.size > 15 * 1024 * 1024) { alert('A imagem deve ter até 15 MB.'); return; }
+  const rd = new FileReader();
+  rd.onerror = () => alert('Não foi possível ler a imagem. Tente outro arquivo.');
+  rd.onload = () => {
+    const im = new Image();
+    im.onerror = () => alert('Não foi possível abrir essa imagem. Tente PNG ou JPG.');
+    im.onload = () => {
+      try {
+        const c = document.createElement('canvas'), sc = Math.min(1, 700 / im.width, 700 / im.height);
+        c.width = Math.max(1, Math.round(im.width * sc)); c.height = Math.max(1, Math.round(im.height * sc));
+        const cx = c.getContext('2d'); cx.fillStyle = '#fff'; cx.fillRect(0, 0, c.width, c.height); cx.drawImage(im, 0, 0, c.width, c.height);
+        orcPixQrTemp = c.toDataURL('image/png'); atualizarQrPixOrc();
+      } catch (_) { alert('A imagem é muito grande. Tente uma menor.'); }
+    };
+    im.src = rd.result;
+  };
+  rd.readAsDataURL(file); event.target.value = '';
+}
+document.addEventListener('change', function(e) { if (e.target && e.target.id === 'orc-pix-qr-usar') { e.target.dataset.tocado = '1'; atualizarQrPixOrc(); } });
 function textoCartaoOrc(total) {
   const n = parseInt((document.getElementById('orc-cartao-parcelas') || {}).value, 10) || 2;
   const sem = !!(document.getElementById('orc-cartao-sem-juros') || {}).checked;
@@ -5742,10 +5928,18 @@ function atualizarCartaoOrc() {
   const opt = document.querySelector('#orc-pay-opts .pay-opt.active');
   const on = !!opt && opt.textContent.trim() === 'Cartão de crédito';
   const box = document.getElementById('orc-cartao-box'); if (box) box.style.display = on ? '' : 'none';
+  const pixOn = !!opt && opt.textContent.trim() === 'Pix';
+  const pbox = document.getElementById('orc-pix-box'); if (pbox) pbox.style.display = pixOn ? '' : 'none';
+  if (pixOn) { const pt = document.getElementById('orc-pix-tipo'), pc = document.getElementById('orc-pix-chave'); if (pc && !pc.dataset.pixTipo) pixAplicarTipo(pc, pt ? pt.value : ''); const qu = document.getElementById('orc-pix-qr-usar'); if (qu && !qu.dataset.tocado) { qu.checked = !!orcQrPixAtual(); } atualizarQrPixOrc(); }
   const pr = document.getElementById('orc-cartao-previa');
   if (on && pr) { const d = calcularDescontoOrcamento(); pr.textContent = textoCartaoOrc(d.total) + ' (total ' + fmtBRL(d.total) + ')'; }
 }
 document.addEventListener('change', function(e) {
+  if (e.target && (e.target.id === 'orc-pix-tipo' || e.target.id === 'rec-pix-tipo')) {
+    const pre = e.target.id === 'orc-pix-tipo' ? 'orc' : 'rec';
+    pixPreencherPorTipo(pre);
+    if (pre === 'rec' && typeof atualizarRecibo === 'function') atualizarRecibo();
+  }
   if (e.target && (e.target.id === 'orc-cartao-parcelas' || e.target.id === 'orc-cartao-sem-juros')) atualizarCartaoOrc();
 });
 document.addEventListener('input', function(e) {
@@ -5775,6 +5969,8 @@ function limparFormOrcamento() {
   const numero = document.getElementById('orc-numero');
   if (numero) numero.placeholder = 'Automático: ' + proximoNumero();
   document.querySelectorAll('#orc-pay-opts .pay-opt').forEach(b => b.classList.toggle('active', b.textContent.trim() === 'Texto livre'));
+  orcPixQrTemp = '';
+  { const pt = document.getElementById('orc-pix-tipo'); if (pt) pt.value = ''; const pc = document.getElementById('orc-pix-chave'); if (pc) { pc.value = ''; pixAplicarTipo(pc, ''); pc.classList.remove('pix-invalido'); } const pe = document.getElementById('orc-pix-erro'); if (pe) pe.textContent = ''; const qu = document.getElementById('orc-pix-qr-usar'); if (qu) { qu.checked = false; delete qu.dataset.tocado; } }
   atualizarCartaoOrc();
   resetarDescontoOrcamento();
   atualizarTotalOrcamento();
@@ -5799,8 +5995,12 @@ function salvarOrcamento() {
   const numero = String(isNaN(digitado) ? parseInt(proximoNumero(), 10) : digitado).padStart(4, '0');
 
   const opt = document.querySelector('#orc-pay-opts .pay-opt.active');
+  const ehPix = !!opt && opt.textContent.trim() === 'Pix';
+  if (ehPix) { const er = orcPixErroGeral(); if (er) { alert(er); const ci = document.getElementById('orc-pix-chave'); if (ci && !ci.disabled) { pixMostrarErro(ci); ci.focus(); } return; } }
   let pagamento = v('orc-pagamento');
   if (opt && opt.textContent.trim() === 'Cartão de crédito') { const c = textoCartaoOrc(total); pagamento = pagamento ? pagamento + '\n' + c : c; }
+  else if (opt && opt.textContent.trim() === 'Pix') { const c = textoPix(v('orc-pix-tipo'), v('orc-pix-chave')); pagamento = pagamento ? pagamento + '\n' + c : c; }
+  else if (opt && opt.textContent.trim() === 'Cartão de débito') { const c = 'Cartão de débito'; pagamento = pagamento ? pagamento + '\n' + c : c; }
   else if (!pagamento && opt && opt.textContent.trim() !== 'Texto livre') pagamento = opt.textContent.trim();
 
   const orc = {
@@ -5825,6 +6025,10 @@ function salvarOrcamento() {
     modelo: modeloNovoOrcamento || null
   };
   if (logoNovoOrc !== undefined) orc.logo = logoNovoOrc;
+  if (ehPix) {
+    orc.pixTipo = v('orc-pix-tipo'); orc.pixChave = v('orc-pix-chave');
+    orc.pixQr = ((document.getElementById('orc-pix-qr-usar') || {}).checked) ? orcQrPixAtual() : '';
+  }
   if (typeof window.orcaUpsertCliente === 'function' && orc.cliente && orc.whatsapp) window.orcaUpsertCliente(orc.cliente, orc.whatsapp);
   orcamentos.push(orc);
   modeloNovoOrcamento = '';
@@ -6592,6 +6796,8 @@ function montarHTMLModeloSimples(o, emp, logoImg, assinaturaSrc, assinaturaOn, b
 
 function montarHTMLDocumentoOrcamento(o) {
   const emp = dadosEmpresaPerfil();
+  if (o.pixChave !== undefined) emp.pix = o.pixChave;   // Pix escolhido neste orçamento
+  if (o.pixQr !== undefined) emp.pixQr = o.pixQr;
   const nomeMarca = emp.empresa || emp.nome || 'ORÇAPRO';
   const linhasEmpresa = [
     (emp.empresa && emp.nome) ? '<b>' + escaparHTMLOrc(emp.nome) + '</b>' : '',
@@ -7753,6 +7959,7 @@ function coletarDadosRecibo(){
   return {id:reciboEmEdicaoId||Date.now(),modelo:modeloReciboAtual||'Recibo Simples',numero:campos['rec-numero']||String(recibosSalvos.length+1).padStart(3,'0'),cliente:campos['rec-cliente']||'Sem nome',valor, data:campos['recibo-data']||hojeISO(), campos, logo:logoReciboData||'', criadoEm:reciboEmEdicaoId?(recibosSalvos.find(r=>r.id===reciboEmEdicaoId)||{}).criadoEm||Date.now():Date.now(), atualizadoEm:Date.now()};
 }
 function salvarReciboNaBiblioteca(silencioso=false){
+  { const er = recPixErroGeral(); if (er) { if (!silencioso) alert('Confira a chave Pix: ' + er); return; } }
   recibosSalvos=lerRecibosSalvos();
   if(!usuarioTemPro() && reciboEmEdicaoId===null && totalRecibosCriados()>=RECIBOS_LIMITE_GRATUITO){podeCriarRecibo();return false}
   const eraNovo = reciboEmEdicaoId===null;
@@ -8027,6 +8234,51 @@ document.addEventListener('change', function(e){
     if (q) { aplicarUnidadeQtd(q, t.value); try { oeAtualizarResumo(); } catch (_) {} }
   }
 });
+</script>
+<script>
+// ===== Perfil: todas as chaves Pix salvas (preenchem sozinhas no orçamento e no recibo) =====
+(function(){
+  const ORDEM = ['CPF', 'CNPJ', 'E-mail', 'Telefone', 'Chave aleatória'];
+  const IDS = { 'CPF': 'perfil-pix-cpf', 'CNPJ': 'perfil-pix-cnpj', 'E-mail': 'perfil-pix-email', 'Telefone': 'perfil-pix-tel', 'Chave aleatória': 'perfil-pix-aleat' };
+  const lg = k => { try { return (localStorage.getItem(k) || '').trim(); } catch (_) { return ''; } };
+  function carregarChavesPixPerfil() {
+    let alguma = false;
+    ORDEM.forEach(t => { const el = document.getElementById(IDS[t]); if (!el) return; pixAplicarTipo(el, t); el.disabled = false; el.value = pixMascara(t, lg(PIX_KEYS[t])); el.classList.remove('pix-invalido'); if (el.value) alguma = true; const er = el.closest('.pix-campo').querySelector('.pix-erro'); if (er) er.textContent = ''; });
+    const antiga = lg('orcapro_perfil_pix');
+    if (!alguma && antiga) {                       // quem já tinha uma chave salva: separa pelo tipo
+      const t = detectarTipoPix(antiga), el = t && document.getElementById(IDS[t]);
+      if (el) { el.value = pixMascara(t, antiga); try { localStorage.setItem('orcapro_pix_principal', t); } catch (_) {} }
+    }
+    const pr = document.getElementById('perfil-pix-principal'); if (pr) pr.value = lg('orcapro_pix_principal');
+  }
+  function validarEGravarChavesPix() {   // devolve '' se deu certo, ou a mensagem de erro
+    for (const t of ORDEM) {
+      const el = document.getElementById(IDS[t]); if (!el) continue;
+      const msg = pixMostrarErro(el); if (msg) { el.focus(); return t + ': ' + msg; }
+    }
+    const valores = {};
+    ORDEM.forEach(t => { const el = document.getElementById(IDS[t]); valores[t] = el ? el.value.trim() : ''; try { if (valores[t]) localStorage.setItem(PIX_KEYS[t], valores[t]); else localStorage.removeItem(PIX_KEYS[t]); } catch (_) {} });
+    const pr = document.getElementById('perfil-pix-principal');
+    let princ = pr ? pr.value : '';
+    if (!princ || !valores[princ]) princ = ORDEM.find(t => valores[t]) || '';
+    try { if (pr && pr.value) localStorage.setItem('orcapro_pix_principal', pr.value); else localStorage.removeItem('orcapro_pix_principal'); } catch (_) {}
+    const oculto = document.getElementById('perfil-pix'); if (oculto) oculto.value = princ ? valores[princ] : '';
+    return '';
+  }
+  const salvarAnterior = window.salvarPerfil;
+  window.salvarPerfil = function() {
+    const er = validarEGravarChavesPix();
+    if (er) { alert('Confira a chave Pix.\n\n' + er); return; }
+    return typeof salvarAnterior === 'function' ? salvarAnterior.apply(this, arguments) : undefined;
+  };
+  const editarAnterior = window.goToEditProfile;
+  window.goToEditProfile = function() {
+    const r = typeof editarAnterior === 'function' ? editarAnterior.apply(this, arguments) : undefined;
+    setTimeout(carregarChavesPixPerfil, 160);
+    return r;
+  };
+  window.carregarChavesPixPerfil = carregarChavesPixPerfil;
+})();
 </script>
 </body>
 </html>
