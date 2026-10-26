@@ -64,10 +64,13 @@ label{display:block;margin:10px 0 4px;color:var(--mut);font-size:.85rem}
       <div><button class="sm" id="btn-atualizar">Atualizar</button> <button class="sm" id="btn-sair">Sair</button></div>
     </div>
     <div class="grid" id="stats"></div>
-    <input id="busca" placeholder="Buscar por e-mail, nome ou código" autocomplete="off" autocapitalize="characters">
+    <div class="box"><b>Novos usuários por dia</b> <span class="meta">(últimos 30 dias)</span><div id="g-novos"></div></div>
+    <div class="box"><b>Novos Pro por dia</b> <span class="meta">(últimos 30 dias)</span><div id="g-pro"></div></div>
+    <div class="box"><b>Quem usa o app</b><div id="g-dist"></div></div>
+    <input id="busca" placeholder="Buscar pelo código do usuário (ex.: K7M2-9QXP)" autocomplete="off" autocapitalize="characters">
     <div id="msg"></div>
     <div class="box" id="lista">Carregando…</div>
-    <p class="meta">Mostrando até 500 usuários, do mais novo ao mais antigo. O painel não mostra os orçamentos, recibos nem clientes dos usuários, que ficam só no celular de cada um.</p>
+    <p class="meta">Mostrando até 500 usuários, do mais novo ao mais antigo. O painel não mostra nome, e-mail nem os documentos dos usuários.</p>
   </div>
 </main>
 
@@ -95,7 +98,6 @@ async function codigo(gid){
   for(let i=0;i<8;i++)o+=alf[h[i]%alf.length];
   return o.slice(0,4)+'-'+o.slice(4);
 }
-const esc=s=>String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const ms=t=>!t?0:(t.toMillis?t.toMillis():Number(t)||0);
 const fmt=t=>{const m=ms(t);return m?new Date(m).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'}):'—';};
 function plano(u){
@@ -125,7 +127,7 @@ async function carregar(){
   try{
     const snap=await db.collection('quotas').orderBy('criado','desc').limit(500).get();
     usuarios=await Promise.all(snap.docs.map(async d=>Object.assign({id:d.id,cod:await codigo(d.id)},d.data())));
-    stats();desenhar();
+    stats();graficos();desenhar();
   }catch(e){$('lista').textContent='Erro ao carregar: '+(e.code||e.message)+'. Confira se as regras novas do Firestore foram publicadas.';}
 }
 function stats(){
@@ -136,16 +138,37 @@ function stats(){
   const itens=[[usuarios.length,'usuários'],[novos(1),'novos hoje'],[novos(7),'novos em 7 dias'],[novos(30),'novos em 30 dias'],[pro,'com Pro ativo'],[orc,'orçamentos emitidos'],[rec,'recibos emitidos']];
   $('stats').innerHTML=itens.map(([n,t])=>`<div class="stat"><b>${n}</b><span>${t}</span></div>`).join('');
 }
+function barras(el,datas,vals,cor,vazio){
+  const tot=vals.reduce((x,y)=>x+y,0);
+  if(!tot){$(el).innerHTML='<p class="meta">'+vazio+'</p>';return;}
+  const W=300,H=110,pb=18,pt=14,n=vals.length,mx=Math.max(...vals),bw=W/n;
+  let s=`<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="gráfico de barras, total ${tot}">`;
+  s+=`<line x1="0" x2="${W}" y1="${H-pb}" y2="${H-pb}" stroke="#1E3A50"/>`;
+  vals.forEach((v,i)=>{const h=v?Math.max(3,(H-pb-pt)*v/mx):0,x=i*bw+1.2,y=H-pb-h;
+    if(v)s+=`<rect x="${x}" y="${y}" width="${bw-2.4}" height="${h}" rx="2" fill="${cor}"/><text x="${x+(bw-2.4)/2}" y="${y-3}" font-size="8" text-anchor="middle" fill="#fff">${v}</text>`;});
+  [0,Math.floor(n/2),n-1].forEach((i,k)=>{s+=`<text x="${k==0?2:k==2?W-2:i*bw+bw/2}" y="${H-4}" font-size="8" fill="#A0B0C0" text-anchor="${k==0?'start':k==2?'end':'middle'}">${datas[i]}</text>`;});
+  $(el).innerHTML=s+'</svg><div class="meta">Total no período: <b style="color:#fff">'+tot+'</b></div>';
+}
+function graficos(){
+  const dia=864e5,hoje=new Date();hoje.setHours(0,0,0,0);
+  const datas=[],ini=[];
+  for(let i=29;i>=0;i--){const d=new Date(hoje.getTime()-i*dia);ini.push(d.getTime());datas.push(d.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}));}
+  const conta=campo=>{const v=new Array(30).fill(0);usuarios.forEach(u=>{const t=ms(u[campo]);if(!t)return;const k=Math.floor((t-ini[0])/dia);if(k>=0&&k<30)v[k]++;});return v;};
+  barras('g-novos',datas,conta('criado'),'#F4C430','Nenhum usuário novo nos últimos 30 dias.');
+  barras('g-pro',datas,conta('proDesde'),'#22C55E','Nenhum Pro liberado nos últimos 30 dias. A data passa a ser registrada a partir de agora, ao liberar Pro.');
+  let g=0,pa=0,pv=0,lim=0;
+  usuarios.forEach(u=>{const p=plano(u);if(p.ativo)pa++;else if(u.pro===true)pv++;else if((+u.orc||0)>=10||(+u.rec||0)>=10)lim++;else g++;});
+  const tot=usuarios.length||1,seg=[[g,'Gratuito','#64748B'],[lim,'Chegou ao limite grátis','#F4C430'],[pa,'Pro ativo','#22C55E'],[pv,'Pro vencido','#EF4444']];
+  $('g-dist').innerHTML='<div style="display:flex;height:16px;border-radius:8px;overflow:hidden;background:#1E3A50;margin:10px 0">'+seg.map(([n,t,c])=>n?`<i style="width:${n/tot*100}%;background:${c}"></i>`:'').join('')+'</div>'+seg.map(([n,t,c])=>`<div class="meta"><i style="display:inline-block;width:10px;height:10px;border-radius:3px;background:${c};margin-right:6px"></i>${t}: <b style="color:#fff">${n}</b> (${Math.round(n/tot*100)}%)</div>`).join('');
+}
 function desenhar(){
-  const raw=$('busca').value.trim().toLowerCase();
-  const q=raw.replace(/[^a-z0-9]/g,'');
-  const lista=usuarios.filter(u=>!raw||((u.email||'')+' '+(u.nome||'')).toLowerCase().includes(raw)||u.cod.toLowerCase().replace('-','').includes(q));
-  if(!lista.length){$('lista').textContent=raw?'Nenhum usuário encontrado.':'Ainda não há usuários.';return;}
+  const q=$('busca').value.toUpperCase().replace(/[^A-Z0-9]/g,'');
+  const lista=usuarios.filter(u=>!q||u.cod.replace('-','').includes(q));
+  if(!lista.length){$('lista').textContent=q?'Nenhum usuário com esse código.':'Ainda não há usuários.';return;}
   $('lista').innerHTML=lista.map(u=>{
     const p=plano(u),o=Math.min(LIMITE,+u.orc||0),r=Math.min(LIMITE,+u.rec||0);
     return `<div class="user"><div>
-      <div><b>${esc(u.nome)||'(sem nome)'}</b> <span class="tag ${p.cls}">${p.txt}</span></div>
-      <div class="meta" style="word-break:break-all">${esc(u.email)||'(sem e-mail registrado: aparece quando o usuário entrar no app atualizado)'} · <span class="cod" style="font-size:.9rem">${u.cod}</span></div>
+      <div><span class="cod">${u.cod}</span> <span class="tag ${p.cls}">${p.txt}</span></div>
       <div class="meta">Cadastro: ${fmt(u.criado)} · Último uso: ${fmt(u.atualizado)}</div>
       <div class="meta">Orçamentos: ${+u.orc||0}/${LIMITE}<div class="bar"><i style="width:${o*10}%"></i></div></div>
       <div class="meta">Recibos: ${+u.rec||0}/${LIMITE}<div class="bar"><i style="width:${r*10}%"></i></div></div>
@@ -168,7 +191,7 @@ function dialogo(titulo,sub,corpo,ok){
   d.showModal();
 }
 function dlgCred(u){
-  dialogo('Adicionar créditos',(u.email||u.cod)+' · usados: '+(+u.orc||0)+' orçamentos, '+(+u.rec||0)+' recibos',
+  dialogo('Adicionar créditos','Usuário '+u.cod+' · usados: '+(+u.orc||0)+' orçamentos, '+(+u.rec||0)+' recibos',
    `<label>Tipo</label><select id="f-tipo"><option value="ambos">Orçamentos e recibos</option><option value="orc">Só orçamentos</option><option value="rec">Só recibos</option></select>
     <label>Quantos usos a mais?</label><input id="f-qtd" type="number" min="1" max="1000" value="5">`,
    async()=>{
@@ -182,14 +205,14 @@ function dlgCred(u){
 }
 function dlgDias(u){
   const p=plano(u);
-  dialogo('Dar dias de Pro',(u.email||u.cod)+' · '+p.txt,
+  dialogo('Dar dias de Pro','Usuário '+u.cod+' · '+p.txt,
    `<label>Quantos dias?</label><input id="f-dias" type="number" min="1" max="3650" value="7">
     <div class="meta" style="margin-top:8px">Se o Pro já estiver ativo, os dias são somados ao fim do prazo atual.</div>`,
    async()=>{
     const n=Math.max(1,parseInt($('f-dias').value,10)||0);
     const base=Math.max(Date.now(),p.ativo?ms(u.proAte):0);
     const fim=new Date(base+n*864e5);
-    await db.collection('quotas').doc(u.id).update({pro:true,proAte:firebase.firestore.Timestamp.fromDate(fim),atualizado:firebase.firestore.FieldValue.serverTimestamp()});
+    await db.collection('quotas').doc(u.id).update(Object.assign({pro:true,proAte:firebase.firestore.Timestamp.fromDate(fim),atualizado:firebase.firestore.FieldValue.serverTimestamp()},p.ativo?{}:{proDesde:firebase.firestore.FieldValue.serverTimestamp()}));
     $('msg').textContent='Pro liberado ao usuário '+u.cod+' até '+fim.toLocaleDateString('pt-BR')+'.';await carregar();
    });
 }

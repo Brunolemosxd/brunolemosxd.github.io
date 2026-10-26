@@ -3948,7 +3948,7 @@ const LEGAL_TEXTOS = {
 <li><b>Seu perfil:</b> nome, nome da empresa, CPF ou CNPJ, telefone/WhatsApp, endereço, chave Pix, QR Code do Pix, logotipo e assinatura digital. Tudo opcional e informado por você.</li>
 <li><b>Seus clientes e documentos:</b> nome, telefone e endereço dos seus clientes, itens, valores e condições dos orçamentos e recibos que você cria.</li>
 <li><b>Login:</b> ao entrar com Google, o app recebe seu nome, e-mail e um identificador da conta.</li>
-<li><b>Plano e controle de uso:</b> guardamos no servidor (Google Firebase/Firestore) o identificador da sua conta Google, o seu nome e e-mail do Google, a data de cadastro e de último uso, quantos documentos gratuitos você já baixou ou compartilhou, o seu plano e qual celular está usando a conta no momento. O responsável pelo OrçaPRO consulta esses dados em um painel interno, só para dar suporte, liberar créditos ou dias de Pro e contar usuários. Cada conta também recebe um código que você pode informar ao suporte. Ao excluir a conta, apagamos seu nome e e-mail desse registro; ficam apenas o identificador e os contadores de usos gratuitos, para impedir fraude no limite gratuito. Seus orçamentos, recibos e clientes não são enviados ao servidor.</li>
+<li><b>Plano e controle de uso:</b> guardamos no servidor (Google Firebase/Firestore) o identificador da sua conta Google, quantos documentos gratuitos você já baixou ou compartilhou, o seu plano e qual celular está usando a conta no momento. Cada conta recebe um código (derivado do identificador) que você pode informar ao suporte; o responsável pelo OrçaPRO vê, em um painel interno, apenas esse código, a data de cadastro, os contadores e o plano, sem nome nem e-mail. Esse registro de contagem não é apagado ao excluir a conta, para impedir fraude no limite gratuito; ele não contém seu nome, e-mail nem os seus documentos.</li>
 <li><b>Sugestões de modelo:</b> se você enviar uma sugestão pelo app, usamos a foto ou print e o texto que você escolher enviar. Só é enviado se você tocar em enviar.</li>
 </ul>
 <h3>2. Para que usamos</h3>
@@ -3965,7 +3965,7 @@ const LEGAL_TEXTOS = {
 <h3>5. Dados dos seus clientes</h3>
 <p>Ao cadastrar dados de terceiros, você é responsável por ter autorização para usá-los. Use esses dados somente para os orçamentos e recibos que você emite.</p>
 <h3>6. Por quanto tempo e como excluir</h3>
-<p>Mantemos os dados enquanto você usar o app. Para apagar tudo, vá em <b>Perfil &gt; Excluir minha conta</b>: o app remove os dados guardados no aparelho, o controle de celular ativo e a sua conta de login (apenas o identificador e a contagem de usos gratuitos são mantidos, sem nome nem e-mail, para evitar fraude). Se não conseguir acessar o app, peça a exclusão pelo e-mail <b>brunolemosxd@gmail.com</b> (assunto: Excluir conta OrçaPRO) ou pela página pública de exclusão de conta (<b>brunolemosxd.github.io/excluir-conta.html</b>). Atendemos o pedido em até 30 dias.</p>
+<p>Mantemos os dados enquanto você usar o app. Para apagar tudo, vá em <b>Perfil &gt; Excluir minha conta</b>: o app remove os dados guardados no aparelho, o controle de celular ativo e a sua conta de login (apenas a contagem anônima de usos gratuitos é mantida, para evitar fraude). Se não conseguir acessar o app, peça a exclusão pelo e-mail <b>brunolemosxd@gmail.com</b> (assunto: Excluir conta OrçaPRO) ou pela página pública de exclusão de conta (<b>brunolemosxd.github.io/excluir-conta.html</b>). Atendemos o pedido em até 30 dias.</p>
 <h3>7. Seus direitos</h3>
 <p>Você pode pedir confirmação de que tratamos seus dados, acesso, correção, anonimização ou eliminação, informação sobre compartilhamento e revogar consentimentos. Para exercer esses direitos, escreva para <b>brunolemosxd@gmail.com</b> ou use o botão <b>Ajuda</b> do app.</p>
 <h3>8. Segurança</h3>
@@ -6794,7 +6794,7 @@ async function excluirMinhaConta() {
     '• Orçamentos e recibos salvos\n' +
     '• Logos e assinatura\n' +
     '• Preferências e sessão\n\n' +
-    'Se você estiver logado, a conta de acesso também será excluída. Seu nome e e-mail são apagados do registro do plano; só o identificador e a contagem de usos gratuitos são mantidos, para evitar fraude.\n\n' +
+    'Se você estiver logado, a conta de acesso também será excluída. O registro anônimo de usos gratuitos é mantido para evitar fraude.\n\n' +
     'Esta ação não pode ser desfeita.'
   );
   if (!ok) return;
@@ -6811,10 +6811,6 @@ async function excluirMinhaConta() {
       const user = firebase.auth().currentUser;
       try { await liberarSessaoUnica(); } catch (_) {}
       if (user) {
-        try {   // apaga nome e e-mail do registro do plano (o contador anônimo fica)
-          const gidDel = googleIdOrca(user), dbDel = firestoreOrca();
-          if (gidDel && dbDel) await dbDel.collection('quotas').doc(gidDel).update({ email: firebase.firestore.FieldValue.delete(), nome: firebase.firestore.FieldValue.delete() });
-        } catch (eDel) { console.warn('Limpeza do registro:', eDel); }
         try {
           await user.delete();
         } catch (err) {
@@ -7240,31 +7236,19 @@ async function carregarCotaOrca(){
   try {
     const ref = db.collection('quotas').doc(gid);
     const snap = await ref.get();
-    if (snap.exists) {
-      cota = snap.data();
-      // mantém nome/e-mail e o "último uso" em dia para o suporte (no máx. a cada 6 horas)
-      try {
-        const id1 = identidadeOrca(), ult = cota.atualizado && cota.atualizado.toMillis ? cota.atualizado.toMillis() : 0;
-        if (cota.email !== id1.email || cota.nome !== id1.nome || (Date.now() - ult) > 6 * 3600e3)
-          await ref.update({ email: id1.email, nome: id1.nome, atualizado: firebase.firestore.FieldValue.serverTimestamp() });
-      } catch (e3) { console.warn('Atualização do registro:', e3); }
-    } else {
+    if (snap.exists) cota = snap.data();
+    else {
       cota = { orc: 0, rec: 0, pro: false };
       // registra o usuário (só contadores, sem nome nem e-mail) para aparecer no painel
       try {
         const agora = firebase.firestore.FieldValue.serverTimestamp();
-        const id0 = identidadeOrca();
-        await db.runTransaction(async tx => { const s2 = await tx.get(ref); if (!s2.exists) tx.set(ref, { orc: 0, rec: 0, pro: false, criado: agora, atualizado: agora, email: id0.email, nome: id0.nome }); });
+        await db.runTransaction(async tx => { const s2 = await tx.get(ref); if (!s2.exists) tx.set(ref, { orc: 0, rec: 0, pro: false, criado: agora, atualizado: agora }); });
       } catch (e2) { console.warn('Registro inicial:', e2); }
     }
   } catch (e) { console.warn('Não consegui ler o plano:', e); cota = null; }
   atualizarTelasPlano();
 }
 // Código do usuário (8 letras/números derivados do ID da conta; não revela nome nem e-mail)
-function identidadeOrca(){
-  const u = usuarioFirebase();
-  return { email: (u && u.email) || '', nome: String((u && u.displayName) || '').slice(0, 80) };
-}
 async function codigoUsuarioOrca(gid){
   try {
     const dados = new TextEncoder().encode('orcapro:' + gid);
@@ -7442,7 +7426,7 @@ async function registrarCompartilhamento(tipo){
       if((parseInt(d[campo],10) || 0) >= LIMITE_GRATUITO_ORCAPRO){ bloqueado = true; return d; }
       const prox = Object.assign({}, d); prox[campo] = (parseInt(d[campo],10) || 0) + 1;
       if(snap.exists) tx.update(ref, { [campo]: prox[campo], atualizado: agora });
-      else tx.set(ref, { orc: prox.orc || 0, rec: prox.rec || 0, pro: false, criado: agora, atualizado: agora, email: (u.email || ''), nome: String(u.displayName || '').slice(0, 80) });
+      else tx.set(ref, { orc: prox.orc || 0, rec: prox.rec || 0, pro: false, criado: agora, atualizado: agora });
       return prox;
     });
   }catch(e){
