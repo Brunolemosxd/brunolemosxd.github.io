@@ -13,6 +13,22 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="description" content="Crie orçamentos e recibos profissionais pelo celular e envie em PDF ou imagem pelo WhatsApp.">
   <title>OrçaPRO — Recibos e Plano Pro</title>
+  <script>
+  // Quem já entrou antes não vê a tela de login piscar: mostra uma tela de abertura até o Firebase confirmar a conta.
+  try {
+    if (/^https?:$/i.test(location.protocol) && localStorage.getItem('orcapro_boot_google') === '1') {
+      document.documentElement.classList.add('boot-wait');
+      setTimeout(function(){ document.documentElement.classList.remove('boot-wait'); }, 7000);
+    }
+  } catch (e) {}
+  </script>
+  <style>
+  #boot-splash{display:none}
+  html.boot-wait #boot-splash{display:flex;position:fixed;inset:0;z-index:2000000;background:#0B1C2C;color:#fff;align-items:center;justify-content:center;flex-direction:column;gap:16px;font:800 28px/1 system-ui,Arial,sans-serif}
+  html.boot-wait #boot-splash b{color:#F4C430}
+  html.boot-wait #boot-splash i{width:26px;height:26px;border:3px solid rgba(255,255,255,.25);border-top-color:#F4C430;border-radius:50%;animation:bootgira .8s linear infinite}
+  @keyframes bootgira{to{transform:rotate(360deg)}}
+  </style>
   <style id="orcapro-icons">
 /* ===== ÍCONES EMBUTIDOS (Font Awesome Free 6 · SVG inline, funciona offline e sem CDN) ===== */
 .fas,.fab,.far{display:inline-block;width:1em;height:1em;line-height:1;vertical-align:-0.125em;flex-shrink:0;font-style:normal;background-color:currentColor;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;-webkit-mask-position:center;mask-position:center;-webkit-mask-size:contain;mask-size:contain}
@@ -2969,6 +2985,7 @@ body.light .btn-remove-item{color:#b91c1c}
 </style>
 </head>
 <body class="dark">
+<div id="boot-splash" aria-label="Carregando"><span>Orça<b>PRO</b></span><i></i></div>
   <div id="app">
     <!-- LOGIN SCREEN -->
     <div id="screen-login" class="screen active">
@@ -4188,7 +4205,8 @@ function iniciarFirebaseAuth() {
     firebaseAuthReady = true;
     try { firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL); } catch (_) {}   // mantém o login neste aparelho
     firebase.auth().onAuthStateChanged(async user => {
-      if (!user) { cota = null; try { pararSessaoUnica(); } catch (_) {} try { atualizarBarraGratuita(); } catch (_) {} return; }
+      if (!user) { try { localStorage.removeItem('orcapro_boot_google'); } catch (_) {} document.documentElement.classList.remove('boot-wait'); cota = null; try { pararSessaoUnica(); } catch (_) {} try { atualizarBarraGratuita(); } catch (_) {} return; }
+      try { localStorage.setItem('orcapro_boot_google', '1'); } catch (_) {}
       currentUser.name = user.displayName || user.phoneNumber || (user.email ? user.email.split('@')[0] : 'Usuário');
       currentUser.email = user.email || '';
       currentUser.phone = user.phoneNumber || '';
@@ -4197,6 +4215,7 @@ function iniciarFirebaseAuth() {
       try { await iniciarSessaoUnica(user); } catch (e) { console.warn('Sessão única:', e); }
       try { await carregarCotaOrca(); } catch (e) { console.warn('Cota:', e); }
       afterLogin();
+      document.documentElement.classList.remove('boot-wait');
       if (typeof aplicarAcessoAdmin === 'function') aplicarAcessoAdmin();
     });
     return true;
@@ -7360,7 +7379,7 @@ function bkChaves(){
       const k = localStorage.key(i);
       if (!k) continue;
       const incl = k.indexOf('orcapro_') === 0 || k === 'assinaturaDigital' || k === 'profession' || k === 'professionChosenV2';
-      const excl = k === 'orcapro_aparelho_id' || k.indexOf('orcapro_backup') === 0 || k.indexOf('orcapro_perfil_inicial_') === 0 || /compartilhados_total$/.test(k) || /^orcapro_(plano|pro_ativo)$/.test(k);
+      const excl = k === 'orcapro_aparelho_id' || k.indexOf('orcapro_backup') === 0 || k === 'orcapro_boot_google' || k.indexOf('orcapro_perfil_inicial_') === 0 || /compartilhados_total$/.test(k) || /^orcapro_(plano|pro_ativo)$/.test(k);
       if (incl && !excl) r.push(k);
     }
   } catch (_) {}
@@ -7368,7 +7387,7 @@ function bkChaves(){
 }
 function bkChaveOk(k){
   const incl = k.indexOf('orcapro_') === 0 || k === 'assinaturaDigital' || k === 'profession' || k === 'professionChosenV2';
-  const excl = k === 'orcapro_aparelho_id' || k.indexOf('orcapro_backup') === 0 || k.indexOf('orcapro_perfil_inicial_') === 0 || /compartilhados_total$/.test(k) || /^orcapro_(plano|pro_ativo)$/.test(k);
+  const excl = k === 'orcapro_aparelho_id' || k.indexOf('orcapro_backup') === 0 || k === 'orcapro_boot_google' || k.indexOf('orcapro_perfil_inicial_') === 0 || /compartilhados_total$/.test(k) || /^orcapro_(plano|pro_ativo)$/.test(k);
   return incl && !excl && k.length < 80;
 }
 function bkChavesValidas(){ return []; }
