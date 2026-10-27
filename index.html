@@ -31,6 +31,11 @@
   
 .plano-selo{display:inline-flex;align-items:center;gap:6px;margin-top:6px;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:700;line-height:1.4;border:1px solid transparent}
 .plano-selo i{font-size:12px}
+.plano-linha{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-top:6px}
+.plano-linha .plano-selo{margin-top:0}
+.plano-btn-pro{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:999px;border:none;cursor:pointer;font-size:12px;font-weight:800;line-height:1.4;background:linear-gradient(135deg,#f7c52f,#e9a712);color:#2a1d00;box-shadow:0 0 12px rgba(247,197,47,.35)}
+.plano-btn-pro i{font-size:12px}
+.plano-btn-pro:active{transform:scale(.96)}
 .plano-selo.plano-free{background:rgba(148,163,184,.14);color:#cbd5e1;border-color:rgba(148,163,184,.35)}
 .plano-selo.plano-pro{background:linear-gradient(135deg,#f7c52f,#e9a712);color:#2a1d00;border-color:#ffd96b;box-shadow:0 0 12px rgba(247,197,47,.35)}
 .plano-selo.plano-admin{background:rgba(99,102,241,.2);color:#c7d2fe;border-color:rgba(129,140,248,.5)}
@@ -3150,7 +3155,7 @@ body.light .btn-remove-item{color:#b91c1c}
             <div>
               <h2><span id="saudacao-hora">Olá</span>, <span id="user-name">Usuário</span>!</h2>
               <p id="user-profession"></p>
-              <span id="plano-selo" class="plano-selo plano-free" aria-live="polite"><i class="fas fa-leaf" aria-hidden="true"></i><span>Plano Gratuito</span></span>
+              <div class="plano-linha"><span id="plano-selo" class="plano-selo plano-free" aria-live="polite"><i class="fas fa-leaf" aria-hidden="true"></i><span>Gratuito</span></span><button type="button" id="plano-btn-pro" class="plano-btn-pro" onclick="abrirOfertaPro()"><i class="fas fa-crown" aria-hidden="true"></i><span>Virar Pro</span></button></div>
             </div>
             <div class="greeting-buttons">
               <button class="btn-yellow-sm" onclick="novoOrcamentoEscolhendoModelo()">+ Orçamento</button>
@@ -7587,7 +7592,7 @@ function atualizarSaudacao(){
 try { atualizarSaudacao(); setInterval(atualizarSaudacao, 60000); document.addEventListener('visibilitychange', atualizarSaudacao); } catch (_) {}
 function atualizarSeloPlano(){
   const el = document.getElementById('plano-selo'); if (!el) return;
-  let cls = 'plano-free', ic = 'fa-leaf', txt = 'Plano Gratuito';
+  let cls = 'plano-free', ic = 'fa-leaf', txt = 'Gratuito';
   if (usuarioEhAdmin()) { cls = 'plano-admin'; ic = 'fa-star'; txt = 'Administrador'; }
   else if (usuarioTemPro()) {
     cls = 'plano-pro'; ic = 'fa-crown'; txt = 'Plano Pro';
@@ -7598,6 +7603,16 @@ function atualizarSeloPlano(){
         txt += ' · ' + (dias === 1 ? 'último dia' : dias + ' dias restantes');
       }
     }
+  }
+  const bt = document.getElementById('plano-btn-pro');
+  if (bt) {
+    let mostrar = cls === 'plano-free', rotulo = 'Virar Pro';
+    if (cls === 'plano-pro' && cota && cota.proAte) {
+      const ms = cota.proAte.toMillis ? cota.proAte.toMillis() : Number(cota.proAte);
+      if (ms && ms - Date.now() <= 7 * 86400000) { mostrar = true; rotulo = 'Renovar'; }
+    }
+    bt.style.display = mostrar ? '' : 'none';
+    const sp = bt.querySelector('span'); if (sp) sp.textContent = rotulo;
   }
   el.className = 'plano-selo ' + cls;
   el.innerHTML = '<i class="fas ' + ic + '" aria-hidden="true"></i><span>' + txt + '</span>';
