@@ -28,7 +28,13 @@
   html.boot-wait #boot-splash b{color:#F4C430}
   html.boot-wait #boot-splash i{width:26px;height:26px;border:3px solid rgba(255,255,255,.25);border-top-color:#F4C430;border-radius:50%;animation:bootgira .8s linear infinite}
   @keyframes bootgira{to{transform:rotate(360deg)}}
-  </style>
+  
+.plano-selo{display:inline-flex;align-items:center;gap:6px;margin-top:6px;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:700;line-height:1.4;border:1px solid transparent}
+.plano-selo i{font-size:12px}
+.plano-selo.plano-free{background:rgba(148,163,184,.14);color:#cbd5e1;border-color:rgba(148,163,184,.35)}
+.plano-selo.plano-pro{background:linear-gradient(135deg,#f7c52f,#e9a712);color:#2a1d00;border-color:#ffd96b;box-shadow:0 0 12px rgba(247,197,47,.35)}
+.plano-selo.plano-admin{background:rgba(99,102,241,.2);color:#c7d2fe;border-color:rgba(129,140,248,.5)}
+</style>
   <style id="orcapro-icons">
 /* ===== ÍCONES EMBUTIDOS (Font Awesome Free 6 · SVG inline, funciona offline e sem CDN) ===== */
 .fas,.fab,.far{display:inline-block;width:1em;height:1em;line-height:1;vertical-align:-0.125em;flex-shrink:0;font-style:normal;background-color:currentColor;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;-webkit-mask-position:center;mask-position:center;-webkit-mask-size:contain;mask-size:contain}
@@ -3142,8 +3148,9 @@ body.light .btn-remove-item{color:#b91c1c}
         <div class="content">
           <div class="greeting">
             <div>
-              <h2>Boa noite, <span id="user-name">Usuário</span>!</h2>
+              <h2><span id="saudacao-hora">Olá</span>, <span id="user-name">Usuário</span>!</h2>
               <p id="user-profession"></p>
+              <span id="plano-selo" class="plano-selo plano-free" aria-live="polite"><i class="fas fa-leaf" aria-hidden="true"></i><span>Plano Gratuito</span></span>
             </div>
             <div class="greeting-buttons">
               <button class="btn-yellow-sm" onclick="novoOrcamentoEscolhendoModelo()">+ Orçamento</button>
@@ -7572,7 +7579,31 @@ function aplicarAcessoAdmin(){
   if (typeof atualizarBarraGratuita === 'function') atualizarBarraGratuita();
   if (typeof atualizarAcessoVisualizacaoRecibo === 'function') atualizarAcessoVisualizacaoRecibo();
 }
+function atualizarSaudacao(){
+  const el = document.getElementById('saudacao-hora'); if (!el) return;
+  const h = new Date().getHours();
+  el.textContent = h >= 5 && h < 12 ? 'Bom dia' : (h >= 12 && h < 18 ? 'Boa tarde' : 'Boa noite');
+}
+try { atualizarSaudacao(); setInterval(atualizarSaudacao, 60000); document.addEventListener('visibilitychange', atualizarSaudacao); } catch (_) {}
+function atualizarSeloPlano(){
+  const el = document.getElementById('plano-selo'); if (!el) return;
+  let cls = 'plano-free', ic = 'fa-leaf', txt = 'Plano Gratuito';
+  if (usuarioEhAdmin()) { cls = 'plano-admin'; ic = 'fa-star'; txt = 'Administrador'; }
+  else if (usuarioTemPro()) {
+    cls = 'plano-pro'; ic = 'fa-crown'; txt = 'Plano Pro';
+    if (cota && cota.proAte) {
+      const ms = cota.proAte.toMillis ? cota.proAte.toMillis() : Number(cota.proAte);
+      if (ms) {
+        const dias = Math.max(1, Math.ceil((ms - Date.now()) / 86400000));
+        txt += ' · ' + (dias === 1 ? 'último dia' : dias + ' dias restantes');
+      }
+    }
+  }
+  el.className = 'plano-selo ' + cls;
+  el.innerHTML = '<i class="fas ' + ic + '" aria-hidden="true"></i><span>' + txt + '</span>';
+}
 function atualizarTelasPlano(){
+  try { atualizarSeloPlano(); atualizarSaudacao(); } catch (_) {}
   try { atualizarBarraGratuita(); } catch (_) {}
   try { aplicarAcessoAdmin(); } catch (_) {}
   try { atualizarAcessoVisualizacaoRecibo(); } catch (_) {}
