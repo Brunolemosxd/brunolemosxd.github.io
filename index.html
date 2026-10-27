@@ -5324,7 +5324,7 @@ async function compartilharReciboDireto(tipo) {
   const nomeCliente = (document.getElementById('rec-cliente') || {}).value || '';
   const contatoCliente = (document.getElementById('rec-contato') || {}).value || '';
   if (typeof window.orcaUpsertCliente === 'function' && nomeCliente.trim()) {
-    window.orcaUpsertCliente(nomeCliente, contatoCliente);
+    window.orcaUpsertCliente(nomeCliente, contatoCliente, (document.getElementById('rec-cpf-cliente')||{}).value||'');
   }
 
   const avisoGerando = orcaproToast(tipo === 'pdf' ? 'Gerando PDF…' : 'Gerando imagem…');
@@ -5375,7 +5375,7 @@ function compartilharReciboPDF(acaoInicial='preview') {
   }
   const nomeCliente=(document.getElementById('rec-cliente')||{}).value||'';
   const contatoCliente=(document.getElementById('rec-contato')||{}).value||'';
-  if (typeof window.orcaUpsertCliente==='function' && nomeCliente.trim()) window.orcaUpsertCliente(nomeCliente,contatoCliente);
+  if (typeof window.orcaUpsertCliente==='function' && nomeCliente.trim()) window.orcaUpsertCliente(nomeCliente,contatoCliente,(document.getElementById('rec-cpf-cliente')||{}).value||'');
   const papel=document.getElementById('recibo-papel');
   if(!papel){alert('Recibo não encontrado.');return;}
   window.__reciboAcaoInicial=acaoInicial;
@@ -7420,7 +7420,7 @@ function editarClienteCard(card){
     const lista=root.querySelector('.clientes-lista')||document.createElement('div');lista.className='clientes-lista';
     const busca=(perfilEl('clientes-busca')?.value||'').toLowerCase().trim();
     const visiveis=clientes.filter(c=>(c.nome+' '+(c.contato||'')).toLowerCase().includes(busca));
-    lista.innerHTML=visiveis.map(c=>`<div class="client-card" data-cliente-id="${String(c.id).replace(/[^a-zA-Z0-9_-]/g,'')}" style="align-items:center"><div class="avatar">${escCliente(c.nome.split(/\s+/).slice(0,2).map(x=>x[0]||'').join('').toUpperCase())}</div><div class="info"><strong>${escCliente(c.nome)}</strong>${c.contato?`<p>${escCliente(c.contato)}</p>`:''}${c.endereco?`<p>${escCliente(c.endereco)}</p>`:''}</div><div class="client-management-actions"><button type="button" class="btn-dark-sm" onclick="editarClienteOrcaPro('${String(c.id).replace(/[^a-zA-Z0-9_-]/g,'')}')">Editar</button><button type="button" class="btn-delete-small" onclick="excluirClienteOrcaPro('${String(c.id).replace(/[^a-zA-Z0-9_-]/g,'')}')">Excluir</button></div></div>`).join('')||'<p class="hint" style="text-align:center;padding:18px">Nenhum cliente encontrado.</p>';
+    lista.innerHTML=visiveis.map(c=>`<div class="client-card" data-cliente-id="${String(c.id).replace(/[^a-zA-Z0-9_-]/g,'')}" style="align-items:center"><div class="avatar">${escCliente(c.nome.split(/\s+/).slice(0,2).map(x=>x[0]||'').join('').toUpperCase())}</div><div class="info"><strong>${escCliente(c.nome)}</strong>${c.contato?`<p>${escCliente(c.contato)}</p>`:''}${c.documento?`<p>${escCliente(c.documento)}</p>`:''}${c.endereco?`<p>${escCliente(c.endereco)}</p>`:''}</div><div class="client-management-actions"><button type="button" class="btn-dark-sm" onclick="editarClienteOrcaPro('${String(c.id).replace(/[^a-zA-Z0-9_-]/g,'')}')">Editar</button><button type="button" class="btn-delete-small" onclick="excluirClienteOrcaPro('${String(c.id).replace(/[^a-zA-Z0-9_-]/g,'')}')">Excluir</button></div></div>`).join('')||'<p class="hint" style="text-align:center;padding:18px">Nenhum cliente encontrado.</p>';
     root.querySelectorAll('.client-card').forEach(x=>{if(!lista.contains(x))x.remove();});
     root.appendChild(lista);
     const count=perfilEl('clientes-contagem');if(count)count.textContent=clientes.length+' cadastrado'+(clientes.length===1?'':'s');
@@ -7431,24 +7431,27 @@ function editarClienteCard(card){
     if(!modal){
       modal=document.createElement('div');modal.id='novo-cliente-modal';
       modal.style.cssText='position:fixed;inset:0;z-index:100000;background:rgba(0,0,0,.72);display:flex;align-items:center;justify-content:center;padding:18px';
-      modal.innerHTML='<div style="width:min(440px,100%);background:var(--card-bg,#102432);color:var(--text,#fff);border:1px solid var(--border,rgba(255,255,255,.15));border-radius:18px;padding:20px"><h2 style="margin:0 0 16px">Cadastrar cliente</h2><form id="novo-cliente-form"><label for="novo-cliente-nome">Nome do cliente</label><input id="novo-cliente-nome" type="text" autocomplete="name" required maxlength="100" placeholder="Nome completo" style="width:100%;margin:6px 0 14px;padding:12px"><label for="novo-cliente-contato">Telefone / WhatsApp</label><input id="novo-cliente-contato" type="tel" inputmode="tel" autocomplete="tel" required maxlength="16" placeholder="(11) 99999-9999" style="width:100%;margin:6px 0 14px;padding:12px"><label for="novo-cliente-endereco">Endereço (opcional)</label><input id="novo-cliente-endereco" type="text" autocomplete="street-address" maxlength="200" placeholder="Rua, número, bairro, cidade" style="width:100%;margin:6px 0 18px;padding:12px"><div style="display:flex;gap:8px;justify-content:flex-end"><button type="button" class="btn-dark-sm" onclick="document.getElementById(\'novo-cliente-modal\').remove()">Cancelar</button><button type="submit" class="btn-yellow-sm">Salvar cliente</button></div></form></div>';
+      modal.innerHTML='<div style="width:min(440px,100%);background:var(--card-bg,#102432);color:var(--text,#fff);border:1px solid var(--border,rgba(255,255,255,.15));border-radius:18px;padding:20px"><h2 style="margin:0 0 16px">Cadastrar cliente</h2><form id="novo-cliente-form"><label for="novo-cliente-nome">Nome do cliente</label><input id="novo-cliente-nome" type="text" autocomplete="name" required maxlength="100" placeholder="Nome completo" style="width:100%;margin:6px 0 14px;padding:12px"><label for="novo-cliente-contato">Telefone / WhatsApp</label><input id="novo-cliente-contato" type="tel" inputmode="tel" autocomplete="tel" required maxlength="16" placeholder="(11) 99999-9999" style="width:100%;margin:6px 0 14px;padding:12px"><label for="novo-cliente-doc">CPF / CNPJ (opcional)</label><input id="novo-cliente-doc" type="text" inputmode="numeric" maxlength="18" placeholder="000.000.000-00 ou 00.000.000/0001-00" style="width:100%;margin:6px 0 14px;padding:12px"><label for="novo-cliente-endereco">Endereço (opcional)</label><input id="novo-cliente-endereco" type="text" autocomplete="street-address" maxlength="200" placeholder="Rua, número, bairro, cidade" style="width:100%;margin:6px 0 18px;padding:12px"><div style="display:flex;gap:8px;justify-content:flex-end"><button type="button" class="btn-dark-sm" onclick="document.getElementById(\'novo-cliente-modal\').remove()">Cancelar</button><button type="submit" class="btn-yellow-sm">Salvar cliente</button></div></form></div>';
       document.body.appendChild(modal);
-      modal.querySelector('#novo-cliente-form').addEventListener('submit',function(e){e.preventDefault();const nome=modal.querySelector('#novo-cliente-nome').value.trim();const contato=modal.querySelector('#novo-cliente-contato').value.trim();const dig=contato.replace(/\D/g,'');if(!nome){alert('Informe o nome do cliente.');return;}if(dig.length<10||dig.length>11){alert('Informe um telefone válido com DDD.');return;}clientes.push({id:'cli-'+Date.now(),nome,contato,endereco:modal.querySelector('#novo-cliente-endereco').value.trim()});gravarClientes();renderClientes();modal.remove();});
+      modal.querySelector('#novo-cliente-form').addEventListener('submit',function(e){e.preventDefault();const nome=modal.querySelector('#novo-cliente-nome').value.trim();const contato=modal.querySelector('#novo-cliente-contato').value.trim();const dig=contato.replace(/\D/g,'');if(!nome){alert('Informe o nome do cliente.');return;}if(dig.length<10||dig.length>11){alert('Informe um telefone válido com DDD.');return;}clientes.push({id:'cli-'+Date.now(),nome,contato,endereco:modal.querySelector('#novo-cliente-endereco').value.trim(),documento:modal.querySelector('#novo-cliente-doc').value.trim()});gravarClientes();renderClientes();modal.remove();});
       modal.querySelector('#novo-cliente-contato').addEventListener('input',function(){this.value=maskPhoneLocal(this.value);});
+      modal.querySelector('#novo-cliente-doc').addEventListener('input',function(){this.value=maskDocLocal(this.value);});
     }
     modal.style.display='flex';modal.querySelector('#novo-cliente-nome').focus();
   };
+  function maskDocLocal(v){const d=String(v||'').replace(/\D/g,'').slice(0,14);if(d.length<=11)return d.replace(/(\d{3})(\d)/,'$1.$2').replace(/(\d{3})(\d)/,'$1.$2').replace(/(\d{3})(\d{1,2})$/,'$1-$2');return d.replace(/^(\d{2})(\d)/,'$1.$2').replace(/^(\d{2})\.(\d{3})(\d)/,'$1.$2.$3').replace(/\.(\d{3})(\d)/,'.$1/$2').replace(/(\d{4})(\d)/,'$1-$2');}
   function maskPhoneLocal(value){let d=String(value||'').replace(/\D/g,'').slice(0,11);if(d.length<=2)return d?'('+d:'';if(d.length<=6)return '('+d.slice(0,2)+') '+d.slice(2);if(d.length<=10)return '('+d.slice(0,2)+') '+d.slice(2,6)+'-'+d.slice(6);return '('+d.slice(0,2)+') '+d.slice(2,7)+'-'+d.slice(7);}
   window.editarClienteOrcaPro=function(id){
     const c=clientes.find(x=>String(x.id)===String(id));if(!c)return;
     let modal=document.getElementById('editar-cliente-modal');if(modal)modal.remove();
     modal=document.createElement('div');modal.id='editar-cliente-modal';
     modal.style.cssText='position:fixed;inset:0;z-index:100000;background:rgba(0,0,0,.72);display:flex;align-items:center;justify-content:center;padding:18px';
-    modal.innerHTML='<div style="width:min(440px,100%);background:var(--card-bg,#102432);color:var(--text,#fff);border:1px solid var(--border,rgba(255,255,255,.15));border-radius:18px;padding:20px"><h2 style="margin:0 0 16px">Editar cliente</h2><form id="editar-cliente-form"><label for="editar-cliente-nome">Nome do cliente</label><input id="editar-cliente-nome" type="text" autocomplete="name" required maxlength="100" style="width:100%;margin:6px 0 14px;padding:12px"><label for="editar-cliente-contato">Telefone / WhatsApp</label><input id="editar-cliente-contato" type="tel" inputmode="tel" autocomplete="tel" maxlength="16" placeholder="(11) 99999-9999" style="width:100%;margin:6px 0 14px;padding:12px"><label for="editar-cliente-endereco">Endereço</label><input id="editar-cliente-endereco" type="text" autocomplete="street-address" maxlength="200" placeholder="Rua, número, bairro, cidade" style="width:100%;margin:6px 0 18px;padding:12px"><div style="display:flex;gap:8px;justify-content:flex-end"><button type="button" class="btn-dark-sm" id="editar-cliente-cancelar">Cancelar</button><button type="submit" class="btn-yellow-sm">Salvar</button></div></form></div>';
+    modal.innerHTML='<div style="width:min(440px,100%);background:var(--card-bg,#102432);color:var(--text,#fff);border:1px solid var(--border,rgba(255,255,255,.15));border-radius:18px;padding:20px"><h2 style="margin:0 0 16px">Editar cliente</h2><form id="editar-cliente-form"><label for="editar-cliente-nome">Nome do cliente</label><input id="editar-cliente-nome" type="text" autocomplete="name" required maxlength="100" style="width:100%;margin:6px 0 14px;padding:12px"><label for="editar-cliente-contato">Telefone / WhatsApp</label><input id="editar-cliente-contato" type="tel" inputmode="tel" autocomplete="tel" maxlength="16" placeholder="(11) 99999-9999" style="width:100%;margin:6px 0 14px;padding:12px"><label for="editar-cliente-doc">CPF / CNPJ (opcional)</label><input id="editar-cliente-doc" type="text" inputmode="numeric" maxlength="18" placeholder="000.000.000-00 ou 00.000.000/0001-00" style="width:100%;margin:6px 0 14px;padding:12px"><label for="editar-cliente-endereco">Endereço</label><input id="editar-cliente-endereco" type="text" autocomplete="street-address" maxlength="200" placeholder="Rua, número, bairro, cidade" style="width:100%;margin:6px 0 18px;padding:12px"><div style="display:flex;gap:8px;justify-content:flex-end"><button type="button" class="btn-dark-sm" id="editar-cliente-cancelar">Cancelar</button><button type="submit" class="btn-yellow-sm">Salvar</button></div></form></div>';
     document.body.appendChild(modal);
     const inNome=modal.querySelector('#editar-cliente-nome'),inContato=modal.querySelector('#editar-cliente-contato');
     inNome.value=c.nome||'';
     modal.querySelector('#editar-cliente-endereco').value=c.endereco||'';
+    const inDoc=modal.querySelector('#editar-cliente-doc');inDoc.value=maskDocLocal(c.documento||'');inDoc.addEventListener('input',function(){this.value=maskDocLocal(this.value);});
     inContato.value=/^[\d\s()+-]*$/.test(c.contato||'')?maskPhoneLocal(c.contato||''):(c.contato||'');
     inContato.addEventListener('input',function(){if(/^[\d\s()+-]*$/.test(this.value))this.value=maskPhoneLocal(this.value);});
     modal.querySelector('#editar-cliente-cancelar').onclick=function(){modal.remove();};
@@ -7458,18 +7461,19 @@ function editarClienteCard(card){
       const nome=inNome.value.trim(),contato=inContato.value.trim(),dig=contato.replace(/\D/g,'');
       if(!nome){alert('Informe o nome do cliente.');return;}
       if(contato&&(dig.length<10||dig.length>11)){alert('Informe um telefone válido com DDD.');return;}
-      c.nome=nome;c.contato=contato;c.endereco=modal.querySelector('#editar-cliente-endereco').value.trim();gravarClientes();renderClientes();modal.remove();
+      c.nome=nome;c.contato=contato;c.endereco=modal.querySelector('#editar-cliente-endereco').value.trim();c.documento=inDoc.value.trim();gravarClientes();renderClientes();modal.remove();
     });
     inNome.focus();
   };
   window.excluirClienteOrcaPro=function(id){const c=clientes.find(x=>String(x.id)===String(id));if(!c)return;if(!confirm('Excluir o cliente “'+c.nome+'”?'))return;clientes=clientes.filter(x=>String(x.id)!==String(id));gravarClientes();renderClientes();};
   // Keep legacy inline entry points compatible with the new stored client list.
   window.editarClienteCard=function(card){const id=card&&card.dataset&&card.dataset.clienteId;if(id)window.editarClienteOrcaPro(id);};
-  window.orcaUpsertCliente=function(nome,contato){
+  window.orcaUpsertCliente=function(nome,contato,documento){
     nome=String(nome||'').trim();contato=String(contato||'').trim();if(!nome||nome==='Sem nome')return;
     const digits=contato.replace(/\D/g,'');
     const found=clientes.find(c=>c.nome.trim().toLowerCase()===nome.toLowerCase()||(digits.length>=10&&String(c.contato||'').replace(/\D/g,'')===digits));
-    if(found){found.nome=nome;if(contato)found.contato=contato;}else clientes.push({id:'cli-'+Date.now()+'-'+Math.random().toString(36).slice(2,6),nome,contato});
+    documento=String(documento||'').trim();
+    if(found){found.nome=nome;if(contato)found.contato=contato;if(documento)found.documento=documento;}else{const n={id:'cli-'+Date.now()+'-'+Math.random().toString(36).slice(2,6),nome,contato};if(documento)n.documento=documento;clientes.push(n);}
     gravarClientes();renderClientes();
   };
 
@@ -7969,7 +7973,7 @@ function salvarReciboNaBiblioteca(silencioso=false){
   const idx=recibosSalvos.findIndex(r=>String(r.id)===String(dados.id));
   if(idx>=0) recibosSalvos[idx]=dados; else recibosSalvos.unshift(dados);
   if(!gravarRecibosSalvos())return false;
-  try{ if(typeof window.orcaUpsertCliente==='function') window.orcaUpsertCliente(dados.cliente,(dados.campos&&dados.campos['rec-contato'])||''); }catch(e){}
+  try{ if(typeof window.orcaUpsertCliente==='function') window.orcaUpsertCliente(dados.cliente,(dados.campos&&dados.campos['rec-contato'])||'',(dados.campos&&dados.campos['rec-cpf-cliente'])||''); }catch(e){}
   reciboEmEdicaoId=dados.id;
   renderRecibosSalvos();
   if(!silencioso) alert('Recibo salvo com sucesso! Ele ficará disponível na aba Recibos neste aparelho.');
