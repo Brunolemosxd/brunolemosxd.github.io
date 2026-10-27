@@ -5323,7 +5323,7 @@ async function compartilharReciboDireto(tipo) {
   { const er = recPixErroGeral(); if (er) { alert('Confira a chave Pix: ' + er); const ci = document.getElementById('rec-pix-chave'); if (ci) { pixMostrarErro(ci); ci.focus(); } return; } }
   const nomeCliente = (document.getElementById('rec-cliente') || {}).value || '';
   const contatoCliente = (document.getElementById('rec-contato') || {}).value || '';
-  if (typeof window.orcaUpsertCliente === 'function' && nomeCliente.trim() && contatoCliente.trim()) {
+  if (typeof window.orcaUpsertCliente === 'function' && nomeCliente.trim()) {
     window.orcaUpsertCliente(nomeCliente, contatoCliente);
   }
 
@@ -5375,7 +5375,7 @@ function compartilharReciboPDF(acaoInicial='preview') {
   }
   const nomeCliente=(document.getElementById('rec-cliente')||{}).value||'';
   const contatoCliente=(document.getElementById('rec-contato')||{}).value||'';
-  if (typeof window.orcaUpsertCliente==='function' && nomeCliente.trim() && contatoCliente.trim()) window.orcaUpsertCliente(nomeCliente,contatoCliente);
+  if (typeof window.orcaUpsertCliente==='function' && nomeCliente.trim()) window.orcaUpsertCliente(nomeCliente,contatoCliente);
   const papel=document.getElementById('recibo-papel');
   if(!papel){alert('Recibo não encontrado.');return;}
   window.__reciboAcaoInicial=acaoInicial;
@@ -7466,10 +7466,10 @@ function editarClienteCard(card){
   // Keep legacy inline entry points compatible with the new stored client list.
   window.editarClienteCard=function(card){const id=card&&card.dataset&&card.dataset.clienteId;if(id)window.editarClienteOrcaPro(id);};
   window.orcaUpsertCliente=function(nome,contato){
-    nome=String(nome||'').trim();contato=String(contato||'').trim();if(!nome||!contato)return;
+    nome=String(nome||'').trim();contato=String(contato||'').trim();if(!nome||nome==='Sem nome')return;
     const digits=contato.replace(/\D/g,'');
     const found=clientes.find(c=>c.nome.trim().toLowerCase()===nome.toLowerCase()||(digits.length>=10&&String(c.contato||'').replace(/\D/g,'')===digits));
-    if(found){found.nome=nome;found.contato=contato;}else clientes.push({id:'cli-'+Date.now()+'-'+Math.random().toString(36).slice(2,6),nome,contato});
+    if(found){found.nome=nome;if(contato)found.contato=contato;}else clientes.push({id:'cli-'+Date.now()+'-'+Math.random().toString(36).slice(2,6),nome,contato});
     gravarClientes();renderClientes();
   };
 
@@ -7969,6 +7969,7 @@ function salvarReciboNaBiblioteca(silencioso=false){
   const idx=recibosSalvos.findIndex(r=>String(r.id)===String(dados.id));
   if(idx>=0) recibosSalvos[idx]=dados; else recibosSalvos.unshift(dados);
   if(!gravarRecibosSalvos())return false;
+  try{ if(typeof window.orcaUpsertCliente==='function') window.orcaUpsertCliente(dados.cliente,(dados.campos&&dados.campos['rec-contato'])||''); }catch(e){}
   reciboEmEdicaoId=dados.id;
   renderRecibosSalvos();
   if(!silencioso) alert('Recibo salvo com sucesso! Ele ficará disponível na aba Recibos neste aparelho.');
