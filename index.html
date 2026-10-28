@@ -14,9 +14,20 @@
   <meta name="description" content="Crie orçamentos e recibos profissionais pelo celular e envie em PDF ou imagem pelo WhatsApp.">
   <title>OrçaOn — Recibos e Plano Pro</title>
   <script>
+  // Dados salvos com o nome antigo (orcapro_) passam para o nome novo (orcaon_) sem perder nada.
+  try {
+    var velhas = [];
+    for (var i = 0; i < localStorage.length; i++) { var k = localStorage.key(i); if (k && k.indexOf('orcapro_') === 0) velhas.push(k); }
+    velhas.forEach(function (k) {
+      var nova = 'orcaon_' + k.slice(8), v = localStorage.getItem(k);
+      if (localStorage.getItem(nova) !== null) { localStorage.removeItem(k); return; }
+      localStorage.removeItem(k);
+      try { localStorage.setItem(nova, v); } catch (e) { localStorage.setItem(k, v); }
+    });
+  } catch (e) {}
   // Quem já entrou antes não vê a tela de login piscar: mostra uma tela de abertura até o Firebase confirmar a conta.
   try {
-    if (/^https?:$/i.test(location.protocol) && localStorage.getItem('orcapro_boot_google') === '1') {
+    if (/^https?:$/i.test(location.protocol) && localStorage.getItem('orcaon_boot_google') === '1') {
       document.documentElement.classList.add('boot-wait');
       setTimeout(function(){ document.documentElement.classList.remove('boot-wait'); }, 7000);
     }
@@ -3292,7 +3303,7 @@ body.light .btn-remove-item{color:#b91c1c}
             </div>
             <div class="btns">
               
-              <button class="btn-yellow-sm" type="button" onclick="novoClienteOrcaPro()">+ Novo</button>
+              <button class="btn-yellow-sm" type="button" onclick="novoClienteOrcaOn()">+ Novo</button>
             </div>
           </div>
           <div class="search-box">
@@ -4136,7 +4147,7 @@ function abrirOfertaPro(motivo){
   m.classList.remove('hidden');
 }
 // Convite guardado para depois que o envio terminar (não atrapalha o compartilhamento).
-const OFERTA_PRO_PENDENTE_KEY='orcapro_oferta_pro_pendente';
+const OFERTA_PRO_PENDENTE_KEY='orcaon_oferta_pro_pendente';
 function mostrarOfertaProPendente(){
   let motivo=null;try{motivo=localStorage.getItem(OFERTA_PRO_PENDENTE_KEY);}catch(_){}
   if(!motivo)return;
@@ -4293,8 +4304,8 @@ function iniciarFirebaseAuth() {
     firebaseAuthReady = true;
     try { firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL); } catch (_) {}   // mantém o login neste aparelho
     firebase.auth().onAuthStateChanged(async user => {
-      if (!user) { try { localStorage.removeItem('orcapro_boot_google'); } catch (_) {} document.documentElement.classList.remove('boot-wait'); cota = null; try { pararSessaoUnica(); } catch (_) {} try { atualizarBarraGratuita(); } catch (_) {} return; }
-      try { localStorage.setItem('orcapro_boot_google', '1'); } catch (_) {}
+      if (!user) { try { localStorage.removeItem('orcaon_boot_google'); } catch (_) {} document.documentElement.classList.remove('boot-wait'); cota = null; try { pararSessaoUnica(); } catch (_) {} try { atualizarBarraGratuita(); } catch (_) {} return; }
+      try { localStorage.setItem('orcaon_boot_google', '1'); } catch (_) {}
       currentUser.name = user.displayName || user.phoneNumber || (user.email ? user.email.split('@')[0] : 'Usuário');
       currentUser.email = user.email || '';
       currentUser.phone = user.phoneNumber || '';
@@ -4348,7 +4359,7 @@ function afterLogin() {
 
 // Profession
 function selectProfession(prof) {
-  const mostrarPerfilInicial = (typeof orcaproDeveMostrarPerfilInicial === 'function') && orcaproDeveMostrarPerfilInicial();
+  const mostrarPerfilInicial = (typeof orcaonDeveMostrarPerfilInicial === 'function') && orcaonDeveMostrarPerfilInicial();
   currentUser.profession = prof;
   localStorage.setItem('profession', prof);
   document.getElementById('user-name').textContent = currentUser.name;
@@ -4357,7 +4368,7 @@ function selectProfession(prof) {
   document.getElementById('profile-sub').textContent = prof;
   
   setTimeout(() => {
-    if (mostrarPerfilInicial) { orcaproAbrirPerfilInicial(); } else { showScreen('screen-main'); }
+    if (mostrarPerfilInicial) { orcaonAbrirPerfilInicial(); } else { showScreen('screen-main'); }
   }, 150);
 }
 
@@ -4546,7 +4557,7 @@ function abrirModelosRecibo() {
 }
 
 let modeloReciboAtual = 'Recibo Simples';
-let logoReciboData = localStorage.getItem('orcapro_recibo_logo') !== null ? (localStorage.getItem('orcapro_recibo_logo') || '') : (localStorage.getItem('orcapro_logo_orcamento') || '');
+let logoReciboData = localStorage.getItem('orcaon_recibo_logo') !== null ? (localStorage.getItem('orcaon_recibo_logo') || '') : (localStorage.getItem('orcaon_logo_orcamento') || '');
 let reciboItens = [];
 
 function selecionarModeloRecibo(nome) {
@@ -4769,7 +4780,7 @@ function carregarLogoRecibo(event) {
   const reader = new FileReader();
   reader.onload = () => {
     logoReciboData = String(reader.result || '');
-    try { localStorage.setItem('orcapro_recibo_logo', logoReciboData); } catch(e) {}
+    try { localStorage.setItem('orcaon_recibo_logo', logoReciboData); } catch(e) {}
     atualizarStatusLogoRecibo('Logotipo selecionado: ' + file.name + '. Ele aparecerá na prévia e no arquivo gerado.');
     atualizarRecibo();
   };
@@ -4779,7 +4790,7 @@ function carregarLogoRecibo(event) {
 function limparLogoRecibo() {
   logoReciboData = '';
   const input = document.getElementById('recibo-logo-upload'); if (input) input.value = '';
-  try { localStorage.setItem('orcapro_recibo_logo', ''); } catch(e) {}
+  try { localStorage.setItem('orcaon_recibo_logo', ''); } catch(e) {}
   atualizarStatusLogoRecibo('Logotipo removido deste recibo.');
   atualizarRecibo();
 }
@@ -4819,12 +4830,12 @@ function definirAssinaturaRecibo(){
 }
 document.addEventListener('DOMContentLoaded',inicializarToggleAssinaturaRecibo);
 // Cartão do logotipo: com logo carregado mostra "já carregado" + Remover; sem logo mostra "Escolher imagem".
-function logoDoPerfilRecibo(){ try { return localStorage.getItem('orcapro_logo_orcamento') || ''; } catch(e) { return ''; } }
+function logoDoPerfilRecibo(){ try { return localStorage.getItem('orcaon_logo_orcamento') || ''; } catch(e) { return ''; } }
 function usarLogoPerfilRecibo(){
   const l=logoDoPerfilRecibo();
   if(!l){ alert('Você ainda não tem logotipo no perfil. Vá em Perfil > Editar perfil para adicionar.'); return; }
   logoReciboData=l;
-  try { localStorage.setItem('orcapro_recibo_logo', l); } catch(e) {}
+  try { localStorage.setItem('orcaon_recibo_logo', l); } catch(e) {}
   if(typeof atualizarStatusLogoRecibo==='function') atualizarStatusLogoRecibo('Logotipo do perfil carregado neste recibo.');
   atualizarRecibo();
 }
@@ -5106,8 +5117,8 @@ let perfilCanvas, perfilCtx, desenhandoPerfil = false;
 // Assinaturas antigas salvas em amarelo passam a ficar pretas (uma única vez)
 function migrarAssinaturaParaPreto() {
   let salva = '';
-  try { if (localStorage.getItem('orcapro_ass_preta')) return; salva = localStorage.getItem('assinaturaDigital') || ''; } catch (e) { return; }
-  if (!salva) { try { localStorage.setItem('orcapro_ass_preta', '1'); } catch (e) {} return; }
+  try { if (localStorage.getItem('orcaon_ass_preta')) return; salva = localStorage.getItem('assinaturaDigital') || ''; } catch (e) { return; }
+  if (!salva) { try { localStorage.setItem('orcaon_ass_preta', '1'); } catch (e) {} return; }
   const im = new Image();
   im.onload = () => {
     try {
@@ -5117,7 +5128,7 @@ function migrarAssinaturaParaPreto() {
       for (let i = 0; i < px.length; i += 4) { if (px[i + 3] > 0) { px[i] = 17; px[i + 1] = 17; px[i + 2] = 17; } }
       x.putImageData(dados, 0, 0);
       localStorage.setItem('assinaturaDigital', c.toDataURL('image/png'));
-      localStorage.setItem('orcapro_ass_preta', '1');
+      localStorage.setItem('orcaon_ass_preta', '1');
       if (typeof initAssinaturaPerfil === 'function') initAssinaturaPerfil();
       if (typeof atualizarRecibo === 'function') atualizarRecibo();
     } catch (e) {}
@@ -5231,8 +5242,8 @@ function aplicarAssinaturaPerfil() {
   }
 }
 
-let logoPerfilData = localStorage.getItem('orcapro_logo_orcamento') || '';
-const PIX_QR_KEY = 'orcapro_perfil_pix_qr';
+let logoPerfilData = localStorage.getItem('orcaon_logo_orcamento') || '';
+const PIX_QR_KEY = 'orcaon_perfil_pix_qr';
 function mostrarQrPix() {
   let data = '';
   try { data = localStorage.getItem(PIX_QR_KEY) || ''; } catch(e) {}
@@ -5307,7 +5318,7 @@ function carregarLogoPerfil(event) {
         canvas.height = Math.max(1, Math.round(img.height * scale));
         canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
         const compressed = canvas.toDataURL('image/jpeg', 0.86);
-        localStorage.setItem('orcapro_logo_orcamento', compressed);
+        localStorage.setItem('orcaon_logo_orcamento', compressed);
         logoPerfilData = compressed;
         if (typeof logoOrcamentoData !== 'undefined') logoOrcamentoData = compressed;
         mostrarLogoPerfil(compressed);
@@ -5323,7 +5334,7 @@ function carregarLogoPerfil(event) {
 }
 function removerLogoPerfil() {
   logoPerfilData = '';
-  try { localStorage.removeItem('orcapro_logo_orcamento'); } catch(_) {}
+  try { localStorage.removeItem('orcaon_logo_orcamento'); } catch(_) {}
   if (typeof logoOrcamentoData !== 'undefined') logoOrcamentoData = '';
   mostrarLogoPerfil('');
   const input = document.getElementById('perfil-logo-upload'); if (input) input.value = '';
@@ -5374,7 +5385,7 @@ async function compartilharReciboDireto(tipo) {
     window.orcaUpsertCliente(nomeCliente, contatoCliente, (document.getElementById('rec-cpf-cliente')||{}).value||'');
   }
 
-  const avisoGerando = orcaproToast(tipo === 'pdf' ? 'Gerando PDF…' : 'Gerando imagem…');
+  const avisoGerando = orcaonToast(tipo === 'pdf' ? 'Gerando PDF…' : 'Gerando imagem…');
   await carregarBibliotecaRecibo('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js', 'html2canvas');
   if (tipo === 'pdf') await carregarBibliotecaRecibo('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js', 'jspdf');
 
@@ -5408,7 +5419,7 @@ async function compartilharReciboDireto(tipo) {
   const mime = tipo === 'png' ? 'image/png' : 'application/pdf';
   const arquivo = new File([blob], nome, {type: mime});
   avisoGerando.fechar();
-  await orcaproEntregarArquivo(arquivo, { titulo: 'Recibo OrçaOn', texto: 'Segue o recibo gerado pelo OrçaOn.' });
+  await orcaonEntregarArquivo(arquivo, { titulo: 'Recibo OrçaOn', texto: 'Segue o recibo gerado pelo OrçaOn.' });
 }
 
 function compartilharReciboPDF(acaoInicial='preview') {
@@ -5512,8 +5523,8 @@ function abrirAtendimento() {
 
 // Link que será enviado aos amigos. Coloque aqui o link do app (Play Store/site).
 // Se ficar vazio e o app estiver aberto por um site (http/https), usa o endereço atual.
-const LINK_APP_ORCAPRO = '';
-// ID do app na Play Store (ex.: com.seudominio.orcapro). Enquanto vazio, o item "Avaliar" fica oculto.
+const LINK_APP_ORCAON = '';
+// ID do app na Play Store (ex.: com.seudominio.orcaon). Enquanto vazio, o item "Avaliar" fica oculto.
 const PLAY_STORE_ID = '';
 function avaliarNaPlayStore() {
   if (!PLAY_STORE_ID) return;
@@ -5524,7 +5535,7 @@ document.addEventListener('DOMContentLoaded', function () {
   if (it && PLAY_STORE_ID) it.style.display = '';
 });
 function compartilharAppWhatsApp() {
-  let link = LINK_APP_ORCAPRO;
+  let link = LINK_APP_ORCAON;
   if (!link && /^https?:/i.test(location.href)) link = location.href.split('#')[0];
   const texto = 'Estou usando o OrçaOn para fazer orçamentos e recibos profissionais pelo celular. Experimente!' + (link ? '\n' + link : '');
   window.open('https://wa.me/?text=' + encodeURIComponent(texto), '_blank');
@@ -5539,7 +5550,7 @@ function abrirWhatsAppSuporte() {
 }
 
 // ===== ORÇAMENTOS: dados, lista e Home =====
-const ORC_KEY = 'orcapro_orcamentos';
+const ORC_KEY = 'orcaon_orcamentos';
 // Orçamentos de exemplo: aparecem na primeira vez e ficam salvos junto com os novos
 const ORC_SEED = [];
 let orcFiltro = 'todos';
@@ -5827,7 +5838,7 @@ function atualizarTotalOrcamento() {
 }
 // ---- Pix: tipo da chave + chave preenchida com os dados do Perfil ----
 const PIX_TIPOS = ['CPF', 'CNPJ', 'E-mail', 'Telefone', 'Chave aleatória'];
-const PIX_KEYS = { 'CPF': 'orcapro_pix_cpf', 'CNPJ': 'orcapro_pix_cnpj', 'E-mail': 'orcapro_pix_email', 'Telefone': 'orcapro_pix_tel', 'Chave aleatória': 'orcapro_pix_aleat' };
+const PIX_KEYS = { 'CPF': 'orcaon_pix_cpf', 'CNPJ': 'orcaon_pix_cnpj', 'E-mail': 'orcaon_pix_email', 'Telefone': 'orcaon_pix_tel', 'Chave aleatória': 'orcaon_pix_aleat' };
 const pixDig = x => String(x == null ? '' : x).replace(/\D/g, '');
 function cpfValido(c) {
   const d = pixDig(c); if (d.length !== 11 || /^(\d)\1+$/.test(d)) return false;
@@ -5877,11 +5888,11 @@ function pixMostrarErro(inp) {
 function chavePixPorTipo(tipo) {
   const lg = k => { try { return (localStorage.getItem(k) || '').trim(); } catch (_) { return ''; } };
   const salva = lg(PIX_KEYS[tipo]); if (salva) return pixMascara(tipo, salva);
-  const docP = pixDig(lg('orcapro_perfil_documento')), pixP = lg('orcapro_perfil_pix'), emailL = (typeof currentUser !== 'undefined' && currentUser && currentUser.email) || '';
+  const docP = pixDig(lg('orcaon_perfil_documento')), pixP = lg('orcaon_perfil_pix'), emailL = (typeof currentUser !== 'undefined' && currentUser && currentUser.email) || '';
   if (tipo === 'CPF') return docP.length === 11 ? pixMascara('CPF', docP) : '';
   if (tipo === 'CNPJ') return docP.length === 14 ? pixMascara('CNPJ', docP) : '';
   if (tipo === 'E-mail') return pixErro('E-mail', pixP) === '' && pixP ? pixP : emailL;
-  if (tipo === 'Telefone') { const t = pixDig(lg('orcapro_perfil_whatsapp')).replace(/^55(?=\d{10,11}$)/, ''); return pixMascara('Telefone', t); }
+  if (tipo === 'Telefone') { const t = pixDig(lg('orcaon_perfil_whatsapp')).replace(/^55(?=\d{10,11}$)/, ''); return pixMascara('Telefone', t); }
   if (tipo === 'Chave aleatória') return pixErro('Chave aleatória', pixP) === '' && pixP ? pixP : '';
   return '';
 }
@@ -5933,11 +5944,11 @@ function recPixErroGeral() {
 let orcPixQrTemp = '';
 function orcQrPixAtual() {
   if (orcPixQrTemp) return orcPixQrTemp;
-  try { return localStorage.getItem('orcapro_perfil_pix_qr') || ''; } catch (_) { return ''; }
+  try { return localStorage.getItem('orcaon_perfil_pix_qr') || ''; } catch (_) { return ''; }
 }
 function atualizarQrPixOrc() {
   const area = document.getElementById('orc-pix-qr-area'), usar = document.getElementById('orc-pix-qr-usar'); if (!area || !usar) return;
-  let perfil = ''; try { perfil = localStorage.getItem('orcapro_perfil_pix_qr') || ''; } catch (_) {}
+  let perfil = ''; try { perfil = localStorage.getItem('orcaon_perfil_pix_qr') || ''; } catch (_) {}
   const atual = orcQrPixAtual(), img = document.getElementById('orc-pix-qr-img'), info = document.getElementById('orc-pix-qr-info'), bp = document.getElementById('orc-pix-qr-perfil-btn');
   area.style.display = usar.checked ? '' : 'none';
   if (img) { if (atual) { img.src = atual; img.style.display = ''; } else { img.removeAttribute('src'); img.style.display = 'none'; } }
@@ -6001,7 +6012,7 @@ document.addEventListener('input', function(e) {
 
 function validadePadraoOrc() {
   let v = 7;
-  try { v = parseInt(localStorage.getItem('orcapro_validade_padrao'), 10) || 7; } catch (e) {}
+  try { v = parseInt(localStorage.getItem('orcaon_validade_padrao'), 10) || 7; } catch (e) {}
   return Math.max(1, v);
 }
 
@@ -6303,7 +6314,7 @@ function emitirOrcamentoEditadoOutroModelo() {
 renderOrcamentos();
 
 let modeloOrcamentoEscolhido = 'Modelo Simples';
-const MODELO_ORC_KEY = 'orcapro_modelo_orcamento';
+const MODELO_ORC_KEY = 'orcaon_modelo_orcamento';
 const MODELOS_ORC_VALIDOS = ['Modelo Simples','Modelo Simples 2','Obra e Serviços','Modelo Simples 3'];
 function normalizarModeloOrc(m) { return m === 'Moderno Verde' ? 'Modelo Simples 2' : (m === 'Proposta Comercial' ? 'Modelo Simples 3' : m); } // nome antigo
 function lerModeloOrcamentoSalvo() {
@@ -6315,7 +6326,7 @@ function lerModeloOrcamentoSalvo() {
   } catch(e) { return ''; }
 }
 (function(){ const m = lerModeloOrcamentoSalvo(); if (m) modeloOrcamentoEscolhido = m; })();
-let logoOrcamentoData = localStorage.getItem('orcapro_logo_orcamento') || '';
+let logoOrcamentoData = localStorage.getItem('orcaon_logo_orcamento') || '';
 // ===== Logotipo do novo orçamento (carregado / remover / escolher / usar o do perfil) =====
 let logoNovoOrc;  // undefined = usa o logotipo do perfil; '' = removido; texto = imagem escolhida
 function logoAtualNovoOrc() { return logoNovoOrc !== undefined ? logoNovoOrc : (logoOrcamentoData || ''); }
@@ -6354,7 +6365,7 @@ function salvarLogoOrcamento(event) {
   reader.onload = () => {
     logoOrcamentoData = String(reader.result || '');
     try { const at = orcamentos.find(x => x.id === ultimoOrcamentoId); if (at && at.logo !== undefined) at.logo = logoOrcamentoData; } catch (e) {}
-    try { localStorage.setItem('orcapro_logo_orcamento', logoOrcamentoData); }
+    try { localStorage.setItem('orcaon_logo_orcamento', logoOrcamentoData); }
     catch(e) { alert('A imagem é muito grande para salvar no aparelho. Tente uma imagem menor.'); }
   };
   reader.readAsDataURL(file);
@@ -6390,7 +6401,7 @@ function abrirModelos(novo) {
 
 
 // ===== Favoritos nos modelos (orçamento e recibo) + rolagem até as opções de emitir =====
-const FAV_KEYS = { orcamento: 'orcapro_fav_modelos_orc', recibo: 'orcapro_fav_modelos_rec' };
+const FAV_KEYS = { orcamento: 'orcaon_fav_modelos_orc', recibo: 'orcaon_fav_modelos_rec' };
 function lerFavoritosModelos(t) { try { const a = JSON.parse(localStorage.getItem(FAV_KEYS[t]) || '[]'); return Array.isArray(a) ? a : []; } catch (e) { return []; } }
 function gravarFavoritosModelos(t, a) { try { localStorage.setItem(FAV_KEYS[t], JSON.stringify(a)); } catch (e) {} }
 function nomeModeloCard(card) {
@@ -6557,7 +6568,7 @@ function carregarScriptOrcamento(src, globalCheck) {
     var s = document.createElement('script');
     s.src = src;
     s.async = true;
-    s.dataset.orcaproSrc = src;
+    s.dataset.orcaonSrc = src;
     s.onload = function(){ resolve(); };
     s.onerror = function(){ reject(new Error('Não foi possível carregar: '+src)); };
     document.head.appendChild(s);
@@ -6578,7 +6589,7 @@ async function garantirLibsExportacaoOrcamento(tipo) {
 }
 
 function dadosEmpresaPerfil() {
-  const g = k => { try { return (localStorage.getItem('orcapro_perfil_' + k) || '').trim(); } catch(e) { return ''; } };
+  const g = k => { try { return (localStorage.getItem('orcaon_perfil_' + k) || '').trim(); } catch(e) { return ''; } };
   const d = g('documento').replace(/\D/g, '');
   return {
     nome: g('nome'),
@@ -6588,11 +6599,11 @@ function dadosEmpresaPerfil() {
     contato: g('whatsapp'),
     endereco: g('endereco'),
     pix: g('pix'),
-    pixQr: (function(){ try { return localStorage.getItem('orcapro_perfil_pix_qr') || ''; } catch(e) { return ''; } })()
+    pixQr: (function(){ try { return localStorage.getItem('orcaon_perfil_pix_qr') || ''; } catch(e) { return ''; } })()
   };
 }
 // ===== Modelo Simples: painel, assinatura desenhada e documento =====
-const ORC_ASS_KEY = 'orcapro_orc_assinatura';
+const ORC_ASS_KEY = 'orcaon_orc_assinatura';
 function assinaturaAtualOrc() {
   let a = '';
   try { a = localStorage.getItem('assinaturaDigital') || ''; } catch (e) {}
@@ -7049,7 +7060,7 @@ async function compartilharArquivoOrcamento(tipo, forcarCompartilhar) {
       // Tenta compartilhar direto; se o aparelho recusar (ex.: Samsung Internet),
       // abre um painel com o botão "Compartilhar" para um novo toque.
       toast.style.display = 'none';
-      await orcaproEntregarArquivo(file, { titulo: 'OrçaOn - Orçamento', texto: 'Segue o orçamento gerado pelo OrçaOn.' });
+      await orcaonEntregarArquivo(file, { titulo: 'OrçaOn - Orçamento', texto: 'Segue o orçamento gerado pelo OrçaOn.' });
       return;
     }
     baixarBlobOrcamento(arquivoInfo.blob, arquivoInfo.nome);
@@ -7167,7 +7178,7 @@ async function fazerLogout() {
   localStorage.removeItem('profession');
   currentUser.profession = null;
   currentUser.isFirstLogin = true;
-  mostrarLogoPerfil(localStorage.getItem('orcapro_logo_orcamento') || '');
+  mostrarLogoPerfil(localStorage.getItem('orcaon_logo_orcamento') || '');
   iniciarFirebaseAuth();
   showScreen('screen-login');
 }
@@ -7234,31 +7245,31 @@ async function excluirMinhaConta() {
     'assinaturaDigital',
     'plano',
     'planoPro',
-    'orcapro_plano',
-    'orcapro_pro_ativo',
-    'orcapro_logo_orcamento',
-    'orcapro_recibo_logo',
-    'orcapro_orcamentos',
-    'orcapro_orcamentos_compartilhados_total',
-    'orcapro_recibos_salvos',
-    'orcapro_recibos_compartilhados_total',
-    'orcapro_clientes_v2',
-    'orcapro_clientes_editados',
-    'orcapro_perfil_empresa',
-    'orcapro_perfil_nome',
-    'orcapro_perfil_whatsapp',
-    'orcapro_perfil_documento',
-    'orcapro_perfil_endereco',
-    'orcapro_perfil_pix',
-    'orcapro_perfil_pix_qr'
+    'orcaon_plano',
+    'orcaon_pro_ativo',
+    'orcaon_logo_orcamento',
+    'orcaon_recibo_logo',
+    'orcaon_orcamentos',
+    'orcaon_orcamentos_compartilhados_total',
+    'orcaon_recibos_salvos',
+    'orcaon_recibos_compartilhados_total',
+    'orcaon_clientes_v2',
+    'orcaon_clientes_editados',
+    'orcaon_perfil_empresa',
+    'orcaon_perfil_nome',
+    'orcaon_perfil_whatsapp',
+    'orcaon_perfil_documento',
+    'orcaon_perfil_endereco',
+    'orcaon_perfil_pix',
+    'orcaon_perfil_pix_qr'
   ];
 
-  // Remove também qualquer outra chave que comece com orcapro_
+  // Remove também qualquer outra chave que comece com orcaon_
   try {
     const extras = [];
     for (let i = 0; i < localStorage.length; i++) {
       const k = localStorage.key(i);
-      if (k && (k.indexOf('orcapro_') === 0 || chavesConta.indexOf(k) >= 0)) extras.push(k);
+      if (k && (k.indexOf('orcaon_') === 0 || chavesConta.indexOf(k) >= 0)) extras.push(k);
     }
     extras.forEach(function (k) {
       try { localStorage.removeItem(k); } catch (_) {}
@@ -7333,9 +7344,9 @@ function atualizarProgressoPerfil(){
   const box=document.getElementById('perfil-progresso'); if(!box) return;
   const lg=k=>{try{return (localStorage.getItem(k)||'').trim();}catch(e){return '';}};
   const itens=[
-    ['Nome',lg('orcapro_perfil_nome')],['Empresa',lg('orcapro_perfil_empresa')],['WhatsApp',lg('orcapro_perfil_whatsapp')],
-    ['CPF/CNPJ',lg('orcapro_perfil_documento')],['Endereço',lg('orcapro_perfil_endereco')],['Chave Pix',lg('orcapro_perfil_pix')],
-    ['Logotipo',lg('orcapro_logo_orcamento')],['Assinatura',lg('assinaturaDigital')]
+    ['Nome',lg('orcaon_perfil_nome')],['Empresa',lg('orcaon_perfil_empresa')],['WhatsApp',lg('orcaon_perfil_whatsapp')],
+    ['CPF/CNPJ',lg('orcaon_perfil_documento')],['Endereço',lg('orcaon_perfil_endereco')],['Chave Pix',lg('orcaon_perfil_pix')],
+    ['Logotipo',lg('orcaon_logo_orcamento')],['Assinatura',lg('assinaturaDigital')]
   ];
   const faltam=itens.filter(x=>!x[1]).map(x=>x[0]);
   const pct=Math.round((itens.length-faltam.length)*100/itens.length);
@@ -7356,7 +7367,7 @@ function atualizarProgressoPerfil(){
 
 // Init
 document.addEventListener('DOMContentLoaded', () => {
-  try { logoPerfilData = localStorage.getItem('orcapro_logo_orcamento') || ''; if (typeof logoReciboData !== 'undefined' && !logoReciboData) logoReciboData = logoPerfilData; mostrarLogoPerfil(logoPerfilData); if (typeof atualizarRecibo === 'function') atualizarRecibo(); } catch(e) { console.warn('Não foi possível carregar a logo salva:', e); }
+  try { logoPerfilData = localStorage.getItem('orcaon_logo_orcamento') || ''; if (typeof logoReciboData !== 'undefined' && !logoReciboData) logoReciboData = logoPerfilData; mostrarLogoPerfil(logoPerfilData); if (typeof atualizarRecibo === 'function') atualizarRecibo(); } catch(e) { console.warn('Não foi possível carregar a logo salva:', e); }
   // Garante que a tela de profissão apareça após o login se ainda não escolheu
   // (remove profissão antiga em cache para forçar a pergunta nesta versão)
   if (!localStorage.getItem('professionChosenV2')) {
@@ -7419,14 +7430,14 @@ function editarClienteCard(card){
   strong.textContent=nome.trim();
   if(!p && contato.trim()){const novo=document.createElement('p');novo.textContent=contato.trim();card.querySelector('.info').appendChild(novo);} else if(p){p.textContent=contato.trim();if(!contato.trim())p.remove();}
   const avatar=card.querySelector('.avatar');if(avatar)avatar.textContent=nome.trim().split(/\s+/).slice(0,2).map(x=>x[0]).join('').toUpperCase();
-  try{const key='orcapro_clientes_editados';const dados=JSON.parse(localStorage.getItem(key)||'{}');dados[nomeAtual]={nome:nome.trim(),contato:contato.trim()};localStorage.setItem(key,JSON.stringify(dados));}catch(e){}
+  try{const key='orcaon_clientes_editados';const dados=JSON.parse(localStorage.getItem(key)||'{}');dados[nomeAtual]={nome:nome.trim(),contato:contato.trim()};localStorage.setItem(key,JSON.stringify(dados));}catch(e){}
 }
 </script>
 <script>
 
 // OrçaOn: dados do prestador, gestão de clientes e exclusão de orçamentos
 (function(){
-  const PROFILE_KEYS={empresa:'orcapro_perfil_empresa',nome:'orcapro_perfil_nome',whatsapp:'orcapro_perfil_whatsapp',documento:'orcapro_perfil_documento',endereco:'orcapro_perfil_endereco',pix:'orcapro_perfil_pix'};
+  const PROFILE_KEYS={empresa:'orcaon_perfil_empresa',nome:'orcaon_perfil_nome',whatsapp:'orcaon_perfil_whatsapp',documento:'orcaon_perfil_documento',endereco:'orcaon_perfil_endereco',pix:'orcaon_perfil_pix'};
   function perfilEl(id){return document.getElementById(id)}
   function carregarDadosPerfilOrca(){
     const map={empresa:'perfil-empresa',nome:'edit-name',whatsapp:'perfil-whatsapp',documento:'perfil-documento',endereco:'perfil-endereco',pix:'perfil-pix'};
@@ -7443,7 +7454,7 @@ function editarClienteCard(card){
     const map={empresa:'perfil-empresa',nome:'edit-name',whatsapp:'perfil-whatsapp',documento:'perfil-documento',endereco:'perfil-endereco',pix:'perfil-pix'};
     Object.keys(map).forEach(k=>{const el=perfilEl(map[k]);if(el)localStorage.setItem(PROFILE_KEYS[k],el.value.trim());});
     const vp=perfilEl('perfil-validade');
-    if(vp){const n=Math.max(1,parseInt(vp.value,10)||7);try{localStorage.setItem('orcapro_validade_padrao',String(n));}catch(e){}vp.value=n;}
+    if(vp){const n=Math.max(1,parseInt(vp.value,10)||7);try{localStorage.setItem('orcaon_validade_padrao',String(n));}catch(e){}vp.value=n;}
     const nome=localStorage.getItem(PROFILE_KEYS.nome)||'Prestador';
     if(typeof currentUser==='object'&&currentUser)currentUser.name=nome;
     const h=perfilEl('profile-name');if(h)h.textContent=nome;
@@ -7453,7 +7464,7 @@ function editarClienteCard(card){
   const goEditOriginal=window.goToEditProfile;
   window.goToEditProfile=function(){if(typeof goEditOriginal==='function')goEditOriginal();setTimeout(carregarDadosPerfilOrca,80);};
 
-  const CLIENT_KEY='orcapro_clientes_v2';
+  const CLIENT_KEY='orcaon_clientes_v2';
   function lerClientes(){
     try{const raw=localStorage.getItem(CLIENT_KEY);if(raw){const arr=JSON.parse(raw);if(Array.isArray(arr))return arr;}}catch(e){}
     const root=document.querySelector('#page-clientes .content');
@@ -7467,13 +7478,13 @@ function editarClienteCard(card){
     const lista=root.querySelector('.clientes-lista')||document.createElement('div');lista.className='clientes-lista';
     const busca=(perfilEl('clientes-busca')?.value||'').toLowerCase().trim();
     const visiveis=clientes.filter(c=>(c.nome+' '+(c.contato||'')).toLowerCase().includes(busca));
-    lista.innerHTML=visiveis.map(c=>`<div class="client-card" data-cliente-id="${String(c.id).replace(/[^a-zA-Z0-9_-]/g,'')}" style="align-items:center"><div class="avatar">${escCliente(c.nome.split(/\s+/).slice(0,2).map(x=>x[0]||'').join('').toUpperCase())}</div><div class="info"><strong>${escCliente(c.nome)}</strong>${c.contato?`<p>${escCliente(c.contato)}</p>`:''}${c.documento?`<p>${escCliente(c.documento)}</p>`:''}${c.endereco?`<p>${escCliente(c.endereco)}</p>`:''}</div><div class="client-management-actions"><button type="button" class="btn-dark-sm" onclick="editarClienteOrcaPro('${String(c.id).replace(/[^a-zA-Z0-9_-]/g,'')}')">Editar</button><button type="button" class="btn-delete-small" onclick="excluirClienteOrcaPro('${String(c.id).replace(/[^a-zA-Z0-9_-]/g,'')}')">Excluir</button></div></div>`).join('')||'<p class="hint" style="text-align:center;padding:18px">Nenhum cliente encontrado.</p>';
+    lista.innerHTML=visiveis.map(c=>`<div class="client-card" data-cliente-id="${String(c.id).replace(/[^a-zA-Z0-9_-]/g,'')}" style="align-items:center"><div class="avatar">${escCliente(c.nome.split(/\s+/).slice(0,2).map(x=>x[0]||'').join('').toUpperCase())}</div><div class="info"><strong>${escCliente(c.nome)}</strong>${c.contato?`<p>${escCliente(c.contato)}</p>`:''}${c.documento?`<p>${escCliente(c.documento)}</p>`:''}${c.endereco?`<p>${escCliente(c.endereco)}</p>`:''}</div><div class="client-management-actions"><button type="button" class="btn-dark-sm" onclick="editarClienteOrcaOn('${String(c.id).replace(/[^a-zA-Z0-9_-]/g,'')}')">Editar</button><button type="button" class="btn-delete-small" onclick="excluirClienteOrcaOn('${String(c.id).replace(/[^a-zA-Z0-9_-]/g,'')}')">Excluir</button></div></div>`).join('')||'<p class="hint" style="text-align:center;padding:18px">Nenhum cliente encontrado.</p>';
     root.querySelectorAll('.client-card').forEach(x=>{if(!lista.contains(x))x.remove();});
     root.appendChild(lista);
     const count=perfilEl('clientes-contagem');if(count)count.textContent=clientes.length+' cadastrado'+(clientes.length===1?'':'s');
   }
   function escCliente(v){return String(v==null?'':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
-  window.novoClienteOrcaPro=function(){
+  window.novoClienteOrcaOn=function(){
     let modal=document.getElementById('novo-cliente-modal');
     if(!modal){
       modal=document.createElement('div');modal.id='novo-cliente-modal';
@@ -7488,7 +7499,7 @@ function editarClienteCard(card){
   };
   function maskDocLocal(v){const d=String(v||'').replace(/\D/g,'').slice(0,14);if(d.length<=11)return d.replace(/(\d{3})(\d)/,'$1.$2').replace(/(\d{3})(\d)/,'$1.$2').replace(/(\d{3})(\d{1,2})$/,'$1-$2');return d.replace(/^(\d{2})(\d)/,'$1.$2').replace(/^(\d{2})\.(\d{3})(\d)/,'$1.$2.$3').replace(/\.(\d{3})(\d)/,'.$1/$2').replace(/(\d{4})(\d)/,'$1-$2');}
   function maskPhoneLocal(value){let d=String(value||'').replace(/\D/g,'').slice(0,11);if(d.length<=2)return d?'('+d:'';if(d.length<=6)return '('+d.slice(0,2)+') '+d.slice(2);if(d.length<=10)return '('+d.slice(0,2)+') '+d.slice(2,6)+'-'+d.slice(6);return '('+d.slice(0,2)+') '+d.slice(2,7)+'-'+d.slice(7);}
-  window.editarClienteOrcaPro=function(id){
+  window.editarClienteOrcaOn=function(id){
     const c=clientes.find(x=>String(x.id)===String(id));if(!c)return;
     let modal=document.getElementById('editar-cliente-modal');if(modal)modal.remove();
     modal=document.createElement('div');modal.id='editar-cliente-modal';
@@ -7512,9 +7523,9 @@ function editarClienteCard(card){
     });
     inNome.focus();
   };
-  window.excluirClienteOrcaPro=function(id){const c=clientes.find(x=>String(x.id)===String(id));if(!c)return;if(!confirm('Excluir o cliente “'+c.nome+'”?'))return;clientes=clientes.filter(x=>String(x.id)!==String(id));gravarClientes();renderClientes();};
+  window.excluirClienteOrcaOn=function(id){const c=clientes.find(x=>String(x.id)===String(id));if(!c)return;if(!confirm('Excluir o cliente “'+c.nome+'”?'))return;clientes=clientes.filter(x=>String(x.id)!==String(id));gravarClientes();renderClientes();};
   // Keep legacy inline entry points compatible with the new stored client list.
-  window.editarClienteCard=function(card){const id=card&&card.dataset&&card.dataset.clienteId;if(id)window.editarClienteOrcaPro(id);};
+  window.editarClienteCard=function(card){const id=card&&card.dataset&&card.dataset.clienteId;if(id)window.editarClienteOrcaOn(id);};
   window.orcaUpsertCliente=function(nome,contato,documento){
     nome=String(nome||'').trim();contato=String(contato||'').trim();if(!nome||nome==='Sem nome')return;
     const digits=contato.replace(/\D/g,'');
@@ -7540,10 +7551,10 @@ function editarClienteCard(card){
   window.cardOrcamento=function(o){
     const st=statusOrc(o);
     const enviado=st==='A receber';
-    return '<div class="budget-card" style="cursor:default;position:relative" data-orcamento-id="'+Number(o.id)+'"><div class="bc-left" role="button" tabindex="0" onclick="editarOrcamento('+Number(o.id)+')"><span class="bc-id">#'+esc(o.numero)+'</span><strong>'+esc(o.titulo)+'</strong><p>'+esc(o.cliente)+'</p></div><div class="bc-right"><span class="status '+(st==='Total recebido'?'green':enviado?'yellow':'gray')+'">'+esc(st)+'</span><strong>'+fmtBRL(o.total)+'</strong><p>'+fmtData(o.data)+'</p></div><div class="budget-actions"><button type="button" class="btn-budget-act edit" onclick="event.stopPropagation();editarOrcamento('+Number(o.id)+')">Editar</button><button type="button" class="btn-budget-act pdf" onclick="event.stopPropagation();emitirOrcamentoCard('+Number(o.id)+',\'pdf\')">Emitir PDF</button><button type="button" class="btn-budget-act img" onclick="event.stopPropagation();emitirOrcamentoCard('+Number(o.id)+',\'png\')">Emitir imagem</button><button type="button" class="btn-budget-act layout" onclick="event.stopPropagation();escolherLayoutOrcamento('+Number(o.id)+')">Emitir com outro modelo</button><button type="button" class="btn-delete-budget" onclick="event.stopPropagation();excluirOrcamentoOrcaPro('+Number(o.id)+')">Excluir</button></div></div>';
+    return '<div class="budget-card" style="cursor:default;position:relative" data-orcamento-id="'+Number(o.id)+'"><div class="bc-left" role="button" tabindex="0" onclick="editarOrcamento('+Number(o.id)+')"><span class="bc-id">#'+esc(o.numero)+'</span><strong>'+esc(o.titulo)+'</strong><p>'+esc(o.cliente)+'</p></div><div class="bc-right"><span class="status '+(st==='Total recebido'?'green':enviado?'yellow':'gray')+'">'+esc(st)+'</span><strong>'+fmtBRL(o.total)+'</strong><p>'+fmtData(o.data)+'</p></div><div class="budget-actions"><button type="button" class="btn-budget-act edit" onclick="event.stopPropagation();editarOrcamento('+Number(o.id)+')">Editar</button><button type="button" class="btn-budget-act pdf" onclick="event.stopPropagation();emitirOrcamentoCard('+Number(o.id)+',\'pdf\')">Emitir PDF</button><button type="button" class="btn-budget-act img" onclick="event.stopPropagation();emitirOrcamentoCard('+Number(o.id)+',\'png\')">Emitir imagem</button><button type="button" class="btn-budget-act layout" onclick="event.stopPropagation();escolherLayoutOrcamento('+Number(o.id)+')">Emitir com outro modelo</button><button type="button" class="btn-delete-budget" onclick="event.stopPropagation();excluirOrcamentoOrcaOn('+Number(o.id)+')">Excluir</button></div></div>';
   };
-  window.excluirOrcamentoOrcaPro=function(id){const o=orcamentos.find(x=>Number(x.id)===Number(id));if(!o)return;if(!confirm('Excluir o orçamento #'+(o.numero||'')+' de '+(o.cliente||'cliente')+'? Esta ação não pode ser desfeita.'))return;orcamentos=orcamentos.filter(x=>Number(x.id)!==Number(id));gravarOrcamentos();if(Number(ultimoOrcamentoId)===Number(id))ultimoOrcamentoId=null;renderOrcamentos();};
-  function injectStyle(){if(document.getElementById('orcapro-crud-style'))return;const st=document.createElement('style');st.id='orcapro-crud-style';st.textContent='.client-management-actions{display:flex;flex-wrap:wrap;gap:6px;align-items:center}.client-management-actions .btn-dark-sm,.client-management-actions .btn-delete-small{font-size:11px;padding:8px 9px;white-space:nowrap}.btn-delete-small,.btn-delete-budget{background:#b91c1c;color:#fff;border:0;border-radius:9px;font-weight:700;cursor:pointer}.btn-delete-small{padding:8px 10px}.btn-delete-budget{position:absolute;bottom:10px;right:12px;padding:8px 11px;font-size:12px}.budget-card{margin-bottom:12px}@media(max-width:420px){.client-card{align-items:flex-start!important;flex-wrap:wrap}.client-management-actions{width:100%;padding-left:58px}.client-management-actions button{flex:1}.budget-card{padding-bottom:58px!important}}';document.head.appendChild(st);}
+  window.excluirOrcamentoOrcaOn=function(id){const o=orcamentos.find(x=>Number(x.id)===Number(id));if(!o)return;if(!confirm('Excluir o orçamento #'+(o.numero||'')+' de '+(o.cliente||'cliente')+'? Esta ação não pode ser desfeita.'))return;orcamentos=orcamentos.filter(x=>Number(x.id)!==Number(id));gravarOrcamentos();if(Number(ultimoOrcamentoId)===Number(id))ultimoOrcamentoId=null;renderOrcamentos();};
+  function injectStyle(){if(document.getElementById('orcaon-crud-style'))return;const st=document.createElement('style');st.id='orcaon-crud-style';st.textContent='.client-management-actions{display:flex;flex-wrap:wrap;gap:6px;align-items:center}.client-management-actions .btn-dark-sm,.client-management-actions .btn-delete-small{font-size:11px;padding:8px 9px;white-space:nowrap}.btn-delete-small,.btn-delete-budget{background:#b91c1c;color:#fff;border:0;border-radius:9px;font-weight:700;cursor:pointer}.btn-delete-small{padding:8px 10px}.btn-delete-budget{position:absolute;bottom:10px;right:12px;padding:8px 11px;font-size:12px}.budget-card{margin-bottom:12px}@media(max-width:420px){.client-card{align-items:flex-start!important;flex-wrap:wrap}.client-management-actions{width:100%;padding-left:58px}.client-management-actions button{flex:1}.budget-card{padding-bottom:58px!important}}';document.head.appendChild(st);}
   document.addEventListener('DOMContentLoaded',()=>{carregarDadosPerfilOrca();injectStyle();renderClientes();const search=perfilEl('clientes-busca');if(search)search.addEventListener('input',renderClientes);if(typeof renderOrcamentos==='function')renderOrcamentos();});
   // Handles the case where this script is evaluated after DOMContentLoaded.
   if(document.readyState!=='loading'){carregarDadosPerfilOrca();injectStyle();renderClientes();if(typeof renderOrcamentos==='function')renderOrcamentos();const search=perfilEl('clientes-busca');if(search&&!search.dataset.bound) {search.dataset.bound='1';search.addEventListener('input',renderClientes);}}
@@ -7576,7 +7587,7 @@ function editarClienteCard(card){
 
 <script>
 // ===== BIBLIOTECA DE RECIBOS: salvamento local e plano gratuito =====
-const RECIBOS_KEY = 'orcapro_recibos_salvos';
+const RECIBOS_KEY = 'orcaon_recibos_salvos';
 const RECIBOS_LIMITE_GRATUITO = 10;
 let reciboEmEdicaoId = null;
 function lerRecibosSalvos(){try{const x=JSON.parse(localStorage.getItem(RECIBOS_KEY)||'[]');return Array.isArray(x)?x:[]}catch(e){return []}}
@@ -7585,7 +7596,7 @@ function gravarRecibosSalvos(){try{localStorage.setItem(RECIBOS_KEY,JSON.stringi
 // Administradores: acesso total ao app (sem limites e com todos os recursos Pro) ao entrar com estes e-mails.
 const ADMIN_EMAILS = ['brunolemosxd@gmail.com'];
 // ===== Plano, limite gratuito e sessão única: tudo validado no servidor (Firebase/Firestore) =====
-const LIMITE_GRATUITO_ORCAPRO = 10;
+const LIMITE_GRATUITO_ORCAON = 10;
 let cota = null;       // {orc, rec, pro, proAte} lido do servidor; null = visitante ou ainda não carregado
 let dbOrca = null;
 function usuarioFirebase(){
@@ -7671,16 +7682,16 @@ function bkChaves(){
     for (let i = 0; i < localStorage.length; i++) {
       const k = localStorage.key(i);
       if (!k) continue;
-      const incl = k.indexOf('orcapro_') === 0 || k === 'assinaturaDigital' || k === 'profession' || k === 'professionChosenV2';
-      const excl = k === 'orcapro_aparelho_id' || k.indexOf('orcapro_backup') === 0 || k === 'orcapro_boot_google' || k.indexOf('orcapro_perfil_inicial_') === 0 || /compartilhados_total$/.test(k) || /^orcapro_(plano|pro_ativo)$/.test(k);
+      const incl = k.indexOf('orcaon_') === 0 || k === 'assinaturaDigital' || k === 'profession' || k === 'professionChosenV2';
+      const excl = k === 'orcaon_aparelho_id' || k.indexOf('orcaon_backup') === 0 || k === 'orcaon_boot_google' || k.indexOf('orcaon_perfil_inicial_') === 0 || /compartilhados_total$/.test(k) || /^orcaon_(plano|pro_ativo)$/.test(k);
       if (incl && !excl) r.push(k);
     }
   } catch (_) {}
   return r;
 }
 function bkChaveOk(k){
-  const incl = k.indexOf('orcapro_') === 0 || k === 'assinaturaDigital' || k === 'profession' || k === 'professionChosenV2';
-  const excl = k === 'orcapro_aparelho_id' || k.indexOf('orcapro_backup') === 0 || k === 'orcapro_boot_google' || k.indexOf('orcapro_perfil_inicial_') === 0 || /compartilhados_total$/.test(k) || /^orcapro_(plano|pro_ativo)$/.test(k);
+  const incl = k.indexOf('orcaon_') === 0 || k === 'assinaturaDigital' || k === 'profession' || k === 'professionChosenV2';
+  const excl = k === 'orcaon_aparelho_id' || k.indexOf('orcaon_backup') === 0 || k === 'orcaon_boot_google' || k.indexOf('orcaon_perfil_inicial_') === 0 || /compartilhados_total$/.test(k) || /^orcaon_(plano|pro_ativo)$/.test(k);
   return incl && !excl && k.length < 80;
 }
 function bkChavesValidas(){ return []; }
@@ -7722,7 +7733,7 @@ async function fazerBackupOrca(manual){
       await b.commit();
     }
     await R.meta.set({ partes: novos, atualizado: firebase.firestore.FieldValue.serverTimestamp(), aparelho: idAparelhoOrca(), tam: total });
-    try { localStorage.setItem('orcapro_backup_ok_' + R.gid, String(Date.now())); } catch (_) {}
+    try { localStorage.setItem('orcaon_backup_ok_' + R.gid, String(Date.now())); } catch (_) {}
     const m = await R.meta.get(); bkMsg('Último backup: ' + (bkDataTexto(m.data().atualizado) || 'agora'));
     return true;
   } catch (e) {
@@ -7741,15 +7752,16 @@ async function restaurarBackupOrca(pedirConfirmacao){
     bkMsg('Restaurando…');
     const partes = m.data().partes || {}, dados = {}, validas = bkChavesValidas();
     for (const k of Object.keys(partes)) {
-      if (validas.indexOf(k) < 0 && !bkChaveOk(k)) continue;
+      const nk = k.replace(/^orcapro_/, 'orcaon_');   // backups antigos usam o prefixo antigo
+      if (validas.indexOf(nk) < 0 && !bkChaveOk(nk)) continue;
       if (!(partes[k] >= 1 && partes[k] <= 40)) continue;
       let s = '';
       for (let i = 0; i < partes[k]; i++) { const d = await R.itens.doc(k + '__' + i).get(); if (!d.exists) throw new Error('faltando'); s += d.data().v; }
-      dados[k] = s;
+      dados[nk] = s;
     }
     bkChaves().forEach(k => { try { localStorage.removeItem(k); } catch (_) {} });
     Object.keys(dados).forEach(k => { try { localStorage.setItem(k, dados[k]); } catch (_) {} });
-    try { localStorage.setItem('orcapro_backup_ok_' + R.gid, String(Date.now())); } catch (_) {}
+    try { localStorage.setItem('orcaon_backup_ok_' + R.gid, String(Date.now())); } catch (_) {}
     alert('Backup restaurado! O app vai recarregar.');
     location.reload(); return true;
   } catch (e) { console.warn('Restaurar:', e); bkMsg('Não consegui restaurar. Tente de novo com internet boa.', true); return false; }
@@ -7767,7 +7779,7 @@ async function apagarBackupOrca(){
   } catch (e) { console.warn('Apagar backup:', e); }
 }
 function agendarBackupAuto(){
-  const R = bkRefs(); if (!R || !usuarioTemPro() || !localStorage.getItem('orcapro_backup_ok_' + R.gid)) return;
+  const R = bkRefs(); if (!R || !usuarioTemPro() || !localStorage.getItem('orcaon_backup_ok_' + R.gid)) return;
   clearTimeout(bkTimer); bkTimer = setTimeout(() => { fazerBackupOrca(false); }, 20000);
 }
 // qualquer gravação de dados do app agenda um backup automático (20 s depois da última mudança)
@@ -7786,7 +7798,7 @@ async function verificarBackupAposCota(){
   atualizarCartaoBackup();
   if (!R || !usuarioTemPro()) return;
   try {
-    const m = await R.meta.get(), flag = localStorage.getItem('orcapro_backup_ok_' + R.gid);
+    const m = await R.meta.get(), flag = localStorage.getItem('orcaon_backup_ok_' + R.gid);
     if (m.exists) {
       bkMsg('Último backup: ' + bkDataTexto(m.data().atualizado));
       const outro = m.data().aparelho && m.data().aparelho !== idAparelhoOrca();
@@ -7864,8 +7876,8 @@ const SESSAO_TTL_MS = 5 * 60 * 1000, SESSAO_BATIDA_MS = 60 * 1000;
 let sessaoTimer = null, sessaoUnsub = null, sessaoRef = null, sessaoUsuario = null;
 function idAparelhoOrca(){
   try {
-    let id = localStorage.getItem('orcapro_aparelho_id') || '';
-    if (!id) { id = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : (Date.now().toString(36) + Math.random().toString(36).slice(2)); localStorage.setItem('orcapro_aparelho_id', id); }
+    let id = localStorage.getItem('orcaon_aparelho_id') || '';
+    if (!id) { id = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : (Date.now().toString(36) + Math.random().toString(36).slice(2)); localStorage.setItem('orcaon_aparelho_id', id); }
     return id;
   } catch (e) { return window.__aparelhoTmp || (window.__aparelhoTmp = Date.now().toString(36) + Math.random().toString(36).slice(2)); }
 }
@@ -8004,7 +8016,7 @@ async function registrarCompartilhamento(tipo){
       const d = snap.exists ? snap.data() : { orc: 0, rec: 0, pro: false };
       const proServidor = d.pro === true && (!d.proAte || (d.proAte.toMillis ? d.proAte.toMillis() : Number(d.proAte)) > Date.now());
       if(proServidor) return d;
-      if((parseInt(d[campo],10) || 0) >= LIMITE_GRATUITO_ORCAPRO){ bloqueado = true; return d; }
+      if((parseInt(d[campo],10) || 0) >= LIMITE_GRATUITO_ORCAON){ bloqueado = true; return d; }
       const prox = Object.assign({}, d); prox[campo] = (parseInt(d[campo],10) || 0) + 1;
       if(snap.exists) tx.update(ref, { [campo]: prox[campo], atualizado: agora });
       else tx.set(ref, { orc: prox.orc || 0, rec: prox.rec || 0, pro: false, criado: agora, atualizado: agora });
@@ -8022,7 +8034,7 @@ async function registrarCompartilhamento(tipo){
     return false;
   }
   // Acabou de usar o último envio grátis: convida para o Pro depois que o envio terminar.
-  if(novo && novo.pro !== true && (parseInt(novo[campo],10) || 0) === LIMITE_GRATUITO_ORCAPRO){
+  if(novo && novo.pro !== true && (parseInt(novo[campo],10) || 0) === LIMITE_GRATUITO_ORCAON){
     try{ localStorage.setItem(OFERTA_PRO_PENDENTE_KEY, 'ultimo-'+tipo); }catch(_){}
   }
   return true;
@@ -8130,13 +8142,13 @@ document.addEventListener('DOMContentLoaded',()=>{renderRecibosSalvos();atualiza
 // OrçaOn: (1) perfil no primeiro acesso e (2) entrega de PDF/imagem em qualquer celular
 (function(){
   // ---------- 1) Perfil no primeiro acesso ----------
-  function chavePerfil(){ return 'orcapro_perfil_inicial_' + ((currentUser && currentUser.uid) || 'local'); }
-  window.orcaproDeveMostrarPerfilInicial = function(){
+  function chavePerfil(){ return 'orcaon_perfil_inicial_' + ((currentUser && currentUser.uid) || 'local'); }
+  window.orcaonDeveMostrarPerfilInicial = function(){
     try {
       if (!currentUser || !currentUser.uid) return false;
       if (localStorage.getItem(chavePerfil())) return false;
       return ['empresa','nome','whatsapp','documento','endereco','pix'].every(function(k){
-        return !(localStorage.getItem('orcapro_perfil_' + k) || '').trim();
+        return !(localStorage.getItem('orcaon_perfil_' + k) || '').trim();
       });
     } catch (e) { return false; }
   };
@@ -8146,9 +8158,9 @@ document.addEventListener('DOMContentLoaded',()=>{renderRecibosSalvos();atualiza
     if (d.length === 10) return '(' + d.slice(0,2) + ') ' + d.slice(2,6) + '-' + d.slice(6);
     return d;
   }
-  window.orcaproAbrirPerfilInicial = function(){
+  window.orcaonAbrirPerfilInicial = function(){
     try { localStorage.setItem(chavePerfil(), '1'); } catch (e) {}
-    window.__orcaproPerfilInicial = true;
+    window.__orcaonPerfilInicial = true;
     historyStack.length = 0;
     try { switchPage('home'); } catch (e) {}
     goToEditProfile();
@@ -8176,14 +8188,14 @@ document.addEventListener('DOMContentLoaded',()=>{renderRecibosSalvos();atualiza
   }
   var goAnterior = window.goToEditProfile;
   window.goToEditProfile = function(){
-    var primeiro = !!window.__orcaproPerfilInicial;
-    window.__orcaproPerfilInicial = false;
+    var primeiro = !!window.__orcaonPerfilInicial;
+    window.__orcaonPerfilInicial = false;
     if (typeof goAnterior === 'function') goAnterior.apply(this, arguments);
     ajustarTelaPerfil(primeiro);
   };
 
   // ---------- 2) Entrega do PDF/imagem ----------
-  window.orcaproToast = function(msg){
+  window.orcaonToast = function(msg){
     var el = document.createElement('div');
     el.style.cssText = 'position:fixed;left:12px;right:12px;bottom:18px;z-index:999999;background:#102a43;color:#fff;padding:14px 16px;border-radius:12px;font-size:14px;box-shadow:0 10px 30px rgba(0,0,0,.35);text-align:center';
     el.textContent = msg; document.body.appendChild(el);
@@ -8209,46 +8221,46 @@ document.addEventListener('DOMContentLoaded',()=>{renderRecibosSalvos();atualiza
   }
   function painel(file, opc){
     return new Promise(function(resolve){
-      var antigo = document.getElementById('orcapro-entrega-painel'); if (antigo) antigo.remove();
+      var antigo = document.getElementById('orcaon-entrega-painel'); if (antigo) antigo.remove();
       var rotulo = /pdf/i.test(file.type) ? 'PDF' : 'imagem', pode = podeCompartilhar(file);
       var bt = 'padding:14px;border:0;border-radius:12px;font-weight:800;font-size:15px;';
       var ov = document.createElement('div');
-      ov.id = 'orcapro-entrega-painel'; ov.setAttribute('role','dialog'); ov.setAttribute('aria-modal','true');
+      ov.id = 'orcaon-entrega-painel'; ov.setAttribute('role','dialog'); ov.setAttribute('aria-modal','true');
       ov.style.cssText = 'position:fixed;inset:0;z-index:1000000;background:rgba(0,0,0,.72);display:flex;align-items:flex-end;justify-content:center;padding:16px';
       ov.innerHTML = '<div style="width:min(480px,100%);background:#0f2430;color:#fff;border-radius:18px 18px 12px 12px;padding:18px;border:1px solid rgba(255,255,255,.12)">'
         + '<h2 style="margin:0 0 8px;font-size:18px">Seu ' + rotulo + ' está pronto</h2>'
-        + '<p id="orcapro-ent-msg" style="margin:0 0 14px;color:#9fb3c1;font-size:13px;line-height:1.45"></p>'
+        + '<p id="orcaon-ent-msg" style="margin:0 0 14px;color:#9fb3c1;font-size:13px;line-height:1.45"></p>'
         + '<div style="display:grid;gap:10px">'
-        + (pode ? '<button type="button" id="orcapro-ent-share" style="' + bt + 'background:#f4c430;color:#10202b">Compartilhar</button>' : '')
-        + '<button type="button" id="orcapro-ent-wa" style="' + bt + 'background:#16a34a;color:#fff">Enviar pelo WhatsApp</button>'
-        + '<button type="button" id="orcapro-ent-dl" style="' + bt + 'background:#1d4ed8;color:#fff">Baixar ' + rotulo + '</button>'
-        + '<button type="button" id="orcapro-ent-open" style="' + bt + 'background:#334155;color:#fff">Abrir ' + rotulo + ' para ver e compartilhar</button>'
-        + '<button type="button" id="orcapro-ent-close" style="padding:12px;border:1px solid rgba(255,255,255,.2);border-radius:12px;background:transparent;color:#fff;font-weight:600">Fechar</button>'
+        + (pode ? '<button type="button" id="orcaon-ent-share" style="' + bt + 'background:#f4c430;color:#10202b">Compartilhar</button>' : '')
+        + '<button type="button" id="orcaon-ent-wa" style="' + bt + 'background:#16a34a;color:#fff">Enviar pelo WhatsApp</button>'
+        + '<button type="button" id="orcaon-ent-dl" style="' + bt + 'background:#1d4ed8;color:#fff">Baixar ' + rotulo + '</button>'
+        + '<button type="button" id="orcaon-ent-open" style="' + bt + 'background:#334155;color:#fff">Abrir ' + rotulo + ' para ver e compartilhar</button>'
+        + '<button type="button" id="orcaon-ent-close" style="padding:12px;border:1px solid rgba(255,255,255,.2);border-radius:12px;background:transparent;color:#fff;font-weight:600">Fechar</button>'
         + '</div></div>';
       document.body.appendChild(ov);
-      var msg = ov.querySelector('#orcapro-ent-msg');
+      var msg = ov.querySelector('#orcaon-ent-msg');
       var emApp = /FBAN|FBAV|Instagram|WhatsApp|Line\/|MicroMessenger|; wv\)|GSA\//i.test(navigator.userAgent || ''), samsung = /SamsungBrowser/i.test(navigator.userAgent || '');
       msg.textContent = pode ? 'Toque em Compartilhar para escolher o WhatsApp, e-mail ou outro aplicativo.'
         : 'O ' + rotulo + ' foi gerado, mas este aparelho não envia o arquivo direto. Toque em "Enviar pelo WhatsApp": o arquivo é baixado e o WhatsApp abre; lá, toque no clipe e escolha o arquivo ' + file.name + ' (pasta Downloads).'
           + (samsung && !emApp ? ' Dica: no navegador da Samsung o envio direto de arquivo costuma falhar. Instalar e usar o Chrome resolve; ou toque em "Baixar" e depois compartilhe o arquivo pela notificação de download.' : '') + (emApp ? ' Dica: você abriu o OrçaOn dentro de outro aplicativo. Para compartilhar direto, toque nos 3 pontinhos e escolha "Abrir no Chrome".' : '');
       function fechar(){ ov.remove(); resolve('fechado'); }
       ov.addEventListener('click', function(ev){ if (ev.target === ov) fechar(); });
-      ov.querySelector('#orcapro-ent-close').onclick = fechar;
-      ov.querySelector('#orcapro-ent-dl').onclick = function(){ baixar(file); msg.textContent = 'Arquivo baixado: ' + file.name + '.'; };
-      ov.querySelector('#orcapro-ent-open').onclick = function(){
+      ov.querySelector('#orcaon-ent-close').onclick = fechar;
+      ov.querySelector('#orcaon-ent-dl').onclick = function(){ baixar(file); msg.textContent = 'Arquivo baixado: ' + file.name + '.'; };
+      ov.querySelector('#orcaon-ent-open').onclick = function(){
         var u = URL.createObjectURL(file), w = null;
         try { w = window.open(u, '_blank'); } catch (e) {}
         if (!w) { baixar(file); msg.textContent = 'Seu navegador bloqueou a abertura. O arquivo foi baixado: abra-o em Downloads (ou pela notificação) e use o botão de compartilhar do visualizador.'; }
         else msg.textContent = 'Aberto em outra aba. Use o menu do navegador (compartilhar) para enviar ao WhatsApp.';
         setTimeout(function(){ URL.revokeObjectURL(u); }, 60000);
       };
-      ov.querySelector('#orcapro-ent-wa').onclick = function(){
+      ov.querySelector('#orcaon-ent-wa').onclick = function(){
         baixar(file);
         var w = null;
         try { w = window.open('https://wa.me/?text=' + encodeURIComponent('Olá! Estou enviando o arquivo ' + file.name + ' (gerado pelo OrçaOn). Vou anexá-lo agora nesta conversa.'), '_blank'); } catch (e) {}
         msg.textContent = 'Arquivo baixado. No WhatsApp, toque no clipe e escolha ' + file.name + ' (pasta Downloads).' + (w ? '' : ' Abra o WhatsApp manualmente.');
       };
-      var sh = ov.querySelector('#orcapro-ent-share');
+      var sh = ov.querySelector('#orcaon-ent-share');
       if (sh) sh.onclick = async function(){
         var r = await tentarShare(file, opc);
         if (r === 'ok') { fechar(); }
@@ -8256,7 +8268,7 @@ document.addEventListener('DOMContentLoaded',()=>{renderRecibosSalvos();atualiza
       };
     });
   }
-  window.orcaproEntregarArquivo = async function(file, opc){
+  window.orcaonEntregarArquivo = async function(file, opc){
     opc = opc || {};
     try {
       if (podeCompartilhar(file)) {
@@ -8278,7 +8290,7 @@ document.addEventListener('DOMContentLoaded',()=>{renderRecibosSalvos();atualiza
 <script>
 // OrçaOn: botão "Limpar dados do app" (modo teste)
 (function(){
-  var KEY = 'orcapro_modo_teste';
+  var KEY = 'orcaon_modo_teste';
   // Abra o app com ?teste=1 uma vez para liberar o botão neste aparelho (?teste=0 esconde de novo).
   try {
     localStorage.removeItem(KEY); // liberação por ?teste=1 removida (era uma brecha no limite gratuito)
@@ -8296,11 +8308,11 @@ document.addEventListener('DOMContentLoaded',()=>{renderRecibosSalvos();atualiza
     try {
       for (var i = 0; i < localStorage.length; i++) {
         var k = localStorage.key(i);
-        if (k && k.indexOf('orcapro_') === 0 && /orcamentos|recibos|clientes|compartilhados|numero/.test(k)) apagar.push(k);
+        if (k && k.indexOf('orcaon_') === 0 && /orcamentos|recibos|clientes|compartilhados|numero/.test(k)) apagar.push(k);
       }
     } catch (e) {}
-    ['orcapro_orcamentos', 'orcapro_recibos_salvos', 'orcapro_clientes_v2', 'orcapro_clientes_editados',
-     'orcapro_orcamentos_compartilhados_total', 'orcapro_recibos_compartilhados_total'].forEach(function(k){ if (apagar.indexOf(k) < 0) apagar.push(k); });
+    ['orcaon_orcamentos', 'orcaon_recibos_salvos', 'orcaon_clientes_v2', 'orcaon_clientes_editados',
+     'orcaon_orcamentos_compartilhados_total', 'orcaon_recibos_compartilhados_total'].forEach(function(k){ if (apagar.indexOf(k) < 0) apagar.push(k); });
     apagar.forEach(function(k){ try { localStorage.removeItem(k); } catch (e) {} });
     alert('Dados limpos! O app vai recarregar.');
     location.reload();
@@ -8333,12 +8345,12 @@ document.addEventListener('change', function(e){
   function carregarChavesPixPerfil() {
     let alguma = false;
     ORDEM.forEach(t => { const el = document.getElementById(IDS[t]); if (!el) return; pixAplicarTipo(el, t); el.disabled = false; el.value = pixMascara(t, lg(PIX_KEYS[t])); el.classList.remove('pix-invalido'); if (el.value) alguma = true; const er = el.closest('.pix-campo').querySelector('.pix-erro'); if (er) er.textContent = ''; });
-    const antiga = lg('orcapro_perfil_pix');
+    const antiga = lg('orcaon_perfil_pix');
     if (!alguma && antiga) {                       // quem já tinha uma chave salva: separa pelo tipo
       const t = detectarTipoPix(antiga), el = t && document.getElementById(IDS[t]);
-      if (el) { el.value = pixMascara(t, antiga); try { localStorage.setItem('orcapro_pix_principal', t); } catch (_) {} }
+      if (el) { el.value = pixMascara(t, antiga); try { localStorage.setItem('orcaon_pix_principal', t); } catch (_) {} }
     }
-    const pr = document.getElementById('perfil-pix-principal'); if (pr) pr.value = lg('orcapro_pix_principal');
+    const pr = document.getElementById('perfil-pix-principal'); if (pr) pr.value = lg('orcaon_pix_principal');
   }
   function validarEGravarChavesPix() {   // devolve '' se deu certo, ou a mensagem de erro
     for (const t of ORDEM) {
@@ -8350,7 +8362,7 @@ document.addEventListener('change', function(e){
     const pr = document.getElementById('perfil-pix-principal');
     let princ = pr ? pr.value : '';
     if (!princ || !valores[princ]) princ = ORDEM.find(t => valores[t]) || '';
-    try { if (pr && pr.value) localStorage.setItem('orcapro_pix_principal', pr.value); else localStorage.removeItem('orcapro_pix_principal'); } catch (_) {}
+    try { if (pr && pr.value) localStorage.setItem('orcaon_pix_principal', pr.value); else localStorage.removeItem('orcaon_pix_principal'); } catch (_) {}
     const oculto = document.getElementById('perfil-pix'); if (oculto) oculto.value = princ ? valores[princ] : '';
     return '';
   }
@@ -8420,9 +8432,9 @@ body.light .mic-btn.mic-on{background:#EF4444;color:#fff}
     if (ATIVO && ATIVO.campo === campo) { parar(); return; }
     parar();
     try {
-      if (!localStorage.getItem('orcapro_mic_aviso')) {
+      if (!localStorage.getItem('orcaon_mic_aviso')) {
         if (!confirm('Ditado por voz\n\nQuando você toca no microfone, o áudio é enviado ao serviço de reconhecimento de voz do seu navegador (no Chrome, o Google) só para virar texto. Nada é gravado pelo OrçaOn.\n\nContinuar?')) return;
-        localStorage.setItem('orcapro_mic_aviso', '1');
+        localStorage.setItem('orcaon_mic_aviso', '1');
       }
     } catch (e) {}
     var rec = new SR(); rec.lang = 'pt-BR'; rec.interimResults = true; rec.continuous = false; rec.maxAlternatives = 1;
@@ -8471,7 +8483,7 @@ body.light .mic-btn.mic-on{background:#EF4444;color:#fff}
   document.addEventListener('visibilitychange', function(){ if (document.hidden) parar(); });
   function iniciarTudo(){ varrer(document); try { new MutationObserver(agendar).observe(document.body, { childList: true, subtree: true }); } catch (e) {} }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', iniciarTudo); else iniciarTudo();
-  window.__orcaproMicVarrer = function(){ varrer(document); };
+  window.__orcaonMicVarrer = function(){ varrer(document); };
 })();
 </script>
 
@@ -8505,7 +8517,7 @@ body.light .mic-btn.mic-on{background:#EF4444;color:#fff}
       setVal('rec-numero', String((lerRecibosSalvos().length || 0) + 1).padStart(3, '0'));
       const cpfCli = q('rec-cpf-cliente');
       if (cpfCli && !cpfCli.value && nomeCli) {
-        try { const cs = JSON.parse(localStorage.getItem('orcapro_clientes_v2') || '[]'); const c = cs.find(x => String(x.nome||'').trim().toLowerCase() === nomeCli.toLowerCase()); if (c && c.documento) cpfCli.value = c.documento; } catch(e){}
+        try { const cs = JSON.parse(localStorage.getItem('orcaon_clientes_v2') || '[]'); const c = cs.find(x => String(x.nome||'').trim().toLowerCase() === nomeCli.toLowerCase()); if (c && c.documento) cpfCli.value = c.documento; } catch(e){}
       }
       const v = q('rec-valor');
       if (v) { v.value = fmtBRL(total); if (v.dataset) v.dataset.manualOverride = '1'; }
@@ -8543,7 +8555,7 @@ body.light .mic-btn.mic-on{background:#EF4444;color:#fff}
       endereco: '',
       itens: [{ desc: descr, detalhes: '', unidade: 'un', qtd: 1, valor: valor }],
       pagamento: pagamento,
-      validade: parseInt(localStorage.getItem('orcapro_validade_padrao') || '7', 10) || 7,
+      validade: parseInt(localStorage.getItem('orcaon_validade_padrao') || '7', 10) || 7,
       obs: '',
       assinatura: true,
       total: valor, subtotal: valor, descontoValor: 0, descontoTipo: null, descontoEntrada: 0,
