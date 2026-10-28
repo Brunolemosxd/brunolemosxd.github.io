@@ -1526,6 +1526,20 @@ input.pix-invalido{border-color:#EF4444!important}
 .pix-campo{margin:8px 0}
 .pix-campo label{margin-top:4px}
 .pix-qr-area{margin:8px 0;text-align:center}
+.pix-qr-toggle{display:flex!important;flex-direction:row!important;gap:12px;align-items:center;margin-top:10px!important;color:var(--text-primary,#fff)!important;font-size:14px!important;padding:10px 12px;border:2px dashed var(--accent,#F4C430);border-radius:12px;cursor:pointer;font-weight:600}
+.pix-qr-toggle img{width:56px;height:56px;flex:0 0 56px;object-fit:contain;background:#fff;padding:3px;border-radius:6px}
+.pix-qr-toggle span{flex:1;line-height:1.3;text-align:left}
+.pix-qr-toggle small{display:block;font-weight:400;font-size:12px;color:var(--text-secondary)}
+.pix-qr-toggle input{width:22px!important;height:22px;flex:0 0 22px;margin:0}
+.pix-qr-exemplo{position:relative;display:inline-block}
+.pix-qr-exemplo img{width:150px!important;height:150px!important;opacity:.45}
+.pix-qr-exemplo b{position:absolute;left:50%;top:50%;transform:translate(-50%,-60%);background:#F4C430;color:#0B1C2C;font-size:12px;padding:3px 8px;border-radius:6px;white-space:nowrap}
+.preco-card .preco-nome{font-weight:700;margin-bottom:8px}
+.preco-card .units{margin:0 0 8px}
+.preco-card label{font-size:13px;color:var(--text-secondary)}
+.preco-salvo{font-size:12px;color:#2BD67B;min-height:16px;margin-top:4px}
+.sugestao-chip small{display:block;font-size:11px;font-weight:700;color:#2BD67B;margin-top:2px}
+.sugestao-chip.active small{color:#0B1C2C}
 .pix-qr-area img{max-width:150px;max-height:150px;object-fit:contain;background:#fff;padding:6px;border-radius:8px;display:block;margin:0 auto 8px}
 .pix-linha{display:flex;gap:8px;align-items:center;margin:8px 0}
 .pix-linha select{flex:0 0 46%;min-width:0}
@@ -3363,6 +3377,14 @@ body.light .btn-remove-item{color:#b91c1c}
                 </div>
                 <i class="fas fa-chevron-right"></i>
               </div>
+              <div class="menu-item" onclick="goToPriceTable()">
+                <i class="fas fa-tags"></i>
+                <div>
+                  <strong>Meus preços</strong>
+                  <p>Valor e unidade de cada serviço</p>
+                </div>
+                <i class="fas fa-chevron-right"></i>
+              </div>
             </div>
           </div>
 
@@ -3466,13 +3488,14 @@ body.light .btn-remove-item{color:#b91c1c}
             </div>
             <p class="pix-erro" id="orc-pix-erro" role="alert"></p>
             <p class="hint-sm">Escolha o tipo: a chave vem do seu Perfil e o campo só aceita o formato certo.</p>
-            <label style="display:flex;gap:8px;align-items:center;margin-top:10px;font-weight:500"><input type="checkbox" id="orc-pix-qr-usar" style="width:auto"> Mostrar QR Code do Pix no orçamento</label>
+            <label class="pix-qr-toggle"><img id="orc-pix-qr-mini" alt=""><span>Mostrar QR Code do Pix no orçamento<small id="orc-pix-qr-mini-txt">O cliente aponta a câmera e paga</small></span><input type="checkbox" id="orc-pix-qr-usar"></label>
             <div class="pix-qr-area" id="orc-pix-qr-area" style="display:none">
               <img id="orc-pix-qr-img" alt="QR Code do Pix">
+              <div class="pix-qr-exemplo" id="orc-pix-qr-exemplo" style="display:none"><img id="orc-pix-qr-exemplo-img" alt="QR Code de exemplo"><b>Exemplo</b></div>
               <p class="hint-sm" id="orc-pix-qr-info"></p>
               <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:6px">
                 <button type="button" class="btn-dark-sm" id="orc-pix-qr-perfil-btn" onclick="orcUsarQrPerfil()">Usar o do Perfil</button>
-                <button type="button" class="btn-dark-sm" onclick="document.getElementById('orc-pix-qr-file').click()">Enviar outro agora</button>
+                <button type="button" class="btn-dark-sm" id="orc-pix-qr-enviar-btn" onclick="document.getElementById('orc-pix-qr-file').click()">Enviar outro agora</button>
               </div>
               <input type="file" id="orc-pix-qr-file" accept="image/*" style="display:none" onchange="orcEnviarQrPix(event)">
             </div>
@@ -3804,6 +3827,8 @@ body.light .btn-remove-item{color:#b91c1c}
           <input type="text" id="rec-extenso" placeholder="Cento e cinquenta reais">
           <label>Referente a</label>
           <input type="text" id="rec-referente" placeholder="Serviço de instalação de calhas">
+          <p class="sugestoes-label" style="margin-top:8px">Sugestões para <span id="rec-sugestoes-prof">sua profissão</span>:</p>
+          <div class="sugestoes-row" id="rec-sugestoes"></div>
           <div id="recibo-campos-especificos"></div>
           <label>Cidade</label>
           <input type="text" id="rec-cidade" placeholder="São Paulo">
@@ -3847,30 +3872,19 @@ body.light .btn-remove-item{color:#b91c1c}
     <div id="screen-price-table" class="screen">
       <header class="app-header">
         <button class="back-btn" onclick="goBack()"><i class="fas fa-arrow-left"></i> Voltar</button>
-        <h1>Minha Tabela de Preços</h1>
+        <h1>Meus preços</h1>
       </header>
-      <div class="content center-msg">
-        <i class="fas fa-clipboard-list fa-3x"></i>
-        <h2>Tabela vazia</h2>
-        <p>Adicione seus serviços e preços abaixo. Ao criar orçamentos, você escolhe itens direto daqui — e a IA usa esses preços quando ouve o áudio.</p>
-      </div>
-      <div class="bottom-form">
-        <h3>+ NOVO SERVIÇO</h3>
-        <input type="text" placeholder="Descrição do serviço">
-        <div class="units">
-          <span>Unidade:</span>
-          <button class="unit">un</button>
-          <button class="unit">m</button>
-          <button class="unit">m²</button>
-          <button class="unit">m³</button>
-          <button class="unit">hr</button>
-          <button class="unit">dias</button>
-          <button class="unit">kg</button>
-          <button class="unit active">vb</button>
+      <div class="content form-content">
+        <div class="info-banner">
+          <i class="fas fa-tags"></i>
+          <div>
+            <strong>Quanto você cobra?</strong>
+            <p>Escolha a unidade e coloque o valor de cada serviço. Ao tocar no serviço no orçamento ou no recibo, o valor já aparece preenchido.</p>
+          </div>
         </div>
-        <label>Preço unitário</label>
-        <input type="text" value="R$ 0,00">
-        <button class="btn-primary">+ Adicionar</button>
+        <p class="hint-sm">Serviços de: <b id="precos-prof">sua profissão</b></p>
+        <div id="precos-lista"></div>
+        <button type="button" class="btn-primary-lg" onclick="goBack()">Pronto</button>
       </div>
     </div>
 
@@ -4461,6 +4475,8 @@ function preencherSugestoesItem(row) {
     btn.className = 'sugestao-chip';
     btn.textContent = item;
     btn.dataset.texto = item;
+    const preco = precoServico(item);
+    if (preco) { const sm = document.createElement('small'); sm.textContent = textoPreco(preco); btn.appendChild(sm); }
     btn.onclick = () => usarSugestao(btn);
     box.appendChild(btn);
   });
@@ -4483,6 +4499,16 @@ function usarSugestao(btn) {
   if (!row) return;
   row.querySelector('.item-desc').value = btn.dataset.texto;
   marcarSugestaoAtiva(row);
+  // Preço do Perfil: preenche unidade e valor (sem apagar um valor que a pessoa já digitou)
+  const preco = precoServico(btn.dataset.texto), vi = row.querySelector('.item-valor');
+  if (!preco || !vi) return;
+  const atual = parseBRL(vi.value);
+  if (atual > 0 && vi.dataset.precoAuto !== String(atual)) return;
+  const ub = Array.from(row.querySelectorAll('.unit')).find(u => u.textContent.trim() === preco.un);
+  if (ub && !ub.classList.contains('active')) ub.click();
+  vi.value = fmtBRL(preco.valor);
+  vi.dataset.precoAuto = String(preco.valor);
+  if (typeof atualizarTotalOrcamento === 'function') atualizarTotalOrcamento();
 }
 
 // Se o usuário digitar à mão, o chip só fica amarelo se o texto for igual a ele
@@ -4585,6 +4611,7 @@ function selecionarModeloRecibo(nome) {
   if (cpfRec && !cpfRec.value && empRec.documento) cpfRec.value = empRec.documento;
   montarCamposEspecificosRecibo(nome);
   ajustarFormularioRecibo(nome);
+  renderSugestoesRecibo();
   if (typeof atualizarAcessoVisualizacaoRecibo === 'function') atualizarAcessoVisualizacaoRecibo();
   pushAndShow('screen-novo-recibo');
   setTimeout(atualizarRecibo, 50);
@@ -4793,6 +4820,38 @@ function limparLogoRecibo() {
   try { localStorage.setItem('orcaon_recibo_logo', ''); } catch(e) {}
   atualizarStatusLogoRecibo('Logotipo removido deste recibo.');
   atualizarRecibo();
+}
+// Sugestões do recibo: no recibo com itens vira um item; nos outros preenche "Referente a" e o valor
+function renderSugestoesRecibo() {
+  const box = document.getElementById('rec-sugestoes'); if (!box) return;
+  const prof = profissaoAtual(), lista = SUGESTOES[prof] || SUGESTOES['Outro'];
+  const lp = document.getElementById('rec-sugestoes-prof'); if (lp) lp.textContent = prof;
+  box.innerHTML = '';
+  lista.forEach(nome => {
+    const btn = document.createElement('button');
+    btn.type = 'button'; btn.className = 'sugestao-chip'; btn.textContent = nome; btn.dataset.texto = nome;
+    const preco = precoServico(nome);
+    if (preco) { const sm = document.createElement('small'); sm.textContent = textoPreco(preco); btn.appendChild(sm); }
+    btn.onclick = () => usarSugestaoRecibo(nome);
+    box.appendChild(btn);
+  });
+}
+function usarSugestaoRecibo(nome) {
+  const preco = precoServico(nome);
+  if (document.getElementById('recibo-itens-editor')) {
+    let i = reciboItens.findIndex(it => !String(it.descricao || '').trim());
+    if (i < 0) { reciboItens.push({descricao:'',qtd:1,valor:0}); i = reciboItens.length - 1; }
+    reciboItens[i].descricao = nome;
+    if (preco && !(reciboItens[i].valor > 0)) reciboItens[i].valor = preco.valor;
+    renderizarItensRecibo();
+  } else {
+    const ref = document.getElementById('rec-referente'), val = document.getElementById('rec-valor');
+    if (ref) ref.value = nome;
+    if (preco && val && (!parseBRL(val.value) || val.dataset.precoAuto === val.value)) {
+      val.value = fmtBRL(preco.valor); val.dataset.precoAuto = val.value; val.dataset.manualOverride = '1';
+    }
+  }
+  if (typeof atualizarRecibo === 'function') atualizarRecibo();
 }
 function adicionarItemRecibo() { reciboItens.push({descricao:'',qtd:1,valor:0}); renderizarItensRecibo(); }
 function removerItemRecibo(index) { reciboItens.splice(index,1); if (!reciboItens.length) reciboItens.push({descricao:'',qtd:1,valor:0}); renderizarItensRecibo(); if (typeof atualizarRecibo==='function') atualizarRecibo(); }
@@ -5942,6 +6001,8 @@ function recPixErroGeral() {
 }
 // ---- QR Code do Pix no orçamento ----
 let orcPixQrTemp = '';
+// QR Code só de exemplo (não funciona para pagar): mostra onde o QR do Pix entra
+const QR_PIX_EXEMPLO = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="-2 -2 29 29"><rect x="-2" y="-2" width="29" height="29" fill="#fff"/><path fill="#0B1C2C" d="M0 0h1v1h-1zM1 0h1v1h-1zM2 0h1v1h-1zM3 0h1v1h-1zM4 0h1v1h-1zM5 0h1v1h-1zM6 0h1v1h-1zM8 0h1v1h-1zM9 0h1v1h-1zM10 0h1v1h-1zM11 0h1v1h-1zM12 0h1v1h-1zM14 0h1v1h-1zM15 0h1v1h-1zM18 0h1v1h-1zM19 0h1v1h-1zM20 0h1v1h-1zM21 0h1v1h-1zM22 0h1v1h-1zM23 0h1v1h-1zM24 0h1v1h-1zM0 1h1v1h-1zM6 1h1v1h-1zM8 1h1v1h-1zM9 1h1v1h-1zM10 1h1v1h-1zM12 1h1v1h-1zM13 1h1v1h-1zM15 1h1v1h-1zM16 1h1v1h-1zM18 1h1v1h-1zM24 1h1v1h-1zM0 2h1v1h-1zM2 2h1v1h-1zM3 2h1v1h-1zM4 2h1v1h-1zM6 2h1v1h-1zM11 2h1v1h-1zM15 2h1v1h-1zM18 2h1v1h-1zM20 2h1v1h-1zM21 2h1v1h-1zM22 2h1v1h-1zM24 2h1v1h-1zM0 3h1v1h-1zM2 3h1v1h-1zM3 3h1v1h-1zM4 3h1v1h-1zM6 3h1v1h-1zM9 3h1v1h-1zM10 3h1v1h-1zM11 3h1v1h-1zM13 3h1v1h-1zM14 3h1v1h-1zM18 3h1v1h-1zM20 3h1v1h-1zM21 3h1v1h-1zM22 3h1v1h-1zM24 3h1v1h-1zM0 4h1v1h-1zM2 4h1v1h-1zM3 4h1v1h-1zM4 4h1v1h-1zM6 4h1v1h-1zM8 4h1v1h-1zM15 4h1v1h-1zM18 4h1v1h-1zM20 4h1v1h-1zM21 4h1v1h-1zM22 4h1v1h-1zM24 4h1v1h-1zM0 5h1v1h-1zM6 5h1v1h-1zM8 5h1v1h-1zM9 5h1v1h-1zM12 5h1v1h-1zM13 5h1v1h-1zM14 5h1v1h-1zM15 5h1v1h-1zM16 5h1v1h-1zM18 5h1v1h-1zM24 5h1v1h-1zM0 6h1v1h-1zM1 6h1v1h-1zM2 6h1v1h-1zM3 6h1v1h-1zM4 6h1v1h-1zM5 6h1v1h-1zM6 6h1v1h-1zM12 6h1v1h-1zM13 6h1v1h-1zM14 6h1v1h-1zM18 6h1v1h-1zM19 6h1v1h-1zM20 6h1v1h-1zM21 6h1v1h-1zM22 6h1v1h-1zM23 6h1v1h-1zM24 6h1v1h-1zM10 7h1v1h-1zM14 7h1v1h-1zM15 7h1v1h-1zM16 7h1v1h-1zM0 8h1v1h-1zM5 8h1v1h-1zM6 8h1v1h-1zM8 8h1v1h-1zM11 8h1v1h-1zM12 8h1v1h-1zM15 8h1v1h-1zM16 8h1v1h-1zM17 8h1v1h-1zM20 8h1v1h-1zM24 8h1v1h-1zM1 9h1v1h-1zM2 9h1v1h-1zM7 9h1v1h-1zM10 9h1v1h-1zM11 9h1v1h-1zM12 9h1v1h-1zM13 9h1v1h-1zM15 9h1v1h-1zM16 9h1v1h-1zM17 9h1v1h-1zM19 9h1v1h-1zM20 9h1v1h-1zM23 9h1v1h-1zM3 10h1v1h-1zM4 10h1v1h-1zM5 10h1v1h-1zM6 10h1v1h-1zM8 10h1v1h-1zM9 10h1v1h-1zM12 10h1v1h-1zM16 10h1v1h-1zM18 10h1v1h-1zM19 10h1v1h-1zM0 11h1v1h-1zM5 11h1v1h-1zM7 11h1v1h-1zM12 11h1v1h-1zM16 11h1v1h-1zM17 11h1v1h-1zM18 11h1v1h-1zM19 11h1v1h-1zM20 11h1v1h-1zM21 11h1v1h-1zM0 12h1v1h-1zM3 12h1v1h-1zM6 12h1v1h-1zM8 12h1v1h-1zM9 12h1v1h-1zM12 12h1v1h-1zM13 12h1v1h-1zM15 12h1v1h-1zM16 12h1v1h-1zM17 12h1v1h-1zM19 12h1v1h-1zM21 12h1v1h-1zM22 12h1v1h-1zM23 12h1v1h-1zM1 13h1v1h-1zM5 13h1v1h-1zM6 13h1v1h-1zM7 13h1v1h-1zM9 13h1v1h-1zM10 13h1v1h-1zM11 13h1v1h-1zM14 13h1v1h-1zM15 13h1v1h-1zM19 13h1v1h-1zM20 13h1v1h-1zM22 13h1v1h-1zM23 13h1v1h-1zM2 14h1v1h-1zM4 14h1v1h-1zM6 14h1v1h-1zM7 14h1v1h-1zM10 14h1v1h-1zM11 14h1v1h-1zM13 14h1v1h-1zM14 14h1v1h-1zM15 14h1v1h-1zM16 14h1v1h-1zM17 14h1v1h-1zM18 14h1v1h-1zM19 14h1v1h-1zM21 14h1v1h-1zM23 14h1v1h-1zM24 14h1v1h-1zM0 15h1v1h-1zM1 15h1v1h-1zM2 15h1v1h-1zM5 15h1v1h-1zM6 15h1v1h-1zM8 15h1v1h-1zM10 15h1v1h-1zM11 15h1v1h-1zM13 15h1v1h-1zM17 15h1v1h-1zM21 15h1v1h-1zM22 15h1v1h-1zM23 15h1v1h-1zM24 15h1v1h-1zM0 16h1v1h-1zM2 16h1v1h-1zM3 16h1v1h-1zM4 16h1v1h-1zM8 16h1v1h-1zM9 16h1v1h-1zM10 16h1v1h-1zM11 16h1v1h-1zM12 16h1v1h-1zM13 16h1v1h-1zM14 16h1v1h-1zM18 16h1v1h-1zM20 16h1v1h-1zM21 16h1v1h-1zM22 16h1v1h-1zM23 16h1v1h-1zM24 16h1v1h-1zM8 17h1v1h-1zM9 17h1v1h-1zM10 17h1v1h-1zM17 17h1v1h-1zM18 17h1v1h-1zM20 17h1v1h-1zM23 17h1v1h-1zM0 18h1v1h-1zM1 18h1v1h-1zM2 18h1v1h-1zM3 18h1v1h-1zM4 18h1v1h-1zM5 18h1v1h-1zM6 18h1v1h-1zM14 18h1v1h-1zM15 18h1v1h-1zM16 18h1v1h-1zM17 18h1v1h-1zM18 18h1v1h-1zM24 18h1v1h-1zM0 19h1v1h-1zM6 19h1v1h-1zM8 19h1v1h-1zM9 19h1v1h-1zM10 19h1v1h-1zM12 19h1v1h-1zM15 19h1v1h-1zM16 19h1v1h-1zM17 19h1v1h-1zM22 19h1v1h-1zM23 19h1v1h-1zM24 19h1v1h-1zM0 20h1v1h-1zM2 20h1v1h-1zM3 20h1v1h-1zM4 20h1v1h-1zM6 20h1v1h-1zM9 20h1v1h-1zM11 20h1v1h-1zM12 20h1v1h-1zM13 20h1v1h-1zM15 20h1v1h-1zM18 20h1v1h-1zM19 20h1v1h-1zM22 20h1v1h-1zM23 20h1v1h-1zM24 20h1v1h-1zM0 21h1v1h-1zM2 21h1v1h-1zM3 21h1v1h-1zM4 21h1v1h-1zM6 21h1v1h-1zM11 21h1v1h-1zM13 21h1v1h-1zM14 21h1v1h-1zM15 21h1v1h-1zM16 21h1v1h-1zM17 21h1v1h-1zM18 21h1v1h-1zM19 21h1v1h-1zM20 21h1v1h-1zM21 21h1v1h-1zM23 21h1v1h-1zM0 22h1v1h-1zM2 22h1v1h-1zM3 22h1v1h-1zM4 22h1v1h-1zM6 22h1v1h-1zM10 22h1v1h-1zM11 22h1v1h-1zM12 22h1v1h-1zM13 22h1v1h-1zM14 22h1v1h-1zM16 22h1v1h-1zM18 22h1v1h-1zM19 22h1v1h-1zM21 22h1v1h-1zM22 22h1v1h-1zM0 23h1v1h-1zM6 23h1v1h-1zM8 23h1v1h-1zM11 23h1v1h-1zM12 23h1v1h-1zM14 23h1v1h-1zM15 23h1v1h-1zM16 23h1v1h-1zM17 23h1v1h-1zM20 23h1v1h-1zM22 23h1v1h-1zM24 23h1v1h-1zM0 24h1v1h-1zM1 24h1v1h-1zM2 24h1v1h-1zM3 24h1v1h-1zM4 24h1v1h-1zM5 24h1v1h-1zM6 24h1v1h-1zM8 24h1v1h-1zM9 24h1v1h-1zM10 24h1v1h-1zM11 24h1v1h-1zM12 24h1v1h-1zM13 24h1v1h-1zM14 24h1v1h-1zM15 24h1v1h-1zM19 24h1v1h-1zM20 24h1v1h-1zM22 24h1v1h-1zM23 24h1v1h-1zM24 24h1v1h-1z"/></svg>');
 function orcQrPixAtual() {
   if (orcPixQrTemp) return orcPixQrTemp;
   try { return localStorage.getItem('orcaon_perfil_pix_qr') || ''; } catch (_) { return ''; }
@@ -5952,7 +6013,14 @@ function atualizarQrPixOrc() {
   const atual = orcQrPixAtual(), img = document.getElementById('orc-pix-qr-img'), info = document.getElementById('orc-pix-qr-info'), bp = document.getElementById('orc-pix-qr-perfil-btn');
   area.style.display = usar.checked ? '' : 'none';
   if (img) { if (atual) { img.src = atual; img.style.display = ''; } else { img.removeAttribute('src'); img.style.display = 'none'; } }
-  if (info) info.textContent = orcPixQrTemp ? 'QR Code enviado agora (vale só para este orçamento).' : perfil ? 'Usando o QR Code salvo no seu Perfil.' : 'Você ainda não tem QR Code no Perfil. Envie um agora.';
+  const ex = document.getElementById('orc-pix-qr-exemplo'), exi = document.getElementById('orc-pix-qr-exemplo-img');
+  if (ex) ex.style.display = atual ? 'none' : '';
+  if (exi && !exi.getAttribute('src')) exi.src = QR_PIX_EXEMPLO;
+  const mini = document.getElementById('orc-pix-qr-mini'), mt = document.getElementById('orc-pix-qr-mini-txt');
+  if (mini) mini.src = atual || QR_PIX_EXEMPLO;
+  if (mt) mt.textContent = atual ? 'O cliente aponta a câmera e paga' : 'Envie o QR Code do seu banco';
+  const be = document.getElementById('orc-pix-qr-enviar-btn'); if (be) be.textContent = atual ? 'Enviar outro agora' : 'Enviar meu QR Code';
+  if (info) info.textContent = orcPixQrTemp ? 'QR Code enviado agora (vale só para este orçamento).' : perfil ? 'Usando o QR Code salvo no seu Perfil.' : 'Este é só um exemplo. Envie o QR Code do seu Pix (print do app do banco).';
   if (bp) bp.style.display = (orcPixQrTemp && perfil) ? '' : 'none';
 }
 function orcUsarQrPerfil() { orcPixQrTemp = ''; atualizarQrPixOrc(); }
@@ -7315,7 +7383,57 @@ function alterarProfissao() {
   showScreen('screen-profession');
 }
 
+// ===== Meus preços: valor e unidade padrão de cada serviço sugerido =====
+const PRECO_UNIDADES = ['un', 'm', 'm²', 'm³', 'hr', 'dias'];
+function lerPrecos() {
+  try { const o = JSON.parse(localStorage.getItem('orcaon_precos') || '{}'); return (o && typeof o === 'object') ? o : {}; } catch (_) { return {}; }
+}
+function precoServico(nome) {
+  const p = lerPrecos()[String(nome || '').trim()];
+  return (p && Number(p.valor) > 0) ? { un: PRECO_UNIDADES.includes(p.un) ? p.un : 'un', valor: Number(p.valor) } : null;
+}
+function textoPreco(p) { return p ? fmtBRL(p.valor) + (p.un && p.un !== 'un' ? '/' + p.un : '') : ''; }
+function salvarPrecoCard(card) {
+  const nome = card.dataset.servico, precos = lerPrecos();
+  const un = ((card.querySelector('.unit.active') || {}).textContent || 'un').trim();
+  const valor = parseBRL((card.querySelector('.money-input') || {}).value || '');
+  if (valor > 0) precos[nome] = { un, valor }; else delete precos[nome];
+  try { localStorage.setItem('orcaon_precos', JSON.stringify(precos)); } catch (_) { alert('Não foi possível salvar. O celular está sem espaço.'); return; }
+  const ok = card.querySelector('.preco-salvo'); if (ok) ok.textContent = valor > 0 ? 'Salvo ✓' : 'Sem valor';
+}
+function renderMeusPrecos() {
+  const prof = profissaoAtual(), lista = SUGESTOES[prof] || SUGESTOES['Outro'], host = document.getElementById('precos-lista');
+  const lp = document.getElementById('precos-prof'); if (lp) lp.textContent = prof;
+  if (!host) return;
+  host.innerHTML = '';
+  lista.forEach(nome => {
+    const p = precoServico(nome), un = p ? p.un : 'un';
+    const card = document.createElement('div');
+    card.className = 'form-card preco-card'; card.dataset.servico = nome;
+    card.innerHTML = '<div class="preco-nome"></div><div class="units"><span>Unidade:</span>'
+      + PRECO_UNIDADES.map(u => '<button class="unit' + (u === un ? ' active' : '') + '" type="button">' + u + '</button>').join('')
+      + '</div><label>Valor por <b class="preco-un"></b></label>'
+      + '<input type="text" class="money-input" inputmode="numeric" autocomplete="off" placeholder="R$ 0,00">'
+      + '<div class="preco-salvo"></div>';
+    card.querySelector('.preco-nome').textContent = nome;
+    card.querySelector('.preco-un').textContent = un;
+    card.querySelector('.money-input').value = p ? fmtBRL(p.valor) : '';
+    host.appendChild(card);
+  });
+}
+document.addEventListener('input', function(e) {
+  const card = e.target && e.target.closest && e.target.closest('.preco-card');
+  if (card && e.target.classList.contains('money-input')) salvarPrecoCard(card);
+});
+document.addEventListener('click', function(e) {
+  const card = e.target && e.target.closest && e.target.closest('.preco-card');
+  if (card && e.target.classList.contains('unit')) {
+    const lu = card.querySelector('.preco-un'); if (lu) lu.textContent = e.target.textContent;
+    salvarPrecoCard(card);
+  }
+});
 function goToPriceTable() {
+  renderMeusPrecos();
   pushAndShow('screen-price-table');
 }
 
