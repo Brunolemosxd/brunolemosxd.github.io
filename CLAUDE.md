@@ -23,7 +23,7 @@ Dono: Bruno. Idioma de tudo: português do Brasil. Explicar sempre em linguagem 
 ## Estado atual (out/2026)
 - Pronto: orçamentos, recibos (vários modelos), clientes (com CPF/CNPJ), perfil, Pix com validação e QR, débito, quantidades fracionadas, horas H:MM e dias, ditado por voz em campos de texto, backup Pro, selo de plano e dias restantes, conversão orçamento ⇄ recibo, saudação por horário.
 - Pendente: cobrança do Pro (Google Play Billing + Cloud Function, exige plano Blaze do Firebase), empacotar como TWA e publicar na Play Store (aguardando D-U-N-S da D&B para conta de organização do MEI), número real do WhatsApp de suporte (hoje é um placeholder), restringir a chave de API do Firebase e domínios autorizados, possível IA de preenchimento (Gemini, só Pro, chave no servidor, com limite mensal).
-- Firestore: regras em `OrcaPRO-firestore-v4.rules` (precisam estar publicadas para o backup Pro funcionar). O nome do arquivo é antigo, mas o conteúdo vale para o OrçaOn..
+- Firestore: regras no arquivo `firestore.rules` deste repositório. Elas precisam estar publicadas no projeto `orcaon-85c7e` (Firestore → Regras → Publicar); sem elas, o app não consegue contar os envios nem fazer backup.
 
 ## Como trabalhar
 - Antes de mexer: ler o trecho do código envolvido. Depois de mexer: validar a sintaxe dos scripts e testar com Playwright (Firebase falso, sem rede).

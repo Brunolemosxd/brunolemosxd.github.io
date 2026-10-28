@@ -1,0 +1,68 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function logado() { return request.auth != null; }
+    function ehAdmin() {
+      return logado() && request.auth.token.email == 'brunolemosxd@gmail.com'
+          && request.auth.token.email_verified == true;
+    }
+    function gid() {
+      return request.auth.token.firebase.identities['google.com'][0];
+    }
+
+    // Contador de usos gratuitos e plano (ligado à conta Google; sobrevive a excluir/recriar conta)
+    match /quotas/{id} {
+      allow read: if logado() && (id == gid() || ehAdmin());
+
+      allow create: if logado() && id == gid()
+                    && request.resource.data.keys().hasOnly(['orc','rec','pro','criado','atualizado'])
+                    && request.resource.data.pro == false
+                    && request.resource.data.orc is int && request.resource.data.rec is int
+                    && request.resource.data.orc >= 0 && request.resource.data.rec >= 0
+                    && request.resource.data.orc + request.resource.data.rec <= 1;
+
+      allow update: if ehAdmin()
+                    || (logado() && id == gid()
+                        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['orc','rec','atualizado'])
+                        && request.resource.data.orc >= resource.data.orc
+                        && request.resource.data.rec >= resource.data.rec
+                        && request.resource.data.orc - resource.data.orc <= 1
+                        && request.resource.data.rec - resource.data.rec <= 1
+                        && (request.resource.data.orc <= 10 || resource.data.pro == true)
+                        && (request.resource.data.rec <= 10 || resource.data.pro == true));
+
+      allow delete: if false;
+    }
+
+    // Um celular por vez
+    match /sessions/{uid} {
+      allow read: if logado() && request.auth.uid == uid;
+      allow create, update: if logado() && request.auth.uid == uid
+          && request.resource.data.keys().hasOnly(['deviceId','lastSeen'])
+          && request.resource.data.lastSeen == request.time
+          && (resource == null
+              || resource.data.deviceId == request.resource.data.deviceId
+              || resource.data.lastSeen < request.time - duration.value(5, 'm'));
+      allow delete: if logado() && request.auth.uid == uid;
+    }
+
+    // Backup na nuvem: só o dono (Pro ou admin grava; o dono sempre pode ler e apagar)
+    function ehPro() {
+      let q = get(/databases/$(database)/documents/quotas/$(gid())).data;
+      return q.pro == true && (!('proAte' in q) || q.proAte > request.time);
+    }
+    match /backups/{id} {
+      allow read, delete: if logado() && id == gid();
+      allow create, update: if logado() && id == gid() && (ehAdmin() || ehPro())
+          && request.resource.data.keys().hasOnly(['partes','atualizado','aparelho','tam'])
+          && request.resource.data.atualizado == request.time;
+      match /itens/{item} {
+        allow read, delete: if logado() && id == gid();
+        allow create, update: if logado() && id == gid() && (ehAdmin() || ehPro())
+            && request.resource.data.keys().hasOnly(['v'])
+            && request.resource.data.v is string && request.resource.data.v.size() <= 400000;
+      }
+    }
+  }
+}
