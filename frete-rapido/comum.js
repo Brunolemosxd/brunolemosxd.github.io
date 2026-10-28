@@ -1,4 +1,4 @@
-/* Frete Lemos: ligação com o Firebase, login com Google e permissões (usado pelo mural e pelo painel) */
+/* Frete Rápido: ligação com o Firebase, login com Google e permissões (usado pelo mural e pelo painel) */
 
 // Cole aqui a configuração do app da Web do projeto Firebase do mural
 // (Firebase → Configurações do projeto → Seus apps → Configuração do SDK → Config).
@@ -59,7 +59,7 @@ async function carregarPerfil(u) {
 
 // Apaga as fotos com mais de DIAS_FOTOS dias. Só o administrador roda (uma vez por dia por aparelho).
 async function limparFotosAntigas(forcar) {
-  const k = 'fretelemos_limpeza', hojeTxt = new Date().toDateString();
+  const k = 'freterapido_limpeza', hojeTxt = new Date().toDateString();
   try { if (!forcar && localStorage.getItem(k) === hojeTxt) return 0; } catch {}
   const limite = Date.now() - DIAS_FOTOS * 864e5;
   const d = new Date(limite), dataLimite = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');

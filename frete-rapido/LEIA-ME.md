@@ -1,4 +1,4 @@
-# Frete Lemos — mural de entregas
+# Frete Rápido — mural de entregas
 
 Projeto separado do OrçaOn. Site estático (GitHub Pages) + Firebase no plano grátis (Spark).
 
