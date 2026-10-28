@@ -11,7 +11,7 @@ Dono: Bruno. Idioma de tudo: português do Brasil. Explicar sempre em linguagem 
 - PDF/imagem: html2canvas + jsPDF, com quebra de página inteligente. Compartilhamento usa `navigator.share` com painel alternativo (Samsung Internet e navegadores de apps não compartilham arquivo).
 
 ## Regras que não podem ser quebradas
-1. O nome do app é SEMPRE "OrçaOn" em qualquer texto visível (telas, PDFs, páginas legais, loja, mensagens). Nunca escrever o nome antigo. Atenção: por dentro do código existem identificadores técnicos antigos (chaves do localStorage que começam com `orcapro_`, nomes de funções e o id do projeto Firebase). Eles NÃO aparecem para o cliente e NÃO podem ser renomeados, senão os dados já salvos dos clientes se perdem.
+1. O nome do app é SEMPRE "OrçaOn" em qualquer texto visível (telas, PDFs, páginas legais, loja, mensagens). Nunca escrever o nome antigo. Por dentro do código também usamos o nome novo: as chaves do localStorage começam com `orcaon_`. O primeiro `<script>` do `index.html` passa sozinho os dados antigos (`orcapro_`) para `orcaon_`. Esse trecho e a leitura de backups antigos (`/^orcapro_/` na restauração) precisam continuar existindo. O projeto Firebase antigo (`orcapro-a70b2`) será trocado por um projeto novo do OrçaOn.
 2. Logotipo: "Orça" em branco + "On" em verde `#2BD67B`. Cor de destaque do app: amarelo `#F4C430`. Fundo: `#0B1C2C`.
 3. Painel admin: mostrar apenas o CÓDIGO da conta. Nunca nome, e-mail, CPF, CNPJ ou RG de clientes. Admin = e-mail `brunolemosxd@gmail.com` verificado.
 4. Segurança e Play Store: sem risco. Nada de código remoto, nada de coletar dados além do declarado, política de privacidade sempre alinhada com o que o app faz (backup Pro, voz, e-mail de sugestões).
