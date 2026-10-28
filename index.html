@@ -1534,7 +1534,27 @@ input.pix-invalido{border-color:#EF4444!important}
 .pix-qr-exemplo{position:relative;display:inline-block}
 .pix-qr-exemplo img{width:150px!important;height:150px!important;opacity:.45}
 .pix-qr-exemplo b{position:absolute;left:50%;top:50%;transform:translate(-50%,-60%);background:#F4C430;color:#0B1C2C;font-size:12px;padding:3px 8px;border-radius:6px;white-space:nowrap}
-.preco-card .preco-nome{font-weight:700;margin-bottom:8px}
+.perfil-sec{padding:0!important;overflow:hidden}
+.perfil-sec>summary,.perfil-sub>summary{list-style:none;display:flex;align-items:center;gap:10px;cursor:pointer;padding:16px 18px;user-select:none}
+.perfil-sec>summary::-webkit-details-marker,.perfil-sub>summary::-webkit-details-marker{display:none}
+.perfil-sec>summary::after,.perfil-sub>summary::after{content:'';margin-left:auto;width:9px;height:9px;flex:0 0 9px;border-right:2px solid var(--accent,#F4C430);border-bottom:2px solid var(--accent,#F4C430);transform:rotate(45deg);transition:transform .2s}
+.perfil-sec[open]>summary::after,.perfil-sub[open]>summary::after{transform:rotate(-135deg)}
+.perfil-sec-tit{display:flex;flex-direction:column;gap:2px}
+.perfil-sec-tit b{font-size:16px}
+.perfil-sec-tit small{font-size:12px;color:var(--text-secondary);font-weight:400}
+.perfil-sec>.perfil-sec-corpo{padding:0 18px 18px}
+.perfil-sub{border:1px solid var(--border);border-radius:12px;margin-top:10px}
+.perfil-sub>summary{padding:12px 14px}
+.perfil-sub .perfil-sec-tit b{font-size:14px}
+.perfil-sub>.perfil-sec-corpo{padding:0 14px 14px}
+.perfil-sub .preco-card{background:transparent;border:1px solid var(--border);padding:14px;margin-bottom:10px}
+.preco-card .preco-topo{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.preco-card .preco-del{margin-left:auto;background:none;border:none;color:#EF4444;font-size:13px;cursor:pointer;padding:4px}
+.preco-tag{font-size:11px;font-weight:700;color:#0B1C2C;background:#2BD67B;border-radius:6px;padding:1px 6px}
+.preco-novo{border:2px dashed var(--accent,#F4C430);border-radius:12px;padding:14px;margin-top:6px}
+.preco-novo .units{margin:10px 0 0}
+.preco-novo .btn-outline-lg{margin-top:12px;width:100%}
+.preco-card .preco-nome{font-weight:700}
 .preco-card .units{margin:0 0 8px}
 .preco-card label{font-size:13px;color:var(--text-secondary)}
 .preco-salvo{font-size:12px;color:#2BD67B;min-height:16px;margin-top:4px}
@@ -3377,14 +3397,6 @@ body.light .btn-remove-item{color:#b91c1c}
                 </div>
                 <i class="fas fa-chevron-right"></i>
               </div>
-              <div class="menu-item" onclick="goToPriceTable()">
-                <i class="fas fa-tags"></i>
-                <div>
-                  <strong>Meus preços</strong>
-                  <p>Valor e unidade de cada serviço</p>
-                </div>
-                <i class="fas fa-chevron-right"></i>
-              </div>
             </div>
           </div>
 
@@ -3869,25 +3881,6 @@ body.light .btn-remove-item{color:#b91c1c}
     </div>
 
     <!-- PRICE TABLE -->
-    <div id="screen-price-table" class="screen">
-      <header class="app-header">
-        <button class="back-btn" onclick="goBack()"><i class="fas fa-arrow-left"></i> Voltar</button>
-        <h1>Meus preços</h1>
-      </header>
-      <div class="content form-content">
-        <div class="info-banner">
-          <i class="fas fa-tags"></i>
-          <div>
-            <strong>Quanto você cobra?</strong>
-            <p>Escolha a unidade e coloque o valor de cada serviço. Ao tocar no serviço no orçamento ou no recibo, o valor já aparece preenchido.</p>
-          </div>
-        </div>
-        <p class="hint-sm">Serviços de: <b id="precos-prof">sua profissão</b></p>
-        <div id="precos-lista"></div>
-        <button type="button" class="btn-primary-lg" onclick="goBack()">Pronto</button>
-      </div>
-    </div>
-
     <!-- EDIT PROFILE -->
     <div id="screen-edit-profile" class="screen">
       <header class="app-header">
@@ -3903,8 +3896,7 @@ body.light .btn-remove-item{color:#b91c1c}
           </div>
         </div>
 
-        <div class="form-card">
-          <h3>LOGO DO NEGÓCIO</h3>
+        <details class="form-card perfil-sec"><summary><span class="perfil-sec-tit"><b>Logo do negócio</b><small>Aparece nos PDFs de orçamento e recibo</small></span></summary><div class="perfil-sec-corpo">
           <input type="file" id="perfil-logo-upload" accept="image/*" style="display:none" onchange="carregarLogoPerfil(event)">
           <div class="logo-upload" role="button" tabindex="0" onclick="document.getElementById('perfil-logo-upload').click()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();document.getElementById('perfil-logo-upload').click()}">
             <img id="perfil-logo-preview" alt="Prévia da logo" style="display:none;max-width:180px;max-height:100px;object-fit:contain;margin:0 auto 10px">
@@ -3913,10 +3905,9 @@ body.light .btn-remove-item{color:#b91c1c}
             <span>Será usada nos PDFs de orçamento e recibo</span>
           </div>
           <button type="button" class="btn-text" onclick="removerLogoPerfil()">Remover logotipo</button>
-        </div>
+</div></details>
 
-        <div class="form-card">
-          <h3>DADOS DO NEGÓCIO</h3>
+        <details class="form-card perfil-sec"><summary><span class="perfil-sec-tit"><b>Dados do negócio</b><small>Empresa, nome, WhatsApp, documento e endereço</small></span></summary><div class="perfil-sec-corpo">
           <label>Nome da empresa / nome comercial</label>
           <input type="text" id="perfil-empresa" placeholder="Ex: João Pedreiro Reformas">
           <label>Seu nome</label>
@@ -3927,13 +3918,11 @@ body.light .btn-remove-item{color:#b91c1c}
           <input type="text" id="perfil-documento" inputmode="numeric" placeholder="000.000.000-00 ou 00.000.000/0001-00">
           <label>Endereço do negócio (opcional)</label>
           <input type="text" id="perfil-endereco" placeholder="Rua, número, bairro, cidade">
-        </div>
+</div></details>
 
-        <div class="form-card">
-          <h3>PADRÕES DOS ORÇAMENTOS</h3>
+        <details class="form-card perfil-sec"><summary><span class="perfil-sec-tit"><b>Padrões dos orçamentos</b><small>Pagamento, Pix, preços, validade e observações</small></span></summary><div class="perfil-sec-corpo">
           <p class="hint">Aplicados automaticamente em todos os novos orçamentos</p>
-          
-          <label>Condições de pagamento</label>
+          <details class="perfil-sub"><summary><span class="perfil-sec-tit"><b>Condições de pagamento</b><small>Texto padrão de pagamento</small></span></summary><div class="perfil-sec-corpo">
           <p class="hint-sm">Um modelo preenche o texto com os valores certos e ajusta o Pix por etapa. Para escrever do seu jeito, toque em "Texto livre".</p>
           <div class="payment-options">
             <button class="pay-opt">50% entrada + restante na entrega</button>
@@ -3944,7 +3933,8 @@ body.light .btn-remove-item{color:#b91c1c}
           </div>
           <input type="text" placeholder='Ex: 50% entrada, 50% na entrega, ou A'>
 
-          <label>Chaves Pix (opcional)</label>
+          </div></details>
+          <details class="perfil-sub"><summary><span class="perfil-sec-tit"><b>Chaves Pix</b><small>Suas chaves e a principal</small></span></summary><div class="perfil-sec-corpo">
           <p class="hint-sm">Deixe salvas todas as suas chaves. Na hora do orçamento ou do recibo, o app preenche a chave certa para você.</p>
           <input type="hidden" id="perfil-pix">
           <div class="pix-campo"><label for="perfil-pix-cpf">CPF</label><input type="text" id="perfil-pix-cpf" data-pix-tipo="CPF" autocomplete="off"><p class="pix-erro"></p></div>
@@ -3955,7 +3945,8 @@ body.light .btn-remove-item{color:#b91c1c}
           <label for="perfil-pix-principal">Chave principal (a que aparece no PDF)</label>
           <select id="perfil-pix-principal"><option value="">Automática (a primeira preenchida)</option><option>CPF</option><option>CNPJ</option><option>E-mail</option><option>Telefone</option><option>Chave aleatória</option></select>
 
-          <label>QR Code do Pix (opcional)</label>
+          </div></details>
+          <details class="perfil-sub"><summary><span class="perfil-sec-tit"><b>QR Code do Pix</b><small>Imagem do QR do seu banco</small></span></summary><div class="perfil-sec-corpo">
           <p class="hint-sm">Envie a imagem do QR Code do seu Pix (print do app do banco). Ele aparece no PDF do orçamento para o cliente pagar.</p>
           <input type="file" id="perfil-pix-qr-upload" accept="image/*" style="display:none" onchange="carregarQrPix(event)">
           <div class="logo-upload" role="button" tabindex="0" onclick="document.getElementById('perfil-pix-qr-upload').click()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();document.getElementById('perfil-pix-qr-upload').click()}">
@@ -3965,16 +3956,32 @@ body.light .btn-remove-item{color:#b91c1c}
           </div>
           <button type="button" class="btn-text" onclick="removerQrPix()">Remover QR Code</button>
 
-          <label>Validade do orçamento (dias)</label>
+          </div></details>
+          <details class="perfil-sub" id="perfil-sec-precos"><summary><span class="perfil-sec-tit"><b>Meus preços</b><small>Valor e unidade de cada serviço</small></span></summary><div class="perfil-sec-corpo">
+          <p class="hint-sm">Escolha a unidade e coloque o valor de cada serviço. Ao tocar no serviço no orçamento ou no recibo, o valor já aparece preenchido.</p>
+          <p class="hint-sm">Serviços de: <b id="precos-prof">sua profissão</b></p>
+          <div id="precos-lista"></div>
+          <div class="preco-novo">
+            <b>+ Criar meu padrão</b>
+            <p class="hint-sm">Cadastre um material ou serviço seu. Ele aparece nas sugestões do orçamento e do recibo.</p>
+            <label for="preco-novo-nome">Nome</label>
+            <input type="text" id="preco-novo-nome" maxlength="60" placeholder="Ex.: Saco de cimento 50 kg">
+            <div class="units" id="preco-novo-units"><span>Unidade:</span><button class="unit active" type="button">un</button><button class="unit" type="button">m</button><button class="unit" type="button">m²</button><button class="unit" type="button">m³</button><button class="unit" type="button">hr</button><button class="unit" type="button">dias</button></div>
+            <label for="preco-novo-valor">Valor</label>
+            <input type="text" id="preco-novo-valor" class="money-input" inputmode="numeric" autocomplete="off" placeholder="R$ 0,00">
+            <button type="button" class="btn-outline-lg" onclick="criarPadraoPreco()">Adicionar padrão</button>
+          </div>
+</div></details>
+          <details class="perfil-sub"><summary><span class="perfil-sec-tit"><b>Validade e observações</b><small>Prazo e texto padrão</small></span></summary><div class="perfil-sec-corpo"><label>Validade do orçamento (dias)</label>
           <input type="number" id="perfil-validade" inputmode="numeric" min="1" step="1" value="7">
 
           <label>Observações padrão</label>
           <textarea placeholder="Ex: Preço válido mediante visita técnica. Não inclui material."></textarea>
 
-        </div>
+</div></details>
+        </div></details>
 
-        <div class="form-card" id="assinatura-perfil-card">
-          <h3>ASSINATURA DO RESPONSÁVEL PELO ORÇAMENTO</h3>
+        <details class="form-card perfil-sec" id="assinatura-perfil-card"><summary><span class="perfil-sec-tit"><b>Assinatura</b><small>Aparece nos recibos e orçamentos</small></span></summary><div class="perfil-sec-corpo">
           <p class="hint">Desenhe uma vez — ela é salva sozinha e aparece automaticamente em todos os recibos e orçamentos</p>
           <div class="signature-box" id="signature-box-area">
             <canvas id="assinatura-perfil-canvas" width="340" height="160"></canvas>
@@ -3991,7 +3998,7 @@ body.light .btn-remove-item{color:#b91c1c}
             <input type="file" id="assinatura-perfil-upload" accept="image/png" style="display:none" onchange="importarAssinaturaPerfil(event)">
           </div>
           <p class="ass-padrao">Para importar: imagem PNG de até 2 MB, mínimo 300×80 px, em formato horizontal, com a assinatura escura sobre fundo branco ou transparente. Ela é ajustada automaticamente (recorte e tinta preta).</p>
-        </div>
+</div></details>
 
         <button class="btn-primary-lg" onclick="salvarPerfil()">Salvar e continuar</button>
         <button type="button" class="btn-text" id="perfil-pular-btn" style="display:none;margin:12px auto 0" onclick="pularPerfilInicial()">Preencher depois</button>
@@ -4463,7 +4470,7 @@ function profissaoAtual() {
 // Preenche as sugestões da profissão dentro de UM item
 function preencherSugestoesItem(row) {
   const prof = profissaoAtual();
-  const lista = SUGESTOES[prof] || SUGESTOES['Outro'];
+  const lista = listaSugestoes();
   const label = row.querySelector('.sugestao-prof');
   if (label) label.textContent = prof;
   const box = row.querySelector('.item-sugestoes');
@@ -4824,7 +4831,7 @@ function limparLogoRecibo() {
 // Sugestões do recibo: no recibo com itens vira um item; nos outros preenche "Referente a" e o valor
 function renderSugestoesRecibo() {
   const box = document.getElementById('rec-sugestoes'); if (!box) return;
-  const prof = profissaoAtual(), lista = SUGESTOES[prof] || SUGESTOES['Outro'];
+  const prof = profissaoAtual(), lista = listaSugestoes();
   const lp = document.getElementById('rec-sugestoes-prof'); if (lp) lp.textContent = prof;
   box.innerHTML = '';
   lista.forEach(nome => {
@@ -7234,6 +7241,7 @@ async function acionarDocumentoOrcamentoDireto(){
   gerarDocumentoOrcamento(true);
 }
 function goToEditProfile() {
+  try { renderMeusPrecos(); } catch (_) {}
   pushAndShow('screen-edit-profile');
   setTimeout(initAssinaturaPerfil, 150);
 }
@@ -7388,6 +7396,36 @@ const PRECO_UNIDADES = ['un', 'm', 'm²', 'm³', 'hr', 'dias'];
 function lerPrecos() {
   try { const o = JSON.parse(localStorage.getItem('orcaon_precos') || '{}'); return (o && typeof o === 'object') ? o : {}; } catch (_) { return {}; }
 }
+// Serviços sugeridos da profissão + padrões criados pela pessoa
+function padroesProprios() {
+  const o = lerPrecos();
+  return Object.keys(o).filter(k => o[k] && o[k].proprio).sort((a, b) => (o[a].criado || 0) - (o[b].criado || 0));
+}
+function listaSugestoes() {
+  const base = SUGESTOES[profissaoAtual()] || SUGESTOES['Outro'];
+  return base.concat(padroesProprios().filter(n => !base.includes(n)));
+}
+function gravarPrecos(precos) {
+  try { localStorage.setItem('orcaon_precos', JSON.stringify(precos)); return true; } catch (_) { alert('Não foi possível salvar. O celular está sem espaço.'); return false; }
+}
+function criarPadraoPreco() {
+  const ni = document.getElementById('preco-novo-nome'), vi = document.getElementById('preco-novo-valor');
+  const nome = String((ni || {}).value || '').replace(/\s+/g, ' ').trim();
+  if (!nome) { alert('Escreva o nome do material ou serviço.'); if (ni) ni.focus(); return; }
+  const precos = lerPrecos();
+  if (precos[nome] || (SUGESTOES[profissaoAtual()] || []).includes(nome)) { alert('Esse nome já está na lista.'); return; }
+  const un = ((document.querySelector('#preco-novo-units .unit.active') || {}).textContent || 'un').trim();
+  precos[nome] = { un, valor: parseBRL((vi || {}).value || ''), proprio: true, criado: Date.now() };
+  if (!gravarPrecos(precos)) return;
+  if (ni) ni.value = ''; if (vi) vi.value = '';
+  renderMeusPrecos();
+  if (typeof carregarSugestoes === 'function') carregarSugestoes();
+}
+function excluirPadraoPreco(nome) {
+  if (!confirm('Excluir o padrão "' + nome + '"?')) return;
+  const precos = lerPrecos(); delete precos[nome];
+  if (gravarPrecos(precos)) { renderMeusPrecos(); if (typeof carregarSugestoes === 'function') carregarSugestoes(); }
+}
 function precoServico(nome) {
   const p = lerPrecos()[String(nome || '').trim()];
   return (p && Number(p.valor) > 0) ? { un: PRECO_UNIDADES.includes(p.un) ? p.un : 'un', valor: Number(p.valor) } : null;
@@ -7397,12 +7435,14 @@ function salvarPrecoCard(card) {
   const nome = card.dataset.servico, precos = lerPrecos();
   const un = ((card.querySelector('.unit.active') || {}).textContent || 'un').trim();
   const valor = parseBRL((card.querySelector('.money-input') || {}).value || '');
-  if (valor > 0) precos[nome] = { un, valor }; else delete precos[nome];
-  try { localStorage.setItem('orcaon_precos', JSON.stringify(precos)); } catch (_) { alert('Não foi possível salvar. O celular está sem espaço.'); return; }
+  const antigo = precos[nome] || {};
+  if (antigo.proprio) precos[nome] = Object.assign({}, antigo, { un, valor });
+  else if (valor > 0) precos[nome] = { un, valor }; else delete precos[nome];
+  if (!gravarPrecos(precos)) return;
   const ok = card.querySelector('.preco-salvo'); if (ok) ok.textContent = valor > 0 ? 'Salvo ✓' : 'Sem valor';
 }
 function renderMeusPrecos() {
-  const prof = profissaoAtual(), lista = SUGESTOES[prof] || SUGESTOES['Outro'], host = document.getElementById('precos-lista');
+  const prof = profissaoAtual(), lista = listaSugestoes(), host = document.getElementById('precos-lista'), todos = lerPrecos();
   const lp = document.getElementById('precos-prof'); if (lp) lp.textContent = prof;
   if (!host) return;
   host.innerHTML = '';
@@ -7410,12 +7450,14 @@ function renderMeusPrecos() {
     const p = precoServico(nome), un = p ? p.un : 'un';
     const card = document.createElement('div');
     card.className = 'form-card preco-card'; card.dataset.servico = nome;
-    card.innerHTML = '<div class="preco-nome"></div><div class="units"><span>Unidade:</span>'
+    const proprio = !!(todos[nome] && todos[nome].proprio);
+    card.innerHTML = '<div class="preco-topo"><span class="preco-nome"></span>' + (proprio ? '<span class="preco-tag">Meu padrão</span><button type="button" class="preco-del">Excluir</button>' : '') + '</div><div class="units"><span>Unidade:</span>'
       + PRECO_UNIDADES.map(u => '<button class="unit' + (u === un ? ' active' : '') + '" type="button">' + u + '</button>').join('')
       + '</div><label>Valor por <b class="preco-un"></b></label>'
       + '<input type="text" class="money-input" inputmode="numeric" autocomplete="off" placeholder="R$ 0,00">'
       + '<div class="preco-salvo"></div>';
     card.querySelector('.preco-nome').textContent = nome;
+    if (proprio) card.querySelector('.preco-del').onclick = () => excluirPadraoPreco(nome);
     card.querySelector('.preco-un').textContent = un;
     card.querySelector('.money-input').value = p ? fmtBRL(p.valor) : '';
     host.appendChild(card);
@@ -7432,10 +7474,18 @@ document.addEventListener('click', function(e) {
     salvarPrecoCard(card);
   }
 });
-function goToPriceTable() {
-  renderMeusPrecos();
-  pushAndShow('screen-price-table');
+function goToPriceTable() {   // abre o Perfil já na seção Meus preços
+  goToEditProfile();
+  const sec = document.getElementById('perfil-sec-precos');
+  if (sec) { sec.open = true; const pai = sec.closest('.perfil-sec'); if (pai) pai.open = true; setTimeout(() => sec.scrollIntoView({ block: 'start' }), 200); }
 }
+// Seções do Perfil: a assinatura só pode ser montada quando a seção estiver aberta (precisa do tamanho real)
+document.addEventListener('toggle', function(e) {
+  const d = e.target;
+  if (!d || !d.open) return;
+  if (d.id === 'assinatura-perfil-card' && typeof initAssinaturaPerfil === 'function') setTimeout(initAssinaturaPerfil, 30);
+  if (d.id === 'perfil-sec-precos') renderMeusPrecos();
+}, true);
 
 // Unit buttons
 document.addEventListener('click', function(e) {
