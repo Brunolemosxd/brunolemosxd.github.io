@@ -8437,5 +8437,123 @@ body.light .mic-btn.mic-on{background:#EF4444;color:#fff}
   window.__orcaproMicVarrer = function(){ varrer(document); };
 })();
 </script>
+
+<script>
+/* ===== Conversão orçamento ⇄ recibo ===== */
+(function(){
+  function esc2(v){return String(v==null?'':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+  const q = id => document.getElementById(id);
+  function setVal(id, v){ const el=q(id); if(el){ el.value = v==null?'':v; } }
+
+  // ---------- Orçamento -> Recibo ----------
+  window.converterOrcamentoEmRecibo = function(id){
+    const o = orcamentos.find(x => Number(x.id) === Number(id));
+    if (!o) { alert('Não encontrei esse orçamento. Atualize a lista e tente novamente.'); return; }
+    if (!podeCriarRecibo()) return;
+    const itens = Array.isArray(o.itens) ? o.itens.filter(i => i && (i.desc || i.valor > 0)) : [];
+    const total = Number(o.total) || 0;
+    const nomeCli = (o.cliente && o.cliente !== 'Sem nome') ? o.cliente : '';
+    const refer = (o.titulo && o.titulo !== 'Sem título' ? o.titulo : (itens[0] && itens[0].desc) || 'Serviço prestado')
+      + ' (orçamento nº ' + (o.numero || '') + ')';
+    const usarItens = itens.length > 1 && !(Number(o.descontoValor) > 0);
+    reciboEmEdicaoId = null;
+    if (usarItens) {
+      reciboItens = itens.map(i => ({ descricao: i.desc + (i.detalhes ? ' — ' + i.detalhes : ''), qtd: Number(i.qtd) || 1, valor: Number(i.valor) || 0 }));
+    } else { reciboItens = []; }
+    selecionarModeloRecibo(usarItens ? 'Recibo com Itens' : 'Recibo Simples');
+    setTimeout(function(){
+      setVal('rec-cliente', nomeCli);
+      setVal('rec-contato', o.whatsapp || '');
+      setVal('rec-referente', refer);
+      setVal('rec-numero', String((lerRecibosSalvos().length || 0) + 1).padStart(3, '0'));
+      const cpfCli = q('rec-cpf-cliente');
+      if (cpfCli && !cpfCli.value && nomeCli) {
+        try { const cs = JSON.parse(localStorage.getItem('orcapro_clientes_v2') || '[]'); const c = cs.find(x => String(x.nome||'').trim().toLowerCase() === nomeCli.toLowerCase()); if (c && c.documento) cpfCli.value = c.documento; } catch(e){}
+      }
+      const v = q('rec-valor');
+      if (v) { v.value = fmtBRL(total); if (v.dataset) v.dataset.manualOverride = '1'; }
+      setVal('rec-extenso', typeof dinheiroPorExtenso === 'function' ? dinheiroPorExtenso(total) : '');
+      if (typeof renderizarItensRecibo === 'function') renderizarItensRecibo();
+      if (typeof atualizarRecibo === 'function') atualizarRecibo();
+      const forma = q('rec-forma-pagamento');
+      if (forma && o.pagamento) {
+        const t = String(o.pagamento);
+        const alvo = /pix/i.test(t) ? 'Pix' : /d[ée]bito/i.test(t) ? 'Cartão de débito' : /cr[ée]dito/i.test(t) ? 'Cartão de crédito' : /dinheiro/i.test(t) ? 'Dinheiro' : '';
+        if (alvo) { forma.value = alvo; forma.dispatchEvent(new Event('change', {bubbles:true})); }
+      }
+      alert('Recibo preenchido com os dados do orçamento nº ' + (o.numero || '') + '. Confira, ajuste o valor se o pagamento for parcial e compartilhe.');
+    }, 200);
+  };
+
+  // ---------- Recibo -> Orçamento ----------
+  window.converterReciboEmOrcamento = function(id){
+    const r = lerRecibosSalvos().find(x => String(x.id) === String(id));
+    if (!r) { alert('Não encontrei esse recibo.'); return; }
+    const c = r.campos || {};
+    const valor = Number(r.valor) || 0;
+    const descr = String(c['rec-referente'] || c['rec-complemento-mo'] || '').trim() || 'Serviço';
+    let pagamento = '';
+    const forma = String(c['rec-forma-pagamento'] || '').trim();
+    if (forma === 'Pix') pagamento = (typeof textoPix === 'function' && c['rec-pix-chave']) ? textoPix(c['rec-pix-tipo'] || '', c['rec-pix-chave']) : 'Pix';
+    else if (forma) pagamento = forma;
+    const digitado = parseInt(proximoNumero(), 10);
+    const orc = {
+      id: Date.now(),
+      numero: String(isNaN(digitado) ? 1 : digitado).padStart(4, '0'),
+      cliente: (r.cliente && r.cliente !== 'Sem nome') ? r.cliente : 'Sem nome',
+      titulo: descr.length > 80 ? descr.slice(0, 77) + '…' : descr,
+      whatsapp: c['rec-contato'] || '',
+      endereco: '',
+      itens: [{ desc: descr, detalhes: '', unidade: 'un', qtd: 1, valor: valor }],
+      pagamento: pagamento,
+      validade: parseInt(localStorage.getItem('orcapro_validade_padrao') || '7', 10) || 7,
+      obs: '',
+      assinatura: true,
+      total: valor, subtotal: valor, descontoValor: 0, descontoTipo: null, descontoEntrada: 0,
+      status: 'Em aberto',
+      data: hojeISO(),
+      modelo: null
+    };
+    orcamentos.push(orc);
+    gravarOrcamentos();
+    ultimoOrcamentoId = orc.id;
+    try { if (typeof window.orcaUpsertCliente === 'function' && orc.cliente !== 'Sem nome') window.orcaUpsertCliente(orc.cliente, orc.whatsapp, c['rec-cpf-cliente'] || ''); } catch(e){}
+    if (typeof renderOrcamentos === 'function') renderOrcamentos();
+    if (typeof switchPage === 'function') { try { switchPage('orcamentos'); } catch(e){} }
+    editarOrcamento(orc.id);
+    setTimeout(function(){ const n = q('orc-edit-numero'); if (n) n.textContent = 'Orçamento nº ' + orc.numero + ' · criado a partir do recibo nº ' + (r.numero || '') + ' — revise os itens e valores'; }, 30);
+  };
+
+  // ---------- Botões nas listas ----------
+  const cardAnt = window.cardOrcamento;
+  window.cardOrcamento = function(o){
+    let h = cardAnt(o);
+    const btn = '<button type="button" class="btn-budget-act conv" onclick="event.stopPropagation();converterOrcamentoEmRecibo(' + Number(o.id) + ')"><i class="fas fa-receipt" aria-hidden="true"></i> Converter em recibo</button>';
+    const marca = '<button type="button" class="btn-delete-budget"';
+    return h.indexOf(marca) >= 0 ? h.replace(marca, btn + marca) : h;
+  };
+  const renderRecAnt = renderRecibosSalvos;
+  renderRecibosSalvos = function(){
+    renderRecAnt.apply(this, arguments);
+    document.querySelectorAll('#lista-recibos-salvos .recibo-salvo-actions').forEach(function(box){
+      if (box.querySelector('.rec-conv')) return;
+      const first = box.querySelector('button[onclick^="editarReciboSalvo"]'); if (!first) return;
+      const m = /editarReciboSalvo\('([^']*)'\)/.exec(first.getAttribute('onclick') || ''); if (!m) return;
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'rec-conv';
+      b.setAttribute('onclick', "converterReciboEmOrcamento('" + m[1] + "')");
+      b.innerHTML = '<i class="fas fa-clipboard-list" aria-hidden="true"></i> Converter em orçamento';
+      const del = box.querySelector('button.delete');
+      box.insertBefore(b, del || null);
+    });
+  };
+  try { renderOrcamentos(); } catch(e){}
+  try { renderRecibosSalvos(); } catch(e){}
+})();
+</script>
+<style>
+.btn-budget-act.conv{background:rgba(43,214,123,.14);color:#2BD67B;border:1px solid rgba(43,214,123,.45);font-weight:700}
+.recibo-salvo-actions .rec-conv{background:rgba(43,214,123,.14);color:#2BD67B;border:1px solid rgba(43,214,123,.45)}
+</style>
 </body>
 </html>
