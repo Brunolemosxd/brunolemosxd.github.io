@@ -1526,6 +1526,13 @@ input.pix-invalido{border-color:#EF4444!important}
 .pix-campo{margin:8px 0}
 .pix-campo label{margin-top:4px}
 .pix-qr-area{margin:8px 0;text-align:center}
+.ass-ajuste{margin-top:14px;padding-top:12px;border-top:1px solid var(--border)}
+.ass-ajuste-papel{background:#fff;border-radius:10px;padding:10px 16px 12px;margin:8px 0;overflow:hidden}
+.ass-ajuste-area{height:70px;display:flex;align-items:flex-end;justify-content:center}
+.ass-ajuste-area img{max-width:200px;max-height:64px;object-fit:contain;transform-origin:50% 100%}
+.ass-ajuste-area span{color:#94a3b8;font-size:12px;align-self:center}
+.ass-ajuste-linha{border-top:1px solid #111;color:#111;text-align:center;font-size:12px;padding-top:4px;width:70%;margin:0 auto}
+.ass-ajuste-bts{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .pix-qr-toggle{display:flex!important;flex-direction:row!important;gap:12px;align-items:center;margin-top:10px!important;color:var(--text-primary,#fff)!important;font-size:14px!important;padding:10px 12px;border:2px dashed var(--accent,#F4C430);border-radius:12px;cursor:pointer;font-weight:600}
 .pix-qr-toggle img{width:56px;height:56px;flex:0 0 56px;object-fit:contain;background:#fff;padding:3px;border-radius:6px}
 .pix-qr-toggle span{flex:1;line-height:1.3;text-align:left}
@@ -3997,6 +4004,19 @@ body.light .btn-remove-item{color:#b91c1c}
             <button type="button" class="btn-outline" style="padding:10px 16px;border-radius:10px;font-size:13px" onclick="salvarAssinaturaPerfil()">Salvar assinatura</button>
             <input type="file" id="assinatura-perfil-upload" accept="image/png" style="display:none" onchange="importarAssinaturaPerfil(event)">
           </div>
+          <div class="ass-ajuste">
+            <b>Posição no documento</b>
+            <p class="hint-sm">Se a assinatura não ficar certinha na linha, ajuste aqui. Vale para todos os recibos e orçamentos.</p>
+            <div class="ass-ajuste-papel"><div class="ass-ajuste-area"><img id="ass-ajuste-img" alt="Prévia da assinatura"><span id="ass-ajuste-vazio">Faça sua assinatura acima</span></div><div class="ass-ajuste-linha">Assinatura</div></div>
+            <div class="ass-ajuste-bts">
+              <button type="button" class="btn-dark-sm" onclick="mudarAjusteAssinatura('y',-10)">▲ Subir</button>
+              <button type="button" class="btn-dark-sm" onclick="mudarAjusteAssinatura('y',10)">▼ Descer</button>
+              <button type="button" class="btn-dark-sm" onclick="mudarAjusteAssinatura('s',-0.1)">− Menor</button>
+              <button type="button" class="btn-dark-sm" onclick="mudarAjusteAssinatura('s',0.1)">+ Maior</button>
+            </div>
+            <button type="button" class="btn-text" onclick="mudarAjusteAssinatura('reset')">Voltar ao automático</button>
+            <p class="hint-sm" id="ass-ajuste-info"></p>
+          </div>
           <p class="ass-padrao">Para importar: imagem PNG de até 2 MB, mínimo 300×80 px, em formato horizontal, com a assinatura escura sobre fundo branco ou transparente. Ela é ajustada automaticamente (recorte e tinta preta).</p>
 </div></details>
 
@@ -5074,7 +5094,28 @@ function canvasCorDataURL(c, r, g, b) {  // cópia do desenho com uma única cor
   x.putImageData(d, 0, 0);
   return t.toDataURL('image/png');
 }
-function canvasAssinaturaPreta(c) { return canvasAssinaturaVazio(c) ? '' : canvasCorDataURL(c, 17, 17, 17); }
+// Corta a assinatura rente ao traço: sem o espaço em branco do quadro, ela encosta na linha do documento
+function recortarAssinaturaCanvas(c) {
+  const x = c.getContext('2d'), w = c.width, h = c.height, px = x.getImageData(0, 0, w, h).data;
+  let minX = w, minY = h, maxX = -1, maxY = -1;
+  for (let yy = 0; yy < h; yy++) for (let xx = 0; xx < w; xx++) {
+    if (px[(yy * w + xx) * 4 + 3] > 20) { if (xx < minX) minX = xx; if (xx > maxX) maxX = xx; if (yy < minY) minY = yy; if (yy > maxY) maxY = yy; }
+  }
+  if (maxX < 0) return c;
+  const m = Math.max(2, Math.round(Math.max(maxX - minX, maxY - minY) * 0.02));
+  minX = Math.max(0, minX - m); minY = Math.max(0, minY - m); maxX = Math.min(w - 1, maxX + m); maxY = Math.min(h - 1, maxY + m);
+  const t = document.createElement('canvas'); t.width = maxX - minX + 1; t.height = maxY - minY + 1;
+  t.getContext('2d').drawImage(c, minX, minY, t.width, t.height, 0, 0, t.width, t.height);
+  return t;
+}
+function canvasAssinaturaPreta(c) {
+  if (canvasAssinaturaVazio(c)) return '';
+  const t = document.createElement('canvas'); t.width = c.width; t.height = c.height;
+  t.getContext('2d').drawImage(c, 0, 0);
+  const r = recortarAssinaturaCanvas(t), d = document.createElement('canvas'); d.width = r.width; d.height = r.height;
+  d.getContext('2d').drawImage(r, 0, 0);
+  return canvasCorDataURL(d, 17, 17, 17);
+}
 function recolorirCanvasAmarelo(c) {  // mostra na tela (amarelo) o que está guardado em preto
   const x = c.getContext('2d'), d = x.getImageData(0, 0, c.width, c.height), px = d.data;
   for (let i = 0; i < px.length; i += 4) { if (px[i + 3] > 0) { px[i] = 244; px[i + 1] = 196; px[i + 2] = 48; } }
@@ -5148,6 +5189,7 @@ function salvarAssinaturaPerfilAuto() {
     if (canvasAssinaturaVazio(perfilCanvas)) localStorage.removeItem('assinaturaDigital');
     else localStorage.setItem('assinaturaDigital', canvasAssinaturaPreta(perfilCanvas));
   } catch (e) {}
+  try { atualizarPreviaAjusteAssinatura(); } catch (e) {}
   if (typeof atualizarRecibo === 'function') atualizarRecibo();
 }
 function desfazerAssinaturaPerfil() {
@@ -5181,10 +5223,28 @@ function importarAssinaturaPerfil(ev) {
 let perfilCanvas, perfilCtx, desenhandoPerfil = false;
 
 // Assinaturas antigas salvas em amarelo passam a ficar pretas (uma única vez)
+// Assinaturas antigas guardavam o quadro inteiro (com espaço em branco): recorta rente ao traço uma única vez
+function migrarAssinaturaRecorte() {
+  let salva = '';
+  try { if (localStorage.getItem('orcaon_ass_recorte')) return; salva = localStorage.getItem('assinaturaDigital') || ''; } catch (e) { return; }
+  if (!salva) { try { localStorage.setItem('orcaon_ass_recorte', '1'); } catch (e) {} return; }
+  const im = new Image();
+  im.onload = () => {
+    try {
+      const c = document.createElement('canvas'); c.width = im.width; c.height = im.height;
+      c.getContext('2d').drawImage(im, 0, 0);
+      const r = recortarAssinaturaCanvas(c);
+      if (r !== c && (r.width < c.width || r.height < c.height)) localStorage.setItem('assinaturaDigital', r.toDataURL('image/png'));
+      localStorage.setItem('orcaon_ass_recorte', '1');
+      if (typeof atualizarRecibo === 'function') atualizarRecibo();
+    } catch (e) {}
+  };
+  im.src = salva;
+}
 function migrarAssinaturaParaPreto() {
   let salva = '';
-  try { if (localStorage.getItem('orcaon_ass_preta')) return; salva = localStorage.getItem('assinaturaDigital') || ''; } catch (e) { return; }
-  if (!salva) { try { localStorage.setItem('orcaon_ass_preta', '1'); } catch (e) {} return; }
+  try { if (localStorage.getItem('orcaon_ass_preta')) { migrarAssinaturaRecorte(); return; } salva = localStorage.getItem('assinaturaDigital') || ''; } catch (e) { return; }
+  if (!salva) { try { localStorage.setItem('orcaon_ass_preta', '1'); } catch (e) {} migrarAssinaturaRecorte(); return; }
   const im = new Image();
   im.onload = () => {
     try {
@@ -5195,6 +5255,7 @@ function migrarAssinaturaParaPreto() {
       x.putImageData(dados, 0, 0);
       localStorage.setItem('assinaturaDigital', c.toDataURL('image/png'));
       localStorage.setItem('orcaon_ass_preta', '1');
+      migrarAssinaturaRecorte();
       if (typeof initAssinaturaPerfil === 'function') initAssinaturaPerfil();
       if (typeof atualizarRecibo === 'function') atualizarRecibo();
     } catch (e) {}
@@ -5209,7 +5270,7 @@ function initAssinaturaPerfil() {
   perfilCtx = perfilCanvas.getContext('2d');
   const ratio = window.devicePixelRatio || 1;
   const rect = perfilCanvas.getBoundingClientRect();
-  const w = Math.max(rect.width, 300);
+  const w = rect.width > 0 ? rect.width : 300;   // o desenho acompanha o tamanho real do quadro
   const h = 160;
   perfilCanvas.width = w * ratio;
   perfilCanvas.height = h * ratio;
@@ -5226,7 +5287,8 @@ function initAssinaturaPerfil() {
     const img = new Image();
     img.onload = () => {
       perfilCtx.clearRect(0, 0, w, h);
-      perfilCtx.drawImage(img, 0, 0, w, h);
+      const k = Math.min((w * 0.92) / img.width, (h * 0.88) / img.height);
+      perfilCtx.drawImage(img, (w - img.width * k) / 2, (h - img.height * k) / 2, img.width * k, img.height * k);
       perfilCtx.setTransform(1, 0, 0, 1, 0, 0); recolorirCanvasAmarelo(perfilCanvas); perfilCtx.scale(ratio, ratio);
       if (placeholder) placeholder.classList.add('hidden');
     };
@@ -6679,6 +6741,44 @@ function dadosEmpresaPerfil() {
 }
 // ===== Modelo Simples: painel, assinatura desenhada e documento =====
 const ORC_ASS_KEY = 'orcaon_orc_assinatura';
+// Ajuste da assinatura feito no Perfil: y em % da altura (negativo sobe), s = tamanho
+function assAjuste() {
+  try { const a = JSON.parse(localStorage.getItem('orcaon_ass_ajuste') || '{}'); return { y: Math.max(-80, Math.min(80, Number(a.y) || 0)), s: Math.max(0.5, Math.min(2, Number(a.s) || 1)) }; } catch (_) { return { y: 0, s: 1 }; }
+}
+function assTransformCSS() {
+  const a = assAjuste();
+  return (a.y || a.s !== 1) ? 'transform:translateY(' + a.y + '%) scale(' + a.s + ');transform-origin:50% 100%;' : '';
+}
+function aplicarAjusteAssinaturaRecibo() {
+  const a = assAjuste(), t = (a.y || a.s !== 1) ? 'translateY(' + a.y + '%) scale(' + a.s + ')' : '';
+  ['prev-assinatura-img', 'pm-ass-img', 'pl-ass-img', 'pt-ass-img', 'pj-ass-img'].forEach(id => {
+    const el = document.getElementById(id); if (!el) return;
+    el.style.transform = t; el.style.transformOrigin = t ? '50% 100%' : '';
+  });
+}
+function mudarAjusteAssinatura(campo, passo) {
+  const a = assAjuste();
+  if (campo === 'reset') { a.y = 0; a.s = 1; }
+  else if (campo === 'y') a.y = Math.max(-80, Math.min(80, a.y + passo));
+  else a.s = Math.max(0.5, Math.min(2, Math.round((a.s + passo) * 10) / 10));
+  try { localStorage.setItem('orcaon_ass_ajuste', JSON.stringify(a)); } catch (_) {}
+  atualizarPreviaAjusteAssinatura();
+  if (typeof atualizarRecibo === 'function') atualizarRecibo();
+}
+function atualizarPreviaAjusteAssinatura() {
+  const img = document.getElementById('ass-ajuste-img'), vazio = document.getElementById('ass-ajuste-vazio'), info = document.getElementById('ass-ajuste-info');
+  let src = ''; try { src = localStorage.getItem('assinaturaDigital') || ''; } catch (_) {}
+  if (img) { if (src) { img.src = src; img.style.display = ''; } else { img.removeAttribute('src'); img.style.display = 'none'; } const a = assAjuste(); img.style.transform = 'translateY(' + a.y + '%) scale(' + a.s + ')'; }
+  if (vazio) vazio.style.display = src ? 'none' : '';
+  if (info) { const a = assAjuste(); info.textContent = (a.y || a.s !== 1) ? 'Ajuste salvo. Vale para todos os recibos e orçamentos.' : 'Posição automática.'; }
+}
+document.addEventListener('DOMContentLoaded', function () {
+  const base = window.atualizarRecibo;
+  if (typeof base === 'function' && !base._comAjusteAss) {
+    window.atualizarRecibo = function () { const r = base.apply(this, arguments); try { aplicarAjusteAssinaturaRecibo(); } catch (e) {} return r; };
+    window.atualizarRecibo._comAjusteAss = true;
+  }
+});
 function assinaturaAtualOrc() {
   let a = '';
   try { a = localStorage.getItem('assinaturaDigital') || ''; } catch (e) {}
@@ -6758,7 +6858,7 @@ function montarHTMLModeloSimples3(o, emp, logoImg, assinaturaSrc, assinaturaOn, 
   </table>`;
   const pagto = esc(o.pagamento || 'A combinar').replace(/\n/g, '<br>');
   const pix = (emp.pix || emp.pixQr) ? `<div style="margin-top:18px;font-size:13px;page-break-inside:avoid"><b>Pagamento via Pix:</b><div style="display:flex;gap:14px;align-items:center;margin-top:8px">${emp.pixQr ? `<img src="${emp.pixQr}" alt="QR Code Pix" style="width:110px;height:110px;object-fit:contain;border:1px solid #ccc;padding:3px;background:#fff">` : ''}<div>${emp.pix ? '<b>Chave Pix:</b> ' + esc(emp.pix) : ''}</div></div></div>` : '';
-  const assImg = assinaturaOn && assinaturaSrc ? `<img src="${assinaturaSrc}" style="max-width:200px;max-height:64px;object-fit:contain;display:block;margin:0 auto 2px">` : '<div style="height:50px"></div>';
+  const assImg = assinaturaOn && assinaturaSrc ? `<img src="${assinaturaSrc}" style="max-width:200px;max-height:64px;object-fit:contain;display:block;margin:0 auto 2px;${assTransformCSS()}">` : '<div style="height:50px"></div>';
   const sig = `<div style="display:flex;gap:40px;justify-content:center;margin-top:34px;page-break-inside:avoid;align-items:flex-end">
     <div style="flex:0 0 55%;text-align:center;font-size:12px">${assImg}<div style="border-top:1px solid #111;padding-top:6px">Assinatura do responsável${nome ? '<br>' + esc(nome) : ''}</div></div>
   </div>`;
@@ -6816,7 +6916,7 @@ function montarHTMLModeloSimples2(o, emp, logoImg, assinaturaSrc, assinaturaOn, 
   const desc = Number(o.descontoValor) > 0 ? Number(o.descontoValor) : 0;
   const pagto = esc(o.pagamento || 'A combinar').replace(/\n/g, '<br>');
   const pix = (emp.pix || emp.pixQr) ? `<div style="margin-top:20px;font-size:13px;page-break-inside:avoid"><b>Pagamento via Pix:</b><div style="display:flex;gap:14px;align-items:center;margin-top:8px">${emp.pixQr ? `<img src="${emp.pixQr}" alt="QR Code Pix" style="width:110px;height:110px;object-fit:contain;border:1px solid #bbb;padding:3px;background:#fff">` : ''}<div>${emp.pix ? 'Chave Pix: ' + esc(emp.pix) : ''}</div></div></div>` : '';
-  const assImg = assinaturaOn && assinaturaSrc ? `<img src="${assinaturaSrc}" style="max-width:200px;max-height:64px;object-fit:contain;display:block;margin:0 auto 2px">` : '<div style="height:50px"></div>';
+  const assImg = assinaturaOn && assinaturaSrc ? `<img src="${assinaturaSrc}" style="max-width:200px;max-height:64px;object-fit:contain;display:block;margin:0 auto 2px;${assTransformCSS()}">` : '<div style="height:50px"></div>';
   return { cor: '#111111', numeroEsc, html: `
 <div class="orcapro-doc-page" style="max-width:850px;margin:0 auto;background:#fff;color:#111;padding:34px 38px;font-family:Arial,Helvetica,sans-serif;box-sizing:border-box">
   <div style="display:flex;justify-content:space-between;align-items:baseline;padding-bottom:12px;border-bottom:2px solid #111">
@@ -6914,7 +7014,7 @@ function montarHTMLModeloSimples(o, emp, logoImg, assinaturaSrc, assinaturaOn, b
     ${o.obs ? `<p style="margin:14px 0 0">${esc(o.obs).replace(/\n/g, '<br>')}</p>` : ''}
     <p style="margin:14px 0 0">Orçamento válido por ${esc(String(o.validade || 7).padStart(2, '0'))} dias.<br>${dataExt}.</p>
   </div>`;
-  const ass = (o.assinatura || assinaturaOn) ? `<div style="margin:46px auto 0;width:55%;text-align:center;font-size:13px">${assinaturaSrc ? `<img src="${assinaturaSrc}" style="max-width:200px;max-height:70px;object-fit:contain;display:block;margin:0 auto 2px">` : '<div style="height:50px"></div>'}<div style="border-top:1px solid #111;padding-top:4px">Assinatura${nome ? ' — ' + esc(nome) : ''}</div></div>` : '';
+  const ass = (o.assinatura || assinaturaOn) ? `<div style="margin:46px auto 0;width:55%;text-align:center;font-size:13px">${assinaturaSrc ? `<img src="${assinaturaSrc}" style="max-width:200px;max-height:70px;object-fit:contain;display:block;margin:0 auto 2px;${assTransformCSS()}">` : '<div style="height:50px"></div>'}<div style="border-top:1px solid #111;padding-top:4px">Assinatura${nome ? ' — ' + esc(nome) : ''}</div></div>` : '';
   return { cor: '#111111', numeroEsc, html: `
 <div class="orcapro-doc-page" style="max-width:850px;margin:0 auto;background:#fff;color:#111;padding:42px;font-family:Arial,sans-serif;box-sizing:border-box">
   ${cab}
@@ -6952,7 +7052,7 @@ function montarHTMLDocumentoOrcamento(o) {
   const assinaturaOn = !!(document.getElementById('orc-model-sign') || {}).checked && !!assinaturaSrc;
   const logoFonte = (o.logo !== undefined && o.logo !== null) ? o.logo : logoOrcamentoData;
   const logo = logoFonte ? `<img src="${logoFonte}" style="max-width:145px;max-height:80px;object-fit:contain">` : '';
-  const assinatura = assinaturaOn ? `<img src="${assinaturaSrc}" style="max-width:180px;max-height:70px;object-fit:contain;display:block;margin:0 auto 4px">` : '';
+  const assinatura = assinaturaOn ? `<img src="${assinaturaSrc}" style="max-width:180px;max-height:70px;object-fit:contain;display:block;margin:0 auto 4px;${assTransformCSS()}">` : '';
   const itens = (o.itens || []).map(i => `<tr><td>${escaparHTMLOrc(i.desc)}${i.detalhes ? '<br><span style="color:#64748b;font-size:11px">' + escaparHTMLOrc(i.detalhes) + '</span>' : ''}</td><td>${escaparHTMLOrc(fmtQtdUn(i.qtd, i.unidade))} ${escaparHTMLOrc(i.unidade)}</td><td>${Number(i.valor||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}</td><td>${(Number(i.qtd||0)*Number(i.valor||0)).toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}</td></tr>`).join('');
   const total = Number(o.total||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
   const data = o.data ? new Date(o.data+'T12:00:00').toLocaleDateString('pt-BR') : new Date().toLocaleDateString('pt-BR');
@@ -7007,7 +7107,7 @@ function montarHTMLDocumentoOrcamento(o) {
     </div>
   </section>
   ${o.assinatura||assinaturaOn?`<div style="display:flex;gap:30px;margin-top:55px;justify-content:space-around;text-align:center">
-    <div style="width:45%;border-top:1px solid #64748b;padding-top:8px;font-size:12px">${assinatura}<b>Responsável / Prestador</b></div>
+    <div style="width:45%;font-size:12px">${assinatura}<div style="border-top:1px solid #64748b;padding-top:8px"><b>Responsável / Prestador</b></div></div>
   </div>`:''}
   <p style="color:#64748b;font-size:12px;text-align:center;margin-top:35px">Documento gerado pelo OrçaOn · Obrigado pela oportunidade!</p>
 </div>`};
@@ -7483,7 +7583,7 @@ function goToPriceTable() {   // abre o Perfil já na seção Meus preços
 document.addEventListener('toggle', function(e) {
   const d = e.target;
   if (!d || !d.open) return;
-  if (d.id === 'assinatura-perfil-card' && typeof initAssinaturaPerfil === 'function') setTimeout(initAssinaturaPerfil, 30);
+  if (d.id === 'assinatura-perfil-card' && typeof initAssinaturaPerfil === 'function') { setTimeout(initAssinaturaPerfil, 30); atualizarPreviaAjusteAssinatura(); }
   if (d.id === 'perfil-sec-precos') renderMeusPrecos();
 }, true);
 
