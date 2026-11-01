@@ -1527,6 +1527,16 @@ input.pix-invalido{border-color:#EF4444!important}
 .pix-campo label{margin-top:4px}
 .pix-qr-area{margin:8px 0;text-align:center}
 .ass-ajuste{margin-top:14px;padding-top:12px;border-top:1px solid var(--border)}
+.ass-bloco{margin-top:12px;padding:12px;border:1px solid var(--border);border-radius:12px}
+.signature-box,.pj-sign-box{position:relative}
+.ass-travada,.ass-travada canvas{touch-action:auto!important;cursor:default!important}
+.ass-travada canvas{pointer-events:none!important}
+.ass-travada .signature-placeholder{display:none!important}
+.ass-lock-bt,.ass-ok-bt{position:absolute;z-index:3;border:none;border-radius:999px;font-weight:700;cursor:pointer;font-family:inherit}
+.ass-lock-bt{right:8px;top:8px;background:#F4C430;color:#0B1C2C;padding:6px 12px;font-size:13px;display:none;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,.35)}
+.ass-travada .ass-lock-bt{display:block}
+.ass-ok-bt{right:8px;top:8px;background:#2BD67B;color:#0B1C2C;padding:6px 12px;font-size:13px}
+.ass-travada .ass-ok-bt{display:none}
 .ass-ajuste-papel{background:#fff;border-radius:10px;padding:10px 16px 12px;margin:8px 0;overflow:hidden}
 .ass-ajuste-area{height:70px;display:flex;align-items:flex-end;justify-content:center}
 .ass-ajuste-area img{max-width:200px;max-height:64px;object-fit:contain;transform-origin:50% 100%}
@@ -3640,6 +3650,7 @@ body.light .btn-remove-item{color:#b91c1c}
           <input type="file" id="orc-model-logo" accept="image/*" onchange="salvarLogoOrcamento(event)">
           <p class="hint">A logo será usada nos documentos gerados neste aparelho.</p>
           <label style="display:flex;gap:8px;align-items:center;margin-top:12px;font-weight:500"><input type="checkbox" id="orc-model-sign" checked style="width:auto"> Incluir assinatura digital</label>
+          <div id="orc-ass-bloco"></div>
           <div id="orc-simples3-panel" style="display:none">
             <h4>Dados do Modelo Simples 3</h4>
             <p class="hint">A logo aparece no canto esquerdo e o nome da empresa no centro do cabeçalho.</p>
@@ -3849,6 +3860,7 @@ body.light .btn-remove-item{color:#b91c1c}
           <p class="sugestoes-label" style="margin-top:8px">Sugestões para <span id="rec-sugestoes-prof">sua profissão</span>:</p>
           <div class="sugestoes-row" id="rec-sugestoes"></div>
           <div id="recibo-campos-especificos"></div>
+          <div id="rec-ass-bloco"></div>
           <label>Cidade</label>
           <input type="text" id="rec-cidade" placeholder="São Paulo">
           <label>Data</label>
@@ -3990,8 +4002,10 @@ body.light .btn-remove-item{color:#b91c1c}
 
         <details class="form-card perfil-sec" id="assinatura-perfil-card"><summary><span class="perfil-sec-tit"><b>Assinatura</b><small>Aparece nos recibos e orçamentos</small></span></summary><div class="perfil-sec-corpo">
           <p class="hint">Desenhe uma vez — ela é salva sozinha e aparece automaticamente em todos os recibos e orçamentos</p>
-          <div class="signature-box" id="signature-box-area">
+          <div class="signature-box ass-travada" id="signature-box-area">
             <canvas id="assinatura-perfil-canvas" width="340" height="160"></canvas>
+            <button type="button" class="ass-lock-bt" onclick="travarAssinatura('signature-box-area',false)">✏️ Editar assinatura</button>
+            <button type="button" class="ass-ok-bt" onclick="travarAssinatura('signature-box-area',true)">✓ Pronto</button>
             <div class="signature-placeholder" id="signature-placeholder">
               <i class="fas fa-signature fa-2x"></i>
               <p>Toque para assinar</p>
@@ -4006,7 +4020,7 @@ body.light .btn-remove-item{color:#b91c1c}
           </div>
           <div class="ass-ajuste">
             <b>Posição no documento</b>
-            <p class="hint-sm">Se a assinatura não ficar certinha na linha, ajuste aqui. Vale para todos os recibos e orçamentos.</p>
+            <p class="hint-sm">Posição padrão para todos os recibos e orçamentos. Em cada modelo você também pode ajustar só aquele modelo.</p>
             <div class="ass-ajuste-papel"><div class="ass-ajuste-area"><img id="ass-ajuste-img" alt="Prévia da assinatura"><span id="ass-ajuste-vazio">Faça sua assinatura acima</span></div><div class="ass-ajuste-linha">Assinatura</div></div>
             <div class="ass-ajuste-bts">
               <button type="button" class="btn-dark-sm" onclick="mudarAjusteAssinatura('y',-10)">▲ Subir</button>
@@ -4639,6 +4653,7 @@ function selecionarModeloRecibo(nome) {
   montarCamposEspecificosRecibo(nome);
   ajustarFormularioRecibo(nome);
   renderSugestoesRecibo();
+  renderBlocoAss('rec-ass-bloco', 'recibo');
   if (typeof atualizarAcessoVisualizacaoRecibo === 'function') atualizarAcessoVisualizacaoRecibo();
   pushAndShow('screen-novo-recibo');
   setTimeout(atualizarRecibo, 50);
@@ -4692,7 +4707,9 @@ function initAssinaturaPJ() {
   pjHist = [];
   const ctx = c.getContext('2d');
   ctx.lineWidth = 2.4; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.strokeStyle = ASS_COR_TELA;
-  if (pjAssinaturaData) { const im = new Image(); im.onload = () => { ctx.drawImage(im, 0, 0, c.width, c.height); recolorirCanvasAmarelo(c); }; im.src = pjAssinaturaData; }
+  // mostra a assinatura em uso: a feita neste recibo ou, se não houver, a do Perfil
+  let mostrar = pjAssinaturaData; if (!mostrar) { try { mostrar = localStorage.getItem('assinaturaDigital') || ''; } catch (e) {} }
+  if (mostrar) assinaturaDesenharAjustada(ctx, mostrar, c.width, c.height, () => recolorirCanvasAmarelo(c));
   let desenhando = false, ultimo = null;
   const pos = e => { const r = c.getBoundingClientRect(); return { x: (e.clientX - r.left) * c.width / r.width, y: (e.clientY - r.top) * c.height / r.height }; };
   c.addEventListener('pointerdown', e => { e.preventDefault(); pjHist.push(ctx.getImageData(0, 0, c.width, c.height)); if (pjHist.length > 30) pjHist.shift(); desenhando = true; ultimo = pos(e); if (c.setPointerCapture) { try { c.setPointerCapture(e.pointerId); } catch (_) {} } });
@@ -4789,7 +4806,7 @@ function montarCamposEspecificosRecibo(nome) {
   if (nome === 'Recibo de Pagamento PJ') {
     html += field('rec-cpf-cliente','CNPJ da empresa que pagou','00.000.000/0001-00');
     html += field('rec-cidade-firmado','Cidade onde o recibo é firmado (aparece no texto)','Ex.: Cidade Exemplo');
-    html += `<div class="specific-field"><label>Assinatura digital</label><div class="pj-sign-box"><canvas id="pj-ass-canvas" width="360" height="130"></canvas></div><p class="hint">Desenhe sua assinatura com o dedo. Se não desenhar, usamos a assinatura salva no seu Perfil, se houver.</p><div class="ass-acoes"><button type="button" class="btn-dark-sm" onclick="usarAssinaturaPerfilPJ()">Usar assinatura do perfil</button><button type="button" class="btn-dark-sm" onclick="desfazerAssinaturaPJ()">↶ Desfazer</button><button type="button" class="btn-dark-sm" onclick="limparAssinaturaPJ()">Limpar assinatura</button><button type="button" class="btn-dark-sm" onclick="document.getElementById('pj-ass-upload').click()">Importar PNG</button><input type="file" id="pj-ass-upload" accept="image/png" style="display:none" onchange="importarAssinaturaPJ(event)"></div><p class="ass-padrao">Para importar: PNG de até 2 MB, mínimo 300×80 px, formato horizontal, assinatura escura em fundo branco ou transparente.</p></div>`;
+    html += `<div class="specific-field"><label>Assinatura digital</label><div class="pj-sign-box ass-travada" id="pj-sign-box"><canvas id="pj-ass-canvas" width="360" height="130"></canvas><button type="button" class="ass-lock-bt" onclick="travarAssinatura('pj-sign-box',false)">✏️ Editar assinatura</button><button type="button" class="ass-ok-bt" onclick="travarAssinatura('pj-sign-box',true)">✓ Pronto</button></div><p class="hint">Aparece aqui a assinatura que vai no recibo (a do Perfil, se você não fizer outra). Para mudar, toque em Editar assinatura.</p><div class="ass-acoes"><button type="button" class="btn-dark-sm" onclick="usarAssinaturaPerfilPJ()">Usar assinatura do perfil</button><button type="button" class="btn-dark-sm" onclick="desfazerAssinaturaPJ()">↶ Desfazer</button><button type="button" class="btn-dark-sm" onclick="limparAssinaturaPJ()">Limpar assinatura</button><button type="button" class="btn-dark-sm" onclick="document.getElementById('pj-ass-upload').click()">Importar PNG</button><input type="file" id="pj-ass-upload" accept="image/png" style="display:none" onchange="importarAssinaturaPJ(event)"></div><p class="ass-padrao">Para importar: PNG de até 2 MB, mínimo 300×80 px, formato horizontal, assinatura escura em fundo branco ou transparente.</p></div>`;
   }
   if (nome === 'Recibo de Pagamento' || nome === 'Comprovante de Pagamento' || nome === 'Recibo de Pagamento Digital') {
     html += `<div class="specific-field"><label for="rec-forma-pagamento">Forma de pagamento</label><select id="rec-forma-pagamento"><option value="">Selecione...</option><option>Pix</option><option>Dinheiro</option><option>Transferência bancária</option><option>Cartão de débito</option><option>Cartão de crédito</option><option>Boleto</option><option>Cheque</option><option>Outro</option></select></div><div class="specific-field" id="rec-pix-wrap" style="display:none"><label for="rec-pix-tipo">Chave Pix</label><div class="pix-linha"><select id="rec-pix-tipo" aria-label="Tipo da chave Pix"><option value="">Tipo da chave…</option><option>CPF</option><option>CNPJ</option><option>E-mail</option><option>Telefone</option><option>Chave aleatória</option></select><input type="text" id="rec-pix-chave" autocomplete="off" placeholder="Chave Pix" aria-label="Chave Pix"></div><p class="pix-erro" id="rec-pix-erro" role="alert"></p></div><div class="specific-field" id="rec-parcelas-wrap" style="display:none"><label for="rec-parcelas">Parcelas no cartão de crédito</label><select id="rec-parcelas"><option value="1">À vista (1x)</option><option value="2">2x</option><option value="3">3x</option><option value="4">4x</option><option value="5">5x</option><option value="6">6x</option><option value="7">7x</option><option value="8">8x</option><option value="9">9x</option><option value="10">10x</option><option value="11">11x</option><option value="12">12x</option></select></div>`;
@@ -6533,6 +6550,7 @@ function abrirModelos(novo) {
   const logoInput = document.getElementById('orc-model-logo');
   if (logoInput) logoInput.value = '';
   atualizarPainelModeloOrc();
+  renderBlocoAss('orc-ass-bloco', 'orcamento');
   setTimeout(initAssinaturaOrc, 80);
 }
 
@@ -6687,6 +6705,7 @@ function selecionarModelo(nome) {
   const atual = orcamentos.find(o => o.id === ultimoOrcamentoId);
   if (atual) { atual.modelo = nome; gravarOrcamentos(); }
   atualizarPainelModeloOrc();
+  renderBlocoAss('orc-ass-bloco', 'orcamento');
 }
 function escaparHTMLOrc(v) {
   return String(v == null ? '' : v).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -6742,27 +6761,38 @@ function dadosEmpresaPerfil() {
 // ===== Modelo Simples: painel, assinatura desenhada e documento =====
 const ORC_ASS_KEY = 'orcaon_orc_assinatura';
 // Ajuste da assinatura feito no Perfil: y em % da altura (negativo sobe), s = tamanho
-function assAjuste() {
-  try { const a = JSON.parse(localStorage.getItem('orcaon_ass_ajuste') || '{}'); return { y: Math.max(-80, Math.min(80, Number(a.y) || 0)), s: Math.max(0.5, Math.min(2, Number(a.s) || 1)) }; } catch (_) { return { y: 0, s: 1 }; }
+// Ajuste da assinatura: y em % da altura (negativo sobe), s = tamanho.
+// Guardado como { y, s, modelos: { 'Nome do modelo': { y, s } } }; o y/s de fora é o padrão do Perfil.
+function assAjusteTodos() {
+  try { const t = JSON.parse(localStorage.getItem('orcaon_ass_ajuste') || '{}'); return (t && typeof t === 'object') ? t : {}; } catch (_) { return {}; }
 }
-function assTransformCSS() {
-  const a = assAjuste();
+function assLimitar(a) { return { y: Math.max(-80, Math.min(80, Number(a && a.y) || 0)), s: Math.max(0.5, Math.min(2, Number(a && a.s) || 1)) }; }
+function assTemAjusteProprio(modelo) { const t = assAjusteTodos(); return !!(modelo && t.modelos && t.modelos[modelo]); }
+function assAjuste(modelo) { const t = assAjusteTodos(); return assLimitar(assTemAjusteProprio(modelo) ? t.modelos[modelo] : t); }
+function assTransformCSS(modelo) {
+  const a = assAjuste(modelo === undefined ? (typeof modeloOrcamentoEscolhido !== 'undefined' ? modeloOrcamentoEscolhido : '') : modelo);
   return (a.y || a.s !== 1) ? 'transform:translateY(' + a.y + '%) scale(' + a.s + ');transform-origin:50% 100%;' : '';
 }
 function aplicarAjusteAssinaturaRecibo() {
-  const a = assAjuste(), t = (a.y || a.s !== 1) ? 'translateY(' + a.y + '%) scale(' + a.s + ')' : '';
+  const a = assAjuste(typeof modeloReciboAtual !== 'undefined' ? modeloReciboAtual : ''), t = (a.y || a.s !== 1) ? 'translateY(' + a.y + '%) scale(' + a.s + ')' : '';
   ['prev-assinatura-img', 'pm-ass-img', 'pl-ass-img', 'pt-ass-img', 'pj-ass-img'].forEach(id => {
     const el = document.getElementById(id); if (!el) return;
     el.style.transform = t; el.style.transformOrigin = t ? '50% 100%' : '';
   });
 }
-function mudarAjusteAssinatura(campo, passo) {
-  const a = assAjuste();
-  if (campo === 'reset') { a.y = 0; a.s = 1; }
-  else if (campo === 'y') a.y = Math.max(-80, Math.min(80, a.y + passo));
-  else a.s = Math.max(0.5, Math.min(2, Math.round((a.s + passo) * 10) / 10));
-  try { localStorage.setItem('orcaon_ass_ajuste', JSON.stringify(a)); } catch (_) {}
+function assModeloDe(tipo) { return tipo === 'recibo' ? modeloReciboAtual : tipo === 'orcamento' ? modeloOrcamentoEscolhido : ''; }
+function mudarAjusteAssinatura(campo, passo, modelo) {
+  const t = assAjusteTodos(), a = assAjuste(modelo);
+  if (campo === 'reset') {
+    if (modelo) { if (t.modelos) delete t.modelos[modelo]; } else { t.y = 0; t.s = 1; }
+  } else {
+    if (campo === 'y') a.y = Math.max(-80, Math.min(80, a.y + passo));
+    else a.s = Math.max(0.5, Math.min(2, Math.round((a.s + passo) * 10) / 10));
+    if (modelo) { t.modelos = t.modelos || {}; t.modelos[modelo] = a; } else { t.y = a.y; t.s = a.s; }
+  }
+  try { localStorage.setItem('orcaon_ass_ajuste', JSON.stringify(t)); } catch (_) {}
   atualizarPreviaAjusteAssinatura();
+  renderBlocoAss('rec-ass-bloco', 'recibo'); renderBlocoAss('orc-ass-bloco', 'orcamento');
   if (typeof atualizarRecibo === 'function') atualizarRecibo();
 }
 function atualizarPreviaAjusteAssinatura() {
@@ -6770,15 +6800,48 @@ function atualizarPreviaAjusteAssinatura() {
   let src = ''; try { src = localStorage.getItem('assinaturaDigital') || ''; } catch (_) {}
   if (img) { if (src) { img.src = src; img.style.display = ''; } else { img.removeAttribute('src'); img.style.display = 'none'; } const a = assAjuste(); img.style.transform = 'translateY(' + a.y + '%) scale(' + a.s + ')'; }
   if (vazio) vazio.style.display = src ? 'none' : '';
-  if (info) { const a = assAjuste(); info.textContent = (a.y || a.s !== 1) ? 'Ajuste salvo. Vale para todos os recibos e orçamentos.' : 'Posição automática.'; }
+  if (info) { const a = assAjuste(); info.textContent = (a.y || a.s !== 1) ? 'Ajuste padrão salvo.' : 'Posição automática.'; }
+}
+// Quadro "Assinatura neste documento": mostra a assinatura em uso e ajusta a posição só deste modelo
+function srcAssinaturaDoc(tipo) {
+  if (tipo === 'recibo' && modeloReciboAtual === 'Recibo de Pagamento PJ' && typeof pjAssinaturaData !== 'undefined' && pjAssinaturaData) return pjAssinaturaData;
+  try { return localStorage.getItem('assinaturaDigital') || ''; } catch (_) { return ''; }
+}
+function renderBlocoAss(hostId, tipo) {
+  const host = document.getElementById(hostId); if (!host) return;
+  if (tipo === 'orcamento') { const cb = document.getElementById('orc-model-sign'); host.style.display = (cb && !cb.checked) ? 'none' : ''; }
+  if (!host.dataset.pronto) {
+    host.dataset.pronto = '1';
+    host.className = 'ass-ajuste ass-bloco';
+    host.innerHTML = '<b>Assinatura neste documento</b>'
+      + '<p class="hint-sm">Esta é a assinatura que vai no documento. Se não ficar certinha na linha, ajuste aqui (vale só para este modelo).</p>'
+      + '<div class="ass-ajuste-papel"><div class="ass-ajuste-area"><img class="ass-bloco-img" alt="Assinatura em uso"><span class="ass-bloco-vazio">Sem assinatura. Faça a sua em Perfil &gt; Editar perfil &gt; Assinatura.</span></div><div class="ass-ajuste-linha">Assinatura</div></div>'
+      + '<div class="ass-ajuste-bts">'
+      + '<button type="button" class="btn-dark-sm" onclick="mudarAjusteAssinatura(\'y\',-10,assModeloDe(\'' + tipo + '\'))">▲ Subir</button>'
+      + '<button type="button" class="btn-dark-sm" onclick="mudarAjusteAssinatura(\'y\',10,assModeloDe(\'' + tipo + '\'))">▼ Descer</button>'
+      + '<button type="button" class="btn-dark-sm" onclick="mudarAjusteAssinatura(\'s\',-0.1,assModeloDe(\'' + tipo + '\'))">− Menor</button>'
+      + '<button type="button" class="btn-dark-sm" onclick="mudarAjusteAssinatura(\'s\',0.1,assModeloDe(\'' + tipo + '\'))">+ Maior</button>'
+      + '</div><button type="button" class="btn-text" onclick="mudarAjusteAssinatura(\'reset\',0,assModeloDe(\'' + tipo + '\'))">Voltar ao padrão</button>'
+      + '<p class="hint-sm ass-bloco-info"></p>';
+  }
+  const modelo = assModeloDe(tipo), src = srcAssinaturaDoc(tipo), a = assAjuste(modelo);
+  const img = host.querySelector('.ass-bloco-img'), vazio = host.querySelector('.ass-bloco-vazio'), info = host.querySelector('.ass-bloco-info');
+  if (img) { if (src) { if (img.getAttribute('src') !== src) img.src = src; img.style.display = ''; } else { img.removeAttribute('src'); img.style.display = 'none'; } img.style.transform = 'translateY(' + a.y + '%) scale(' + a.s + ')'; }
+  if (vazio) vazio.style.display = src ? 'none' : '';
+  if (info) info.textContent = assTemAjusteProprio(modelo) ? 'Ajuste salvo para o modelo "' + modelo + '".' : 'Usando a posição padrão.';
+}
+// Quadros de desenho travados: só desenham depois de tocar em "Editar assinatura" (evita riscar sem querer ao rolar a tela)
+function travarAssinatura(boxId, travar) {
+  const b = document.getElementById(boxId); if (b) b.classList.toggle('ass-travada', !!travar);
 }
 document.addEventListener('DOMContentLoaded', function () {
   const base = window.atualizarRecibo;
   if (typeof base === 'function' && !base._comAjusteAss) {
-    window.atualizarRecibo = function () { const r = base.apply(this, arguments); try { aplicarAjusteAssinaturaRecibo(); } catch (e) {} return r; };
+    window.atualizarRecibo = function () { const r = base.apply(this, arguments); try { aplicarAjusteAssinaturaRecibo(); renderBlocoAss('rec-ass-bloco', 'recibo'); } catch (e) {} return r; };
     window.atualizarRecibo._comAjusteAss = true;
   }
 });
+document.addEventListener('change', function (e) { if (e.target && e.target.id === 'orc-model-sign') renderBlocoAss('orc-ass-bloco', 'orcamento'); });
 function assinaturaAtualOrc() {
   let a = '';
   try { a = localStorage.getItem('assinaturaDigital') || ''; } catch (e) {}
@@ -7342,6 +7405,7 @@ async function acionarDocumentoOrcamentoDireto(){
 }
 function goToEditProfile() {
   try { renderMeusPrecos(); } catch (_) {}
+  travarAssinatura('signature-box-area', true);
   pushAndShow('screen-edit-profile');
   setTimeout(initAssinaturaPerfil, 150);
 }
