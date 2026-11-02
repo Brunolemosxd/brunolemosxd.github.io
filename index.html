@@ -3008,7 +3008,13 @@ html:not(.bf-ativa) .bf-promo{display:none!important}
 .calc-chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:4px}
 .calc-chip{padding:7px 14px;border-radius:16px;border:1px solid var(--border);background:transparent;color:var(--text-secondary);font-size:14px;cursor:pointer;font-family:inherit}
 .calc-chip.on{background:#F4C430;border-color:#F4C430;color:#0B1C2C;font-weight:700}
-.calc-res{border:2px solid #2BD67B!important}
+.calc-res{border:2px solid #2BD67B!important;position:relative;overflow:hidden}
+.calc-gratis{display:inline-block;margin:8px 0 0;padding:4px 12px;border-radius:999px;font-size:12px;font-weight:700;background:rgba(244,196,48,.12);color:var(--accent,#F4C430)}
+.calc-gratis:empty{display:none}
+.calc-res.travado>*:not(.calc-trava){filter:blur(6px);user-select:none;pointer-events:none}
+.calc-trava{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;padding:16px;background:rgba(11,28,44,.55)}
+.calc-trava b{font-size:17px}
+.calc-trava p{margin:0;font-size:13px;color:#cbd8e4}
 .calc-res h3{color:#2BD67B!important}
 .calc-linha{display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);font-size:14px}
 .calc-linha:last-of-type{border-bottom:0}
@@ -3985,6 +3991,7 @@ body.light .btn-remove-item{color:#b91c1c}
       </header>
       <div class="content">
         <p class="hint-sm">Coloque as medidas e o app calcula o material. Depois é só adicionar ao orçamento.</p>
+        <p class="calc-gratis" id="calc-gratis"></p>
         <div class="calc-tipos" id="calc-tipos"></div>
         <div class="form-card" id="calc-campos"></div>
         <div class="form-card calc-res" id="calc-res"></div>
@@ -4144,6 +4151,7 @@ body.light .btn-remove-item{color:#b91c1c}
         <li><b>PDF ou imagem para o WhatsApp:</b> 4 modelos de orçamento, com logotipo e assinatura digital.</li>
         <li><b>Recibos prontos:</b> vários modelos, salvos no aparelho para consultar e editar depois.</li>
         <li><b>Clientes salvos:</b> nome, WhatsApp e endereço preenchidos automaticamente.</li>
+        <li><b>Calculadora de material:</b> calcula o material de 17 serviços (tinta, calha, piso, fiação, forro, ar-condicionado...) e já coloca no orçamento.</li>
         <li><b>Controle do dinheiro:</b> veja o que está em aberto, a receber e já recebido.</li>
         <li><b>Seu perfil no documento:</b> dados da empresa, Pix e QR Code, e validade padrão do orçamento.</li>
       </ul>
@@ -4151,6 +4159,7 @@ body.light .btn-remove-item{color:#b91c1c}
         <h3 class="ab-title" style="margin-top:0"><i class="fas fa-crown"></i> Por que assinar o Pro</h3>
         <ul class="ab-list">
           <li><b>Sem limites:</b> orçamentos e recibos ilimitados. No gratuito são só 10 de cada.</li>
+          <li><b>Calculadora de material sem limite:</b> no gratuito são 10 cálculos.</li>
           <li><b>Pré-visualização do recibo</b> enquanto você preenche, antes de enviar.</li>
           <li><b>Visualizar e salvar em PDF</b> antes de mandar para o cliente.</li>
           <li><b>Todos os recursos liberados</b>, sem travar no meio de um serviço.</li>
@@ -4168,14 +4177,14 @@ body.light .btn-remove-item{color:#b91c1c}
       <button class="oferta-pro-close" type="button" aria-label="Fechar oferta" onclick="fecharOfertaPro()">×</button>
       <div class="oferta-pro-topo">
         <div class="op-logo">Orça<span>On</span> <b>PRO</b></div>
-        <p class="op-sub">Orçamentos e recibos sem limite, backup na nuvem e todos os recursos.</p>
+        <p class="op-sub">Orçamentos, recibos e calculadora de material sem limite, backup na nuvem e todos os recursos.</p>
         <div class="op-bf bf-promo">🔥 BLACK FRIDAY · 50% OFF no plano anual</div>
         <div class="op-planos">
           <div class="op-plano"><small>Mensal</small><strong>R$ 10</strong><span>por mês</span></div>
           <div class="op-plano op-anual"><em class="op-selo">Mais vantajoso</em><small>Anual</small><s class="bf-promo">R$ 120</s><strong>R$ 60</strong><span>por ano · sai R$ 5/mês</span></div>
         </div>
       </div>
-      <div id="oferta-pro-msg" class="oferta-pro-msg hidden" aria-live="polite"><h3 id="oferta-pro-msg-titulo"></h3><p id="oferta-pro-msg-texto"></p><ul><li><i class="fas fa-check" aria-hidden="true"></i>Orçamentos e recibos sem limite</li><li><i class="fas fa-check" aria-hidden="true"></i>Veja o recibo antes de enviar</li><li><i class="fas fa-check" aria-hidden="true"></i>Cópia de segurança na nuvem</li></ul></div>
+      <div id="oferta-pro-msg" class="oferta-pro-msg hidden" aria-live="polite"><h3 id="oferta-pro-msg-titulo"></h3><p id="oferta-pro-msg-texto"></p><ul><li><i class="fas fa-check" aria-hidden="true"></i>Orçamentos e recibos sem limite</li><li><i class="fas fa-check" aria-hidden="true"></i>Calculadora de material sem limite</li><li><i class="fas fa-check" aria-hidden="true"></i>Veja o recibo antes de enviar</li><li><i class="fas fa-check" aria-hidden="true"></i>Cópia de segurança na nuvem</li></ul></div>
       <div class="oferta-pro-actions"><button type="button" class="btn-primary-lg" onclick="escolherPlanoPro('anual')"><span class="bf-promo">🔥 </span>Quero o plano anual — R$ 60</button><button type="button" class="btn-outline-lg" onclick="escolherPlanoPro('mensal')">Quero o plano mensal — R$ 10</button><p class="hint">Pagamento por Pix. O Pro é liberado assim que confirmarmos.</p></div>
     </div>
   </div>
@@ -4294,7 +4303,7 @@ const LEGAL_TEXTOS = {
 <li>Usar o app de forma lícita, sem fraudar documentos nem prejudicar terceiros.</li>
 </ul>
 <h3>4. Plano gratuito e plano Pro</h3>
-<p>O plano gratuito inclui até 10 orçamentos e 10 recibos compartilhados ou baixados. O plano Pro libera recursos adicionais e custa R$ 10 por mês ou R$ 60 por ano. O pagamento é feito por Pix e o Pro é liberado na sua conta depois que o pagamento é confirmado. Não há renovação automática: ao fim do período, o plano volta a ser gratuito até um novo pagamento. Você pode desistir em até 7 dias após o pagamento e receber o valor de volta (Código de Defesa do Consumidor, art. 49), pedindo pelo botão Ajuda.</p>
+<p>O plano gratuito inclui até 10 orçamentos e 10 recibos compartilhados ou baixados e 10 cálculos da calculadora de material. O plano Pro libera recursos adicionais e custa R$ 10 por mês ou R$ 60 por ano. O pagamento é feito por Pix e o Pro é liberado na sua conta depois que o pagamento é confirmado. Não há renovação automática: ao fim do período, o plano volta a ser gratuito até um novo pagamento. Você pode desistir em até 7 dias após o pagamento e receber o valor de volta (Código de Defesa do Consumidor, art. 49), pedindo pelo botão Ajuda.</p>
 <h3>5. Seus dados e backup</h3>
 <p>Os dados ficam no seu aparelho. Fazer cópia dos documentos importantes é sua responsabilidade: ao desinstalar o app ou limpar seus dados, eles podem ser perdidos.</p>
 <h3>6. Propriedade intelectual</h3>
@@ -4324,7 +4333,9 @@ const OFERTA_PRO_TEXTOS={
   'limite-orcamento':['Seus 10 orçamentos grátis acabaram','Não pare agora! Com o OrçaOn Pro você continua mandando orçamentos para os seus clientes, sem limite.'],
   'limite-recibo':['Seus 10 recibos grátis acabaram','Não pare agora! Com o OrçaOn Pro você continua mandando recibos para os seus clientes, sem limite.'],
   'ultimo-orcamento':['Você usou seus 10 orçamentos grátis','Parabéns pelo trabalho! Para continuar enviando orçamentos sem parar, vire Pro.'],
-  'ultimo-recibo':['Você usou seus 10 recibos grátis','Parabéns pelo trabalho! Para continuar enviando recibos sem parar, vire Pro.']
+  'ultimo-recibo':['Você usou seus 10 recibos grátis','Parabéns pelo trabalho! Para continuar enviando recibos sem parar, vire Pro.'],
+  'limite-calc':['Seus 10 cálculos grátis acabaram','Com o OrçaOn Pro você usa a calculadora de material sem limite e monta seus orçamentos em segundos.'],
+  'ultimo-calc':['Você usou seus 10 cálculos grátis','Gostou da calculadora? Com o OrçaOn Pro ela fica liberada sem limite.']
 };
 // ===== Instalar o app (ícone na tela do celular, sem passar pela loja) =====
 let pedidoInstalacao = null;
@@ -5362,9 +5373,33 @@ const CALCULOS = {
     }
   }
 };
+// 10 cálculos grátis (conta quando adiciona ao orçamento ou manda a lista); depois, só no Pro
+const CALC_GRATIS = 10, CALC_USOS_KEY = 'orcaon_calc_usos';
+function calcUsos() { try { return Math.max(0, parseInt(localStorage.getItem(CALC_USOS_KEY), 10) || 0); } catch (_) { return 0; } }
+function calcLiberada() { return (typeof usuarioTemPro === 'function' && usuarioTemPro()) || calcUsos() < CALC_GRATIS; }
+let calcContados = new Set();
+// Devolve false se acabou o grátis (e mostra a oferta do Pro)
+function usarCalculo() {
+  if (typeof usuarioTemPro === 'function' && usuarioTemPro()) return true;
+  if (calcContados.has(calcAtual)) return true;            // mesmo cálculo: não conta de novo
+  const usos = calcUsos();
+  if (usos >= CALC_GRATIS) { abrirOfertaPro('limite-calc'); return false; }
+  try { localStorage.setItem(CALC_USOS_KEY, String(usos + 1)); } catch (_) {}
+  calcContados.add(calcAtual);
+  if (usos + 1 === CALC_GRATIS) { try { localStorage.setItem(OFERTA_PRO_PENDENTE_KEY, 'ultimo-calc'); } catch (_) {} }
+  atualizarAvisoCalc();
+  return true;
+}
+function atualizarAvisoCalc() {
+  const el = document.getElementById('calc-gratis'); if (!el) return;
+  const pro = typeof usuarioTemPro === 'function' && usuarioTemPro();
+  el.textContent = pro ? '' : Math.min(calcUsos(), CALC_GRATIS) + ' de ' + CALC_GRATIS + ' cálculos grátis';
+}
 let calcAtual = 'pintura';
 const calcValores = {};
 function abrirCalculadora() {
+  calcContados = new Set();
+  atualizarAvisoCalc();
   const prof = profissaoAtual();
   const daProf = Object.keys(CALCULOS).filter(k => CALCULOS[k].prof.includes(prof));
   const ordem = daProf.concat(Object.keys(CALCULOS).filter(k => !daProf.includes(k)));
@@ -5405,6 +5440,10 @@ function calcularMaterial() {
     el.querySelector('b').textContent = l.nome; el.querySelector('small').textContent = l.det; el.querySelector('.v').textContent = l.v;
   });
   host.querySelector('.calc-aviso').textContent = c.aviso;
+  // acabou o grátis: resultado embaçado com o convite do Pro
+  const travar = !calcLiberada() && !calcContados.has(calcAtual);
+  host.classList.toggle('travado', travar);
+  if (travar) host.insertAdjacentHTML('beforeend', '<div class="calc-trava"><b>🔒 Seus 10 cálculos grátis acabaram</b><p>Vire Pro para usar a calculadora sem limite.</p><button type="button" class="btn-yellow-sm" onclick="abrirOfertaPro(\'limite-calc\')">Virar Pro</button></div>');
 }
 document.addEventListener('click', function (e) {
   const t = e.target.closest && e.target.closest('.calc-tipo, .calc-chip'); if (!t) return;
@@ -5438,6 +5477,7 @@ function colocarItemNoOrcamento(it) {
 }
 function adicionarCalculoAoOrcamento() {
   if (!calcResultado) return;
+  if (!usarCalculo()) return;
   calcResultado.itens.forEach(colocarItemNoOrcamento);
   if (typeof renumerarItens === 'function') renumerarItens();
   if (typeof atualizarTotalOrcamento === 'function') atualizarTotalOrcamento();
@@ -5447,6 +5487,7 @@ function adicionarCalculoAoOrcamento() {
 }
 function enviarListaMaterial() {
   if (!calcResultado) return;
+  if (!usarCalculo()) return;
   const c = CALCULOS[calcAtual];
   const texto = 'Lista de material: ' + c.titulo + '\n' + calcResultado.linhas.filter(l => l.nome !== 'Mão de obra').map(l => '• ' + l.nome + ': ' + l.v).join('\n') + '\n\n(feito no app OrçaOn)';
   window.open('https://wa.me/?text=' + encodeURIComponent(texto), '_blank');
