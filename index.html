@@ -4881,6 +4881,15 @@ function maoDeObraCalc(servico, qtd, un) {
   const total = qtd * p.valor;
   return { linha: { nome: 'Mão de obra', det: fmtNum(qtd) + ' ' + un + ' × ' + fmtBRL(p.valor) + ' (Meus preços)', v: fmtBRL(total), am: true }, item: { desc: servico, qtd, un, valor: p.valor }, total };
 }
+// Mão de obra com vários serviços de Meus preços: lista de [serviço, quantidade, unidade, rótulo]
+function maoDeObraVarios(lista) {
+  const partes = lista.filter(l => l[1] > 0).map(l => ({ l, r: maoDeObraCalc(l[0], l[1], l[2]) }));
+  const comPreco = partes.filter(x => x.r.total > 0), total = comPreco.reduce((t, x) => t + x.r.total, 0);
+  const linha = comPreco.length
+    ? { nome: 'Mão de obra', det: comPreco.map(x => x.l[3] + ' ' + x.r.linha.det.replace(' (Meus preços)', '')).join(' + ') + ' (Meus preços)', v: fmtBRL(total), am: true }
+    : { nome: 'Mão de obra', det: 'Cadastre o preço de ' + partes.map(x => '"' + x.l[0] + '"').join(' e ') + ' em Perfil > Meus preços', v: '—' };
+  return { linha, itens: partes.map(x => x.r.item) };
+}
 const CALCULOS = {
   pintura: {
     nome: '🎨 Pintura', titulo: 'Pintura de parede', prof: ['Pintor'],
@@ -4942,6 +4951,93 @@ const CALCULOS = {
         itens: [moC.item].concat(moD.total || condM ? [moD.item] : []).concat(pecas.filter(p => p[4] > 0).map(p => ({ desc: p[3], qtd: p[4], un: 'un', valor: 0 })))
       };
     }
+  },
+  piso: {
+    nome: '🧱 Piso', titulo: 'Assentamento de piso', prof: ['Pedreiro'],
+    campos: [
+      { id: 'area', rot: 'Área do piso', un: 'm²', val: 20, meia: true },
+      { id: 'caixa', rot: 'Cada caixa cobre', un: 'm²', val: 2, meia: true },
+      { id: 'arg', rot: 'Argamassa por m²', un: 'kg', val: 5, meia: true },
+      { id: 'rej', rot: 'Rejunte por m²', un: 'kg', val: 0.4, meia: true },
+      { id: 'folga', rot: 'Folga para perda e recorte', un: '%', val: 10 }
+    ],
+    aviso: 'Quantidades aproximadas. Confira na caixa quantos m² ela cobre e na embalagem o consumo da argamassa e do rejunte.',
+    conta(v) {
+      const area = v.area * (1 + v.folga / 100);
+      const caixas = v.caixa > 0 ? Math.ceil(area / v.caixa) : 0;
+      const sacos = Math.ceil(v.area * v.arg / 20), rejunte = Math.ceil(v.area * v.rej);
+      const mo = maoDeObraVarios([['Assentamento de piso', v.area, 'm²', 'piso']]);
+      return {
+        linhas: [
+          { nome: 'Piso', det: fmtNum(v.area) + ' m² + ' + fmtNum(v.folga) + '% ÷ ' + fmtNum(v.caixa) + ' m² por caixa', v: plural(caixas, 'caixa', 'caixas') },
+          { nome: 'Argamassa', det: fmtNum(v.area) + ' m² × ' + fmtNum(v.arg) + ' kg, sacos de 20 kg', v: plural(sacos, 'saco', 'sacos') },
+          { nome: 'Rejunte', det: fmtNum(v.area) + ' m² × ' + fmtNum(v.rej) + ' kg', v: rejunte + ' kg' },
+          mo.linha
+        ],
+        itens: mo.itens.concat([
+          { desc: 'Piso (caixa de ' + fmtNum(v.caixa) + ' m²)', qtd: caixas, un: 'un', valor: 0 },
+          { desc: 'Argamassa (saco de 20 kg)', qtd: sacos, un: 'un', valor: 0 },
+          { desc: 'Rejunte (kg)', qtd: rejunte, un: 'un', valor: 0 }
+        ].filter(i => i.qtd > 0))
+      };
+    }
+  },
+  contrapiso: {
+    nome: '🪣 Contrapiso', titulo: 'Contrapiso', prof: ['Pedreiro'],
+    campos: [
+      { id: 'area', rot: 'Área', un: 'm²', val: 20, meia: true },
+      { id: 'esp', rot: 'Espessura', un: 'cm', val: 5, meia: true },
+      { id: 'folga', rot: 'Folga para perda', un: '%', val: 10 }
+    ],
+    aviso: 'Traço 1:3 (cimento e areia), cerca de 430 kg de cimento e 1,1 m³ de areia por m³ de massa. Valores aproximados.',
+    conta(v) {
+      const vol = v.area * (v.esp / 100) * (1 + v.folga / 100);
+      const cimento = Math.ceil(vol * 430 / 50), areia = Math.ceil(vol * 1.1 * 10) / 10;
+      const mo = maoDeObraVarios([['Contrapiso', v.area, 'm²', 'contrapiso']]);
+      return {
+        linhas: [
+          { nome: 'Volume de massa', det: fmtNum(v.area) + ' m² × ' + fmtNum(v.esp) + ' cm + ' + fmtNum(v.folga) + '%', v: fmtNum(vol) + ' m³' },
+          { nome: 'Cimento', det: 'sacos de 50 kg', v: plural(cimento, 'saco', 'sacos') },
+          { nome: 'Areia média', det: 'lavada', v: fmtNum(areia, 1) + ' m³' },
+          mo.linha
+        ],
+        itens: mo.itens.concat([
+          { desc: 'Cimento (saco de 50 kg)', qtd: cimento, un: 'un', valor: 0 },
+          { desc: 'Areia média', qtd: areia, un: 'm³', valor: 0 }
+        ].filter(i => i.qtd > 0))
+      };
+    }
+  },
+  fiacao: {
+    nome: '⚡ Fiação', titulo: 'Passagem de fiação', prof: ['Eletricista'],
+    campos: [
+      { id: 'circ', rot: 'Quantos circuitos?', un: '', val: 3, meia: true },
+      { id: 'comp', rot: 'Metros por circuito', un: 'm', val: 15, meia: true },
+      { id: 'fios', rot: 'Fios por circuito', chips: [2, 3], val: 3 },
+      { id: 'bitola', rot: 'Bitola do fio', chips: [1.5, 2.5, 4, 6], sufixo: ' mm²', val: 2.5 },
+      { id: 'pontos', rot: 'Tomadas e interruptores', un: 'pontos', val: 8, meia: true },
+      { id: 'folga', rot: 'Folga para perda', un: '%', val: 10, meia: true }
+    ],
+    aviso: 'Quantidades aproximadas. 3 fios = fase, neutro e terra. Confira a bitola certa para cada circuito pela norma.',
+    conta(v) {
+      const porCor = Math.ceil(v.circ * v.comp * (1 + v.folga / 100));
+      const total = porCor * v.fios, rolos = Math.ceil(porCor / 100);
+      const cores = v.fios >= 3 ? ['Fase (preto ou vermelho)', 'Neutro (azul)', 'Terra (verde)'] : ['Fase (preto ou vermelho)', 'Neutro (azul)'];
+      const b = fmtNum(v.bitola) + ' mm²';
+      const eletroduto = Math.ceil(v.circ * v.comp * (1 + v.folga / 100)), rolosEl = Math.ceil(eletroduto / 50);
+      const mo = maoDeObraVarios([['Passagem de fiação', v.circ * v.comp, 'm', 'fiação'], ['Instalação de tomada', v.pontos, 'un', 'pontos']]);
+      return {
+        linhas: [{ nome: 'Fio ' + b + ' (total)', det: plural(v.circ, 'circuito', 'circuitos') + ' × ' + fmtNum(v.comp) + ' m × ' + v.fios + ' fios + ' + fmtNum(v.folga) + '%', v: total + ' m' }]
+          .concat(cores.map(c => ({ nome: c, det: porCor + ' m', v: plural(rolos, 'rolo', 'rolos') + ' de 100 m' })))
+          .concat([
+            { nome: 'Eletroduto corrugado', det: eletroduto + ' m', v: plural(rolosEl, 'rolo', 'rolos') + ' de 50 m' },
+            { nome: 'Caixas 4×2', det: 'uma por ponto', v: String(v.pontos) },
+            mo.linha
+          ]),
+        itens: mo.itens.concat(cores.map(c => ({ desc: 'Fio ' + b + ' ' + c.split(' (')[0].toLowerCase() + ' (rolo de 100 m)', qtd: rolos, un: 'un', valor: 0 })))
+          .concat([{ desc: 'Eletroduto corrugado (rolo de 50 m)', qtd: rolosEl, un: 'un', valor: 0 }, { desc: 'Caixa 4×2', qtd: v.pontos, un: 'un', valor: 0 }].filter(i => i.qtd > 0))
+      };
+    }
   }
 };
 let calcAtual = 'pintura';
@@ -4964,7 +5060,7 @@ function montarCamposCalc() {
   const c = CALCULOS[calcAtual], v = valoresCalc(calcAtual), host = document.getElementById('calc-campos'); if (!host) return;
   let html = '<h3>' + c.titulo + '</h3>', meia = [];
   const campoHTML = f => {
-    if (f.chips) return '<div><label>' + f.rot + '</label><div class="calc-chips">' + f.chips.map(o => '<button type="button" class="calc-chip' + (o === v[f.id] ? ' on' : '') + '" data-campo="' + f.id + '" data-v="' + o + '">' + o + (f.sufixo || '') + '</button>').join('') + '</div></div>';
+    if (f.chips) return '<div><label>' + f.rot + '</label><div class="calc-chips">' + f.chips.map(o => '<button type="button" class="calc-chip' + (o === v[f.id] ? ' on' : '') + '" data-campo="' + f.id + '" data-v="' + o + '">' + fmtNum(o) + (f.sufixo || '') + '</button>').join('') + '</div></div>';
     return '<div><label for="calc-' + f.id + '">' + f.rot + '</label><div class="calc-campo"><input type="text" inputmode="decimal" autocomplete="off" id="calc-' + f.id + '" data-campo="' + f.id + '" value="' + fmtNum(v[f.id]) + '"><em>' + f.un + '</em></div></div>';
   };
   c.campos.forEach(f => {
