@@ -4575,15 +4575,22 @@ function loginWithGoogle() {
   if (loginIndisponivelNoArquivo()) return;
   if (!firebaseAuthReady && !iniciarFirebaseAuth()) { authSetupAviso(); return; }
   const provider = new firebase.auth.GoogleAuthProvider();
+  // "Carregando…" desde o toque: a tela de login não aparece de novo ao voltar da escolha da conta
+  const raiz = document.documentElement;
+  raiz.classList.add('boot-wait');
+  const seguranca = setTimeout(() => raiz.classList.remove('boot-wait'), 90000);
   firebase.auth().signInWithPopup(provider).then(() => {
-    // conta escolhida: mostra "Carregando…" até terminar de entrar (o aviso some sozinho em até 15 s)
+    clearTimeout(seguranca);
     try { localStorage.setItem('orcaon_boot_google', '1'); } catch (_) {}
-    document.documentElement.classList.add('boot-wait');
-    setTimeout(() => document.documentElement.classList.remove('boot-wait'), 15000);
+    raiz.classList.add('boot-wait');
+    setTimeout(() => raiz.classList.remove('boot-wait'), 15000);   // some sozinho se algo travar
   }).catch(err => {
-    document.documentElement.classList.remove('boot-wait');
+    clearTimeout(seguranca);
+    raiz.classList.remove('boot-wait');
     console.error(err);
-    alert(err.code === 'auth/popup-blocked' ? 'O navegador bloqueou a janela de login. Permita pop-ups e tente novamente.' : 'Não foi possível entrar com Google: ' + (err.message || err.code));
+    const code = (err && err.code) || '';
+    if (code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request' || code === 'auth/user-cancelled') return;   // fechou a janela sem escolher: só volta ao login
+    alert(code === 'auth/popup-blocked' ? 'O navegador bloqueou a janela de login. Permita pop-ups e tente novamente.' : 'Não foi possível entrar com Google: ' + (err.message || code));
   });
 }
 function afterLogin() {
