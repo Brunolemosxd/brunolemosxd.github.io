@@ -2997,6 +2997,26 @@ body.light .orc-chip.active {
 .oferta-pro-close{position:absolute;right:16px;top:16px;z-index:2;width:38px;height:38px;border:1px solid rgba(255,255,255,.65);border-radius:50%;background:rgba(4,18,32,.8);color:#fff;font-size:28px;line-height:1;cursor:pointer}
 .oferta-pro-banner{display:block;width:100%;height:auto;border-radius:12px}
 html:not(.bf-ativa) .bf-promo{display:none!important}
+.btn-calc{display:block;width:100%;margin-top:10px;padding:13px;border-radius:12px;border:1px solid var(--accent,#F4C430);background:rgba(244,196,48,.08);color:var(--accent,#F4C430);font-weight:800;font-size:15px;cursor:pointer;font-family:inherit}
+.calc-tipos{display:flex;gap:8px;overflow-x:auto;margin:10px 0 14px;padding-bottom:4px}
+.calc-tipo{flex:0 0 auto;padding:8px 14px;border-radius:999px;border:1px solid var(--border);background:transparent;color:var(--text-secondary);font-size:14px;font-weight:600;cursor:pointer;font-family:inherit}
+.calc-tipo.on{background:#F4C430;border-color:#F4C430;color:#0B1C2C}
+.calc-dupla{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.calc-campo{position:relative}
+.calc-campo input{padding-right:52px!important}
+.calc-campo em{position:absolute;right:12px;top:50%;transform:translateY(-50%);font-style:normal;color:var(--text-secondary);font-size:14px;pointer-events:none}
+.calc-chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:4px}
+.calc-chip{padding:7px 14px;border-radius:16px;border:1px solid var(--border);background:transparent;color:var(--text-secondary);font-size:14px;cursor:pointer;font-family:inherit}
+.calc-chip.on{background:#F4C430;border-color:#F4C430;color:#0B1C2C;font-weight:700}
+.calc-res{border:2px solid #2BD67B!important}
+.calc-res h3{color:#2BD67B!important}
+.calc-linha{display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);font-size:14px}
+.calc-linha:last-of-type{border-bottom:0}
+.calc-linha small{display:block;color:var(--text-secondary);font-size:12px;margin-top:2px}
+.calc-linha .v{text-align:right;font-weight:800;white-space:nowrap}
+.calc-linha .v.am{color:var(--accent,#F4C430)}
+.calc-aviso{font-size:12px;color:var(--text-secondary);margin-top:8px;line-height:1.35}
+.calc-wpp{display:block;width:100%;margin-top:10px;padding:14px;border-radius:12px;border:2px solid #25D366;background:transparent;color:#25D366;font-weight:800;font-size:15px;cursor:pointer;font-family:inherit}
 .pag-pro{color:#fff;padding:22px 16px 16px;text-align:center}
 .pag-pro h2{margin:4px 0 2px;font-size:22px;color:#F4C430}
 .pag-valor{margin:0 0 10px;color:#cbd8e4}
@@ -3551,6 +3571,7 @@ body.light .btn-remove-item{color:#b91c1c}
           
           <div class="item-box" id="itens-container"><!-- itens criados via JS, cada um com suas sugestões --></div>
           <button class="btn-dashed" type="button" onclick="adicionarItem()">+ Adicionar item</button>
+          <button class="btn-calc" type="button" onclick="abrirCalculadora()">🧮 Calculadora de material</button>
         </div>
 
         <div class="form-card">
@@ -3957,6 +3978,21 @@ body.light .btn-remove-item{color:#b91c1c}
     </div>
 
     <!-- PRICE TABLE -->
+    <div id="screen-calculadora" class="screen">
+      <header class="app-header">
+        <button class="back-btn" onclick="goBack()"><i class="fas fa-arrow-left"></i> Voltar</button>
+        <h1>Calculadora de material</h1>
+      </header>
+      <div class="content">
+        <p class="hint-sm">Coloque as medidas e o app calcula o material. Depois é só adicionar ao orçamento.</p>
+        <div class="calc-tipos" id="calc-tipos"></div>
+        <div class="form-card" id="calc-campos"></div>
+        <div class="form-card calc-res" id="calc-res"></div>
+        <button type="button" class="btn-primary-lg" onclick="adicionarCalculoAoOrcamento()">+ Adicionar ao orçamento</button>
+        <button type="button" class="calc-wpp" onclick="enviarListaMaterial()">Mandar lista de material no WhatsApp</button>
+      </div>
+    </div>
+
     <!-- EDIT PROFILE -->
     <div id="screen-edit-profile" class="screen">
       <header class="app-header">
@@ -4820,6 +4856,182 @@ function startVoiceBudget() {
 
 function abrirModelosRecibo() {
   pushAndShow('screen-modelos-recibo');
+}
+
+// ===== Calculadora de material (por profissão) =====
+// Cada cálculo: campos que a pessoa preenche e conta() que devolve as linhas do resultado e os itens do orçamento.
+const plural = (n, um, varios) => n + ' ' + (n === 1 ? um : varios);
+const fmtNum = (n, casas) => (Number(n) || 0).toLocaleString('pt-BR', { maximumFractionDigits: casas == null ? 2 : casas });
+function embalagensTinta(litros) {   // latas de 18 L, galões de 3,6 L e quartos de 0,9 L, sem faltar tinta
+  let resto = Math.max(0, litros), latas = 0, galoes = 0, quartos = 0;
+  if (resto >= 18) { latas = Math.floor(resto / 18); resto -= latas * 18; }
+  galoes = Math.floor(resto / 3.6); resto -= galoes * 3.6;
+  if (resto > 0.0001) { if (resto <= 1.8) quartos = Math.ceil(resto / 0.9); else galoes++; }
+  if (quartos >= 4) { galoes++; quartos = 0; }
+  if (galoes >= 5) { latas++; galoes = 0; quartos = 0; }
+  const p = [];
+  if (latas) p.push(latas + (latas > 1 ? ' latas' : ' lata') + ' de 18 L');
+  if (galoes) p.push(galoes + (galoes > 1 ? ' galões' : ' galão') + ' de 3,6 L');
+  if (quartos) p.push(quartos + (quartos > 1 ? ' quartos' : ' quarto') + ' de 0,9 L');
+  return p.join(' + ') || '—';
+}
+function maoDeObraCalc(servico, qtd, un) {
+  const p = precoServico(servico);
+  if (!p) return { linha: { nome: 'Mão de obra', det: 'Cadastre o preço de "' + servico + '" em Perfil > Meus preços', v: '—' }, item: { desc: servico, qtd, un, valor: 0 }, total: 0 };
+  const total = qtd * p.valor;
+  return { linha: { nome: 'Mão de obra', det: fmtNum(qtd) + ' ' + un + ' × ' + fmtBRL(p.valor) + ' (Meus preços)', v: fmtBRL(total), am: true }, item: { desc: servico, qtd, un, valor: p.valor }, total };
+}
+const CALCULOS = {
+  pintura: {
+    nome: '🎨 Pintura', titulo: 'Pintura de parede', prof: ['Pintor'],
+    campos: [
+      { id: 'area', rot: 'Área a pintar', un: 'm²', val: 36 },
+      { id: 'demaos', rot: 'Quantas demãos?', chips: [1, 2, 3], val: 2 },
+      { id: 'rend', rot: 'Rendimento da tinta', un: 'm²/L', val: 10, meia: true },
+      { id: 'folga', rot: 'Folga para perda', un: '%', val: 10, meia: true }
+    ],
+    aviso: 'Valores aproximados. Confira o rendimento escrito na lata da tinta.',
+    conta(v) {
+      const litros = v.rend > 0 ? (v.area * v.demaos / v.rend) * (1 + v.folga / 100) : 0;
+      const lt = Math.ceil(litros * 10) / 10, emb = embalagensTinta(lt);
+      const mo = maoDeObraCalc('Pintura de parede', v.area, 'm²');
+      return {
+        linhas: [
+          { nome: 'Tinta', det: fmtNum(v.area) + ' m² × ' + plural(v.demaos, 'demão', 'demãos') + ' ÷ ' + fmtNum(v.rend) + ' + ' + fmtNum(v.folga) + '%', v: fmtNum(lt, 1) + ' litros' },
+          { nome: 'Na loja', det: 'embalagens para não faltar', v: emb },
+          mo.linha
+        ],
+        itens: [mo.item, { desc: 'Tinta (' + emb + ')', qtd: 1, un: 'un', valor: 0 }]
+      };
+    }
+  },
+  calha: {
+    nome: '🌧️ Calha', titulo: 'Instalação de calha', prof: ['Calheiro'],
+    campos: [
+      { id: 'comp', rot: 'Comprimento da calha', un: 'm', val: 18, meia: true },
+      { id: 'alt', rot: 'Altura até o chão', un: 'm', val: 3, meia: true },
+      { id: 'desc', rot: 'Quantas descidas (condutores)?', chips: [1, 2, 3, 4], val: 2 },
+      { id: 'barra', rot: 'Barra da calha', chips: [3, 6], sufixo: ' m', val: 3, meia: true },
+      { id: 'sup', rot: 'Suporte a cada', un: 'cm', val: 50, meia: true },
+      { id: 'folga', rot: 'Folga para perda', un: '%', val: 5 }
+    ],
+    aviso: 'Quantidades aproximadas. Confira o tamanho das peças na loja e a quantidade de descidas pelo tamanho do telhado.',
+    conta(v) {
+      const barras = v.barra > 0 ? Math.ceil(v.comp * (1 + v.folga / 100) / v.barra) : 0;
+      const emendas = Math.max(0, barras - 1), suportes = v.sup > 0 ? Math.floor(v.comp / (v.sup / 100)) + 1 : 0;
+      const condM = v.desc * v.alt, tubos = Math.ceil(condM / 3), curvas = 2 * v.desc, bracadeiras = v.desc * Math.ceil(v.alt);
+      const selante = Math.max(1, Math.ceil((emendas + 2 + v.desc) / 5));
+      const moC = maoDeObraCalc('Instalação de calha', v.comp, 'm'), moD = maoDeObraCalc('Condutor vertical', condM, 'm');
+      const moTotal = moC.total + moD.total;
+      const linhaMo = (moC.total || moD.total)
+        ? { nome: 'Mão de obra', det: [moC.total ? 'calha ' + moC.linha.det.replace(' (Meus preços)', '') : '', moD.total ? 'condutor ' + moD.linha.det.replace(' (Meus preços)', '') : ''].filter(Boolean).join(' + ') + ' (Meus preços)', v: fmtBRL(moTotal), am: true }
+        : { nome: 'Mão de obra', det: 'Cadastre o preço de "Instalação de calha" e "Condutor vertical" em Perfil > Meus preços', v: '—' };
+      const pecas = [
+        ['Calha', fmtNum(v.comp) + ' m + ' + fmtNum(v.folga) + '% de folga', barras + ' barras de ' + fmtNum(v.barra) + ' m', 'Calha (barra de ' + fmtNum(v.barra) + ' m)', barras],
+        ['Emendas', 'entre as barras', String(emendas), 'Emenda de calha', emendas],
+        ['Cabeceiras (tampas)', 'uma em cada ponta', '2', 'Cabeceira de calha', 2],
+        ['Suportes', 'um a cada ' + fmtNum(v.sup) + ' cm', String(suportes), 'Suporte de calha', suportes],
+        ['Bocais de saída', 'um por descida', String(v.desc), 'Bocal de saída', v.desc],
+        ['Condutor', plural(v.desc, 'descida', 'descidas') + ' × ' + fmtNum(v.alt) + ' m', plural(tubos, 'tubo', 'tubos') + ' de 3 m', 'Condutor (tubo de 3 m)', tubos],
+        ['Curvas (joelhos)', '2 por descida', String(curvas), 'Curva (joelho)', curvas],
+        ['Braçadeiras', 'uma a cada 1 m de condutor', String(bracadeiras), 'Braçadeira', bracadeiras],
+        ['Selante (PU)', 'emendas, tampas e bocais', plural(selante, 'tubo', 'tubos'), 'Selante PU (tubo)', selante]
+      ];
+      return {
+        linhas: pecas.map(p => ({ nome: p[0], det: p[1], v: p[2] })).concat([linhaMo]),
+        itens: [moC.item].concat(moD.total || condM ? [moD.item] : []).concat(pecas.filter(p => p[4] > 0).map(p => ({ desc: p[3], qtd: p[4], un: 'un', valor: 0 })))
+      };
+    }
+  }
+};
+let calcAtual = 'pintura';
+const calcValores = {};
+function abrirCalculadora() {
+  const prof = profissaoAtual();
+  const daProf = Object.keys(CALCULOS).filter(k => CALCULOS[k].prof.includes(prof));
+  const ordem = daProf.concat(Object.keys(CALCULOS).filter(k => !daProf.includes(k)));
+  if (!daProf.includes(calcAtual)) calcAtual = ordem[0];
+  const tipos = document.getElementById('calc-tipos');
+  if (tipos) tipos.innerHTML = ordem.map(k => '<button type="button" class="calc-tipo' + (k === calcAtual ? ' on' : '') + '" data-calc="' + k + '">' + CALCULOS[k].nome + '</button>').join('');
+  montarCamposCalc();
+  pushAndShow('screen-calculadora');
+}
+function valoresCalc(k) {
+  if (!calcValores[k]) { calcValores[k] = {}; CALCULOS[k].campos.forEach(c => calcValores[k][c.id] = c.val); }
+  return calcValores[k];
+}
+function montarCamposCalc() {
+  const c = CALCULOS[calcAtual], v = valoresCalc(calcAtual), host = document.getElementById('calc-campos'); if (!host) return;
+  let html = '<h3>' + c.titulo + '</h3>', meia = [];
+  const campoHTML = f => {
+    if (f.chips) return '<div><label>' + f.rot + '</label><div class="calc-chips">' + f.chips.map(o => '<button type="button" class="calc-chip' + (o === v[f.id] ? ' on' : '') + '" data-campo="' + f.id + '" data-v="' + o + '">' + o + (f.sufixo || '') + '</button>').join('') + '</div></div>';
+    return '<div><label for="calc-' + f.id + '">' + f.rot + '</label><div class="calc-campo"><input type="text" inputmode="decimal" autocomplete="off" id="calc-' + f.id + '" data-campo="' + f.id + '" value="' + fmtNum(v[f.id]) + '"><em>' + f.un + '</em></div></div>';
+  };
+  c.campos.forEach(f => {
+    if (f.meia) { meia.push(campoHTML(f)); if (meia.length === 2) { html += '<div class="calc-dupla">' + meia.join('') + '</div>'; meia = []; } }
+    else { if (meia.length) { html += '<div class="calc-dupla">' + meia.join('') + '</div>'; meia = []; } html += campoHTML(f); }
+  });
+  if (meia.length) html += '<div class="calc-dupla">' + meia.join('') + '</div>';
+  host.innerHTML = html;
+  calcularMaterial();
+}
+let calcResultado = null;
+function calcularMaterial() {
+  const c = CALCULOS[calcAtual], v = valoresCalc(calcAtual);
+  calcResultado = c.conta(v);
+  const host = document.getElementById('calc-res'); if (!host) return;
+  host.innerHTML = '<h3>✔ Você vai precisar</h3>' + calcResultado.linhas.map(l =>
+    '<div class="calc-linha"><div><b></b><small></small></div><div class="v' + (l.am ? ' am' : '') + '"></div></div>').join('') + '<p class="calc-aviso"></p>';
+  host.querySelectorAll('.calc-linha').forEach((el, i) => {
+    const l = calcResultado.linhas[i];
+    el.querySelector('b').textContent = l.nome; el.querySelector('small').textContent = l.det; el.querySelector('.v').textContent = l.v;
+  });
+  host.querySelector('.calc-aviso').textContent = c.aviso;
+}
+document.addEventListener('click', function (e) {
+  const t = e.target.closest && e.target.closest('.calc-tipo, .calc-chip'); if (!t) return;
+  if (t.classList.contains('calc-tipo')) {
+    calcAtual = t.dataset.calc;
+    document.querySelectorAll('.calc-tipo').forEach(b => b.classList.toggle('on', b === t));
+    montarCamposCalc(); return;
+  }
+  valoresCalc(calcAtual)[t.dataset.campo] = Number(t.dataset.v);
+  t.parentNode.querySelectorAll('.calc-chip').forEach(b => b.classList.toggle('on', b === t));
+  calcularMaterial();
+});
+document.addEventListener('input', function (e) {
+  const el = e.target; if (!el || !el.dataset || !el.dataset.campo || el.id.indexOf('calc-') !== 0) return;
+  let t = el.value.replace(/[^0-9.,]/g, '').replace('.', ','); const i = t.indexOf(','); if (i >= 0) t = t.slice(0, i + 1) + t.slice(i + 1).replace(/,/g, '');
+  if (t !== el.value) el.value = t;
+  valoresCalc(calcAtual)[el.dataset.campo] = parseFloat(t.replace(',', '.')) || 0;
+  calcularMaterial();
+});
+// Coloca um item no orçamento: usa a primeira linha vazia ou cria uma nova
+function colocarItemNoOrcamento(it) {
+  const cont = document.getElementById('itens-container'); if (!cont) return;
+  let row = Array.from(cont.querySelectorAll('.item-row')).find(r => !r.querySelector('.item-desc').value.trim() && !parseBRL(r.querySelector('.item-valor').value));
+  if (!row) { adicionarItem(); row = cont.lastElementChild; }
+  row.querySelector('.item-desc').value = it.desc;
+  const ub = Array.from(row.querySelectorAll('.unit')).find(u => u.textContent.trim() === it.un);
+  if (ub && !ub.classList.contains('active')) ub.click();
+  row.querySelector('.item-qtd').value = fmtQtd(it.qtd);
+  row.querySelector('.item-valor').value = it.valor ? fmtBRL(it.valor) : 'R$ 0,00';
+  if (typeof marcarSugestaoAtiva === 'function') marcarSugestaoAtiva(row);
+}
+function adicionarCalculoAoOrcamento() {
+  if (!calcResultado) return;
+  calcResultado.itens.forEach(colocarItemNoOrcamento);
+  if (typeof renumerarItens === 'function') renumerarItens();
+  if (typeof atualizarTotalOrcamento === 'function') atualizarTotalOrcamento();
+  goBack();
+  const sem = calcResultado.itens.filter(i => !i.valor).length;
+  try { orcaonToast(calcResultado.itens.length + ' itens adicionados.' + (sem ? ' Coloque o valor dos materiais.' : '')); } catch (_) {}
+}
+function enviarListaMaterial() {
+  if (!calcResultado) return;
+  const c = CALCULOS[calcAtual];
+  const texto = 'Lista de material: ' + c.titulo + '\n' + calcResultado.linhas.filter(l => l.nome !== 'Mão de obra').map(l => '• ' + l.nome + ': ' + l.v).join('\n') + '\n\n(feito no app OrçaOn)';
+  window.open('https://wa.me/?text=' + encodeURIComponent(texto), '_blank');
 }
 
 let modeloReciboAtual = 'Recibo Simples';
