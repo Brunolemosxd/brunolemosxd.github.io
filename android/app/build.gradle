@@ -1,0 +1,47 @@
+plugins { id 'com.android.application' }
+
+// A chave de assinatura NÃO fica no GitHub. O caminho e as senhas vêm do arquivo
+// keystore.properties (fora do repositório) ou de variáveis de ambiente.
+def chave = new Properties()
+def arqChave = rootProject.file('keystore.properties')
+if (arqChave.exists()) arqChave.withInputStream { chave.load(it) }
+def cfg = { String k, String env -> chave.getProperty(k) ?: System.getenv(env) }
+
+android {
+    namespace 'com.orcaon.app'
+    compileSdk 36
+
+    defaultConfig {
+        applicationId 'com.orcaon.app'
+        minSdk 24
+        targetSdk 36
+        versionCode 1
+        versionName '1.0.0'
+    }
+
+    signingConfigs {
+        release {
+            if (cfg('storeFile', 'ORCAON_KEYSTORE')) {
+                storeFile file(cfg('storeFile', 'ORCAON_KEYSTORE'))
+                storePassword cfg('storePassword', 'ORCAON_KEYSTORE_PASS')
+                keyAlias cfg('keyAlias', 'ORCAON_KEY_ALIAS')
+                keyPassword cfg('keyPassword', 'ORCAON_KEY_PASS')
+            }
+        }
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            signingConfig signingConfigs.release
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+    implementation 'com.google.androidbrowserhelper:androidbrowserhelper:2.7.4'
+    implementation 'androidx.appcompat:appcompat:1.7.0'
+}

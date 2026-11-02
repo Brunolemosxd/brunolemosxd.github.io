@@ -8,6 +8,7 @@ Dono: Bruno. Idioma de tudo: português do Brasil. Explicar sempre em linguagem 
 - `index.html` é o app inteiro em UM arquivo (HTML + CSS + JS). Dados no `localStorage`; login Google, cotas e backup via Firebase (Auth + Firestore, SDK compat 10.14.1).
 - Outros arquivos: `admin.html` (painel só do Bruno), `politica-privacidade.html`, `termos-de-uso.html`, `excluir-conta.html`, `manifest.json`, `sw.js`, ícones PNG.
 - `capa-play-1024x500.png` é só material da Play Store: NÃO vai para o GitHub.
+- App Android (TWA) em `android/`: pacote `com.orcaon.app` (não muda nunca). A chave de assinatura (`orcaon-upload.jks` + senha) fica com o Bruno, NUNCA no GitHub. `/.well-known/assetlinks.json` tem a impressão digital da chave (sem ele aparece a barra de endereço) e `.nojekyll` faz o GitHub Pages publicar essa pasta. Ver `android/LEIA-ME.md`.
 - PDF/imagem: html2canvas + jsPDF, com quebra de página inteligente. Compartilhamento usa `navigator.share` com painel alternativo (Samsung Internet e navegadores de apps não compartilham arquivo).
 
 ## Regras que não podem ser quebradas
