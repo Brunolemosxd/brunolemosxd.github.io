@@ -6496,7 +6496,7 @@ function compartilharReciboPDF(acaoInicial='preview') {
      let podeCompartilharArquivo=false;
      try{podeCompartilharArquivo=!!(navigator.share&&(!navigator.canShare||navigator.canShare({files:[file]})));}catch(_e){podeCompartilharArquivo=false;}
      if(podeCompartilharArquivo){
-      try{await navigator.share({files:[file],title:'Recibo OrçaOn',text:'Segue o recibo gerado pelo OrçaOn.'});if(status)status.textContent='Compartilhamento aberto. Selecione WhatsApp ou outro aplicativo.';}
+      try{await navigator.share({files:[file]});if(status)status.textContent='Compartilhamento aberto. Selecione WhatsApp ou outro aplicativo.';}
       catch(shareError){if(shareError&&shareError.name==='AbortError'){if(status)status.textContent='Compartilhamento cancelado.';}else{if(status)status.textContent='Toque em "Compartilhar agora" para abrir o WhatsApp ou outro aplicativo.';mostrarBotaoCompartilharRecibo(file,blob,nome);}}
      }else{
       baixarRecibo(blob,nome);
@@ -6515,7 +6515,7 @@ function compartilharReciboPDF(acaoInicial='preview') {
    b.textContent='Compartilhar agora';
    b.onclick=async function(){
     const st=document.querySelector('.receipt-export-status');
-    try{await navigator.share({files:[file],title:'Recibo OrçaOn',text:'Segue o recibo gerado pelo OrçaOn.'});}
+    try{await navigator.share({files:[file]});}
     catch(e){if(!e||e.name!=='AbortError'){try{await navigator.share({files:[file]});}catch(e2){if(!e2||e2.name!=='AbortError'){baixarRecibo(blob,nome);if(st)st.textContent='Este aparelho não abriu o compartilhamento. Arquivo baixado: '+nome+'. Anexe-o no WhatsApp.';}}}}
    };
   }
@@ -7585,7 +7585,7 @@ function escaparHTMLOrc(v) {
 function carregarScriptOrcamento(src, globalCheck) {
   return new Promise(function(resolve, reject) {
     if (globalCheck && globalCheck()) return resolve();
-    var existing = document.querySelector('script[data-orcapro-src="'+src+'"]');
+    var existing = document.querySelector('script[data-orcaon-src="'+src+'"]');
     if (existing) {
       existing.addEventListener('load', function(){ resolve(); });
       existing.addEventListener('error', function(){ reject(new Error('Falha ao carregar biblioteca')); });
@@ -7603,13 +7603,18 @@ function carregarScriptOrcamento(src, globalCheck) {
   });
 }
 
+// Usa primeiro a cópia que fica no próprio site (mais rápida e funciona com internet fraca); a internet só se faltar
+async function carregarLocalOuInternet(local, internet, check) {
+  try { await carregarScriptOrcamento(local, check); if (check()) return; } catch (_) {}
+  await carregarScriptOrcamento(internet, check);
+}
 async function garantirLibsExportacaoOrcamento(tipo) {
-  await carregarScriptOrcamento(
+  await carregarLocalOuInternet('html2canvas.min.js',
     'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js',
     function(){ return !!window.html2canvas; }
   );
   if (tipo === 'pdf') {
-    await carregarScriptOrcamento(
+    await carregarLocalOuInternet('jspdf.umd.min.js',
       'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',
       function(){ return !!(window.jspdf && window.jspdf.jsPDF); }
     );
@@ -9472,12 +9477,9 @@ document.addEventListener('DOMContentLoaded',()=>{renderRecibosSalvos();atualiza
     try { return !!(navigator.share && (!navigator.canShare || navigator.canShare({ files: [file] }))); } catch (e) { return false; }
   }
   async function tentarShare(file, opc){
-    try { await navigator.share({ files: [file], title: opc.titulo, text: opc.texto }); return 'ok'; }
-    catch (e) {
-      if (e && e.name === 'AbortError') return 'cancelado';
-      try { await navigator.share({ files: [file] }); return 'ok'; }
-      catch (e2) { return (e2 && e2.name === 'AbortError') ? 'cancelado' : 'erro'; }
-    }
+    // só o arquivo: com texto junto, no navegador da Samsung o WhatsApp recebia só o texto (sem o PDF)
+    try { await navigator.share({ files: [file] }); return 'ok'; }
+    catch (e) { return (e && e.name === 'AbortError') ? 'cancelado' : 'erro'; }
   }
   function baixar(file){
     var u = URL.createObjectURL(file), a = document.createElement('a');
