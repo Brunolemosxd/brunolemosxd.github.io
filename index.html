@@ -50,6 +50,18 @@
 .plano-btn-pro{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:999px;border:none;cursor:pointer;font-size:12px;font-weight:800;line-height:1.4;background:linear-gradient(135deg,#f7c52f,#e9a712);color:#2a1d00;box-shadow:0 0 12px rgba(247,197,47,.35)}
 .plano-btn-pro i{font-size:12px}
 .plano-btn-pro:active{transform:scale(.96)}
+/* Virar Pro chama atenção: balança e brilha a cada 4 s (parado o resto do tempo) */
+.plano-btn-pro{animation:proChama 4s ease-in-out 1.5s infinite;transform-origin:50% 60%}
+@keyframes proChama{
+  0%,72%,100%{transform:none;box-shadow:0 0 12px rgba(247,197,47,.45)}
+  76%{transform:scale(1.08) rotate(-4deg);box-shadow:0 0 22px rgba(247,197,47,.9)}
+  80%{transform:scale(1.08) rotate(4deg)}
+  84%{transform:scale(1.08) rotate(-3deg)}
+  88%{transform:scale(1.05) rotate(2deg);box-shadow:0 0 18px rgba(247,197,47,.75)}
+  92%{transform:scale(1) rotate(0)}
+}
+.plano-btn-pro:active{animation:none}
+@media (prefers-reduced-motion:reduce){.plano-btn-pro{animation:none}}
 .plano-selo.plano-free{background:rgba(148,163,184,.14);color:#cbd5e1;border-color:rgba(148,163,184,.35)}
 .plano-selo.plano-pro{background:linear-gradient(135deg,#f7c52f,#e9a712);color:#2a1d00;border-color:#ffd96b;box-shadow:0 0 12px rgba(247,197,47,.35)}
 .plano-selo.plano-admin{background:rgba(99,102,241,.2);color:#c7d2fe;border-color:rgba(129,140,248,.5)}
