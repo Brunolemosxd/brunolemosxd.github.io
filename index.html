@@ -31,7 +31,7 @@
   try {
     if (/^https?:$/i.test(location.protocol) && localStorage.getItem('orcaon_boot_google') === '1') {
       document.documentElement.classList.add('boot-wait');
-      setTimeout(function(){ document.documentElement.classList.remove('boot-wait'); }, 7000);
+      setTimeout(function(){ document.documentElement.classList.remove('boot-wait'); }, 12000);
     }
   } catch (e) {}
   </script>
@@ -39,6 +39,7 @@
   #boot-splash{display:none}
   html.boot-wait #boot-splash{display:flex;position:fixed;inset:0;z-index:2000000;background:#0B1C2C;color:#fff;align-items:center;justify-content:center;flex-direction:column;gap:16px;font:800 28px/1 system-ui,Arial,sans-serif}
   html.boot-wait #boot-splash b{color:#2BD67B}
+  html.boot-wait #boot-splash small{font:600 15px/1 system-ui,Arial,sans-serif;color:#cbd8e4}
   html.boot-wait #boot-splash i{width:26px;height:26px;border:3px solid rgba(255,255,255,.25);border-top-color:#F4C430;border-radius:50%;animation:bootgira .8s linear infinite}
   @keyframes bootgira{to{transform:rotate(360deg)}}
   
@@ -3115,7 +3116,7 @@ body.light .btn-remove-item{color:#b91c1c}
 </style>
 </head>
 <body class="dark">
-<div id="boot-splash" aria-label="Carregando"><span>Orça<b>On</b></span><i></i></div>
+<div id="boot-splash" aria-label="Carregando"><span>Orça<b>On</b></span><i></i><small>Carregando…</small></div>
   <div id="app">
     <!-- LOGIN SCREEN -->
     <div id="screen-login" class="screen active">
@@ -4537,7 +4538,13 @@ function iniciarFirebaseAuth() {
     firebaseAuthReady = true;
     try { firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL); } catch (_) {}   // mantém o login neste aparelho
     firebase.auth().onAuthStateChanged(async user => {
-      try { if (trocarDadosDaConta(user)) { location.reload(); return; } } catch (e) { console.warn('Troca de dados da conta:', e); }
+      try {
+        if (trocarDadosDaConta(user)) {
+          try { if (user) localStorage.setItem('orcaon_boot_google', '1'); } catch (_) {}
+          if (user) document.documentElement.classList.add('boot-wait');
+          location.reload(); return;
+        }
+      } catch (e) { console.warn('Troca de dados da conta:', e); }
       if (!user) { try { localStorage.removeItem('orcaon_boot_google'); } catch (_) {} document.documentElement.classList.remove('boot-wait'); cota = null; try { pararSessaoUnica(); } catch (_) {} try { atualizarBarraGratuita(); } catch (_) {} return; }
       try { localStorage.setItem('orcaon_boot_google', '1'); } catch (_) {}
       currentUser.name = user.displayName || user.phoneNumber || (user.email ? user.email.split('@')[0] : 'Usuário');
@@ -4568,7 +4575,13 @@ function loginWithGoogle() {
   if (loginIndisponivelNoArquivo()) return;
   if (!firebaseAuthReady && !iniciarFirebaseAuth()) { authSetupAviso(); return; }
   const provider = new firebase.auth.GoogleAuthProvider();
-  firebase.auth().signInWithPopup(provider).catch(err => {
+  firebase.auth().signInWithPopup(provider).then(() => {
+    // conta escolhida: mostra "Carregando…" até terminar de entrar (o aviso some sozinho em até 15 s)
+    try { localStorage.setItem('orcaon_boot_google', '1'); } catch (_) {}
+    document.documentElement.classList.add('boot-wait');
+    setTimeout(() => document.documentElement.classList.remove('boot-wait'), 15000);
+  }).catch(err => {
+    document.documentElement.classList.remove('boot-wait');
     console.error(err);
     alert(err.code === 'auth/popup-blocked' ? 'O navegador bloqueou a janela de login. Permita pop-ups e tente novamente.' : 'Não foi possível entrar com Google: ' + (err.message || err.code));
   });
