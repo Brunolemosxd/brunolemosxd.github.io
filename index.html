@@ -5038,6 +5038,328 @@ const CALCULOS = {
           .concat([{ desc: 'Eletroduto corrugado (rolo de 50 m)', qtd: rolosEl, un: 'un', valor: 0 }, { desc: 'Caixa 4×2', qtd: v.pontos, un: 'un', valor: 0 }].filter(i => i.qtd > 0))
       };
     }
+  },
+  forro: {
+    nome: '🏠 Forro de drywall', titulo: 'Forro de gesso (drywall)', prof: ['Gesseiro'],
+    campos: [
+      { id: 'area', rot: 'Área do forro', un: 'm²', val: 20, meia: true },
+      { id: 'perim', rot: 'Perímetro (volta)', un: 'm', val: 18, meia: true },
+      { id: 'placa', rot: 'Cada placa cobre', un: 'm²', val: 2.16, meia: true },
+      { id: 'folga', rot: 'Folga para perda', un: '%', val: 10, meia: true }
+    ],
+    aviso: 'Médias: perfil F530 a cada 60 cm, um pendural por 0,6 m², 15 parafusos, 0,5 kg de massa e 1,5 m de fita por m². Valores aproximados.',
+    conta(v) {
+      const f = 1 + v.folga / 100;
+      const placas = v.placa > 0 ? Math.ceil(v.area * f / v.placa) : 0, perfis = Math.ceil(v.area / 0.6 * f / 3), guias = Math.ceil(v.perim * f / 3);
+      const pendurais = Math.ceil(v.area / 0.6), parafusos = Math.ceil(v.area * 15 * f), massa = Math.ceil(v.area * 0.5), fita = Math.ceil(v.area * 1.5);
+      const mo = maoDeObraVarios([['Forro de gesso', v.area, 'm²', 'forro']]);
+      const pecas = [
+        ['Placas', fmtNum(v.area) + ' m² + ' + fmtNum(v.folga) + '% ÷ ' + fmtNum(v.placa) + ' m²', plural(placas, 'placa', 'placas'), 'Placa de drywall', placas],
+        ['Perfil F530', 'um a cada 60 cm, barras de 3 m', plural(perfis, 'barra', 'barras'), 'Perfil F530 (barra de 3 m)', perfis],
+        ['Guia / cantoneira', 'na volta do forro, barras de 3 m', plural(guias, 'barra', 'barras'), 'Guia de forro (barra de 3 m)', guias],
+        ['Pendurais (tirantes)', 'um por 0,6 m²', String(pendurais), 'Pendural com tirante', pendurais],
+        ['Parafusos', 'placa e perfis', String(parafusos), 'Parafuso para drywall', parafusos],
+        ['Massa para junta', fmtNum(v.area) + ' m² × 0,5 kg', massa + ' kg', 'Massa para drywall (kg)', massa],
+        ['Fita para junta', fmtNum(v.area) + ' m² × 1,5 m', fita + ' m', 'Fita para junta (m)', fita]
+      ];
+      return { linhas: pecas.map(x => ({ nome: x[0], det: x[1], v: x[2] })).concat([mo.linha]), itens: mo.itens.concat(pecas.filter(x => x[4] > 0).map(x => ({ desc: x[3], qtd: x[4], un: 'un', valor: 0 }))) };
+    }
+  },
+  tubulacao: {
+    nome: '🚰 Tubulação', titulo: 'Tubulação hidráulica', prof: ['Encanador'],
+    campos: [
+      { id: 'metros', rot: 'Metros de cano', un: 'm', val: 30, meia: true },
+      { id: 'conex', rot: 'Conexões (curvas, tês...)', un: 'un', val: 12, meia: true },
+      { id: 'bitola', rot: 'Bitola do cano', chips: ['20 mm', '25 mm', '32 mm', '40 mm', '50 mm'], val: '25 mm' },
+      { id: 'barra', rot: 'Barra do cano', chips: [3, 6], sufixo: ' m', val: 6, meia: true },
+      { id: 'folga', rot: 'Folga para perda', un: '%', val: 10, meia: true }
+    ],
+    aviso: 'Médias: 1 tubo de cola a cada 25 conexões e 1 lixa a cada 20. Valores aproximados.',
+    conta(v) {
+      const barras = v.barra > 0 ? Math.ceil(v.metros * (1 + v.folga / 100) / v.barra) : 0;
+      const cola = Math.max(1, Math.ceil(v.conex / 25)), lixa = Math.max(1, Math.ceil(v.conex / 20));
+      const mo = maoDeObraVarios([['Tubulação hidráulica', v.metros, 'm', 'tubulação']]);
+      return {
+        linhas: [
+          { nome: 'Cano ' + v.bitola, det: fmtNum(v.metros) + ' m + ' + fmtNum(v.folga) + '%, barras de ' + fmtNum(v.barra) + ' m', v: plural(barras, 'barra', 'barras') },
+          { nome: 'Conexões', det: 'curvas, joelhos, tês e luvas', v: String(v.conex) },
+          { nome: 'Cola para PVC', det: 'tubo de 75 g', v: plural(cola, 'tubo', 'tubos') },
+          { nome: 'Lixa d\'água', det: 'para preparar as pontas', v: plural(lixa, 'folha', 'folhas') },
+          { nome: 'Fita veda-rosca', det: 'para as conexões de rosca', v: '1 rolo' },
+          mo.linha
+        ],
+        itens: mo.itens.concat([
+          { desc: 'Cano ' + v.bitola + ' (barra de ' + fmtNum(v.barra) + ' m)', qtd: barras, un: 'un', valor: 0 },
+          { desc: 'Conexões ' + v.bitola, qtd: v.conex, un: 'un', valor: 0 },
+          { desc: 'Cola para PVC (75 g)', qtd: cola, un: 'un', valor: 0 },
+          { desc: 'Lixa d\'água', qtd: lixa, un: 'un', valor: 0 },
+          { desc: 'Fita veda-rosca', qtd: 1, un: 'un', valor: 0 }
+        ].filter(i => i.qtd > 0))
+      };
+    }
+  },
+  mdf: {
+    nome: '🪚 Chapas de MDF', titulo: 'Móvel em MDF', prof: ['Marceneiro'],
+    campos: [
+      { id: 'area', rot: 'Área das peças', un: 'm²', val: 12, meia: true },
+      { id: 'chapa', rot: 'Cada chapa tem', un: 'm²', val: 5.06, meia: true },
+      { id: 'fita', rot: 'Fita de borda', un: 'm', val: 40, meia: true },
+      { id: 'folga', rot: 'Folga para perda', un: '%', val: 15, meia: true },
+      { id: 'dobr', rot: 'Dobradiças', un: 'un', val: 8, meia: true },
+      { id: 'corr', rot: 'Corrediças (pares)', un: 'pares', val: 4, meia: true }
+    ],
+    aviso: 'Chapa padrão de 2,75 × 1,84 m (5,06 m²). Valores aproximados: confira o plano de corte.',
+    conta(v) {
+      const chapas = v.chapa > 0 ? Math.ceil(v.area * (1 + v.folga / 100) / v.chapa) : 0, rolos = Math.ceil(v.fita * 1.1 / 50);
+      const mo = maoDeObraVarios([['Armário planejado', v.area, 'm²', 'móvel']]);
+      return {
+        linhas: [
+          { nome: 'Chapas de MDF', det: fmtNum(v.area) + ' m² + ' + fmtNum(v.folga) + '% ÷ ' + fmtNum(v.chapa) + ' m²', v: plural(chapas, 'chapa', 'chapas') },
+          { nome: 'Fita de borda', det: fmtNum(v.fita) + ' m + 10%, rolos de 50 m', v: plural(rolos, 'rolo', 'rolos') },
+          { nome: 'Dobradiças', det: 'portas', v: String(v.dobr) },
+          { nome: 'Corrediças', det: 'gavetas', v: plural(v.corr, 'par', 'pares') },
+          mo.linha
+        ],
+        itens: mo.itens.concat([
+          { desc: 'Chapa de MDF', qtd: chapas, un: 'un', valor: 0 },
+          { desc: 'Fita de borda (rolo de 50 m)', qtd: rolos, un: 'un', valor: 0 },
+          { desc: 'Dobradiça', qtd: v.dobr, un: 'un', valor: 0 },
+          { desc: 'Corrediça (par)', qtd: v.corr, un: 'un', valor: 0 }
+        ].filter(i => i.qtd > 0))
+      };
+    }
+  },
+  metalon: {
+    nome: '🔩 Metalon', titulo: 'Estrutura em metalon', prof: ['Serralheiro'],
+    campos: [
+      { id: 'metros', rot: 'Metros de tubo', un: 'm', val: 40, meia: true },
+      { id: 'folga', rot: 'Folga para perda', un: '%', val: 10, meia: true },
+      { id: 'pintura', rot: 'Área para pintar', un: 'm²', val: 6, meia: true },
+      { id: 'rend', rot: 'Rendimento do fundo', un: 'm²/L', val: 10, meia: true }
+    ],
+    aviso: 'Barras de 6 m. Médias: 1 kg de eletrodo a cada 10 m de tubo e 1 disco de corte a cada 5 barras. Valores aproximados.',
+    conta(v) {
+      const barras = Math.ceil(v.metros * (1 + v.folga / 100) / 6), eletrodo = Math.max(1, Math.ceil(v.metros / 10)), discos = Math.max(1, Math.ceil(barras / 5));
+      const fundo = v.rend > 0 ? Math.ceil(v.pintura / v.rend * 10) / 10 : 0;
+      const mo = maoDeObraVarios([['Estrutura metálica', v.metros, 'm', 'estrutura']]);
+      return {
+        linhas: [
+          { nome: 'Metalon', det: fmtNum(v.metros) + ' m + ' + fmtNum(v.folga) + '%, barras de 6 m', v: plural(barras, 'barra', 'barras') },
+          { nome: 'Eletrodo', det: '1 kg a cada 10 m', v: eletrodo + ' kg' },
+          { nome: 'Disco de corte', det: '1 a cada 5 barras', v: String(discos) },
+          { nome: 'Fundo / zarcão', det: fmtNum(v.pintura) + ' m² ÷ ' + fmtNum(v.rend), v: fmtNum(fundo, 1) + ' L' },
+          mo.linha
+        ],
+        itens: mo.itens.concat([
+          { desc: 'Metalon (barra de 6 m)', qtd: barras, un: 'un', valor: 0 },
+          { desc: 'Eletrodo (kg)', qtd: eletrodo, un: 'un', valor: 0 },
+          { desc: 'Disco de corte', qtd: discos, un: 'un', valor: 0 },
+          { desc: 'Fundo / zarcão (litros)', qtd: fundo, un: 'un', valor: 0 }
+        ].filter(i => i.qtd > 0))
+      };
+    }
+  },
+  cftv: {
+    nome: '📹 Câmeras', titulo: 'Instalação de câmeras', prof: ['Inst. Câmeras'],
+    campos: [
+      { id: 'cam', rot: 'Quantas câmeras?', un: 'un', val: 4, meia: true },
+      { id: 'metros', rot: 'Cabo por câmera', un: 'm', val: 20, meia: true },
+      { id: 'folga', rot: 'Folga para perda', un: '%', val: 10 }
+    ],
+    aviso: 'Cabo coaxial bipolar em rolos de 100 m, 2 conectores BNC e 1 P4 por câmera, uma fonte por câmera. Valores aproximados.',
+    conta(v) {
+      const cabo = Math.ceil(v.cam * v.metros * (1 + v.folga / 100)), rolos = Math.ceil(cabo / 100);
+      const canais = [4, 8, 16, 32].find(n => n >= v.cam) || 32;
+      const mo = maoDeObraVarios([['Câmera de segurança', v.cam, 'un', 'câmeras'], ['Cabeamento', cabo, 'm', 'cabo']]);
+      return {
+        linhas: [
+          { nome: 'Cabo coaxial', det: v.cam + ' × ' + fmtNum(v.metros) + ' m + ' + fmtNum(v.folga) + '% = ' + cabo + ' m', v: plural(rolos, 'rolo', 'rolos') + ' de 100 m' },
+          { nome: 'Conector BNC', det: '2 por câmera', v: String(v.cam * 2) },
+          { nome: 'Conector P4', det: '1 por câmera', v: String(v.cam) },
+          { nome: 'Fonte 12 V', det: '1 por câmera', v: String(v.cam) },
+          { nome: 'DVR', det: 'para ' + plural(v.cam, 'câmera', 'câmeras'), v: canais + ' canais' },
+          mo.linha
+        ],
+        itens: mo.itens.concat([
+          { desc: 'Cabo coaxial bipolar (rolo de 100 m)', qtd: rolos, un: 'un', valor: 0 },
+          { desc: 'Conector BNC', qtd: v.cam * 2, un: 'un', valor: 0 },
+          { desc: 'Conector P4', qtd: v.cam, un: 'un', valor: 0 },
+          { desc: 'Fonte 12 V', qtd: v.cam, un: 'un', valor: 0 },
+          { desc: 'DVR ' + canais + ' canais', qtd: v.cam > 0 ? 1 : 0, un: 'un', valor: 0 }
+        ].filter(i => i.qtd > 0))
+      };
+    }
+  },
+  grama: {
+    nome: '🌱 Grama', titulo: 'Plantio de grama', prof: ['Jardinagem'],
+    campos: [
+      { id: 'area', rot: 'Área', un: 'm²', val: 50, meia: true },
+      { id: 'terra', rot: 'Camada de terra', un: 'cm', val: 5, meia: true },
+      { id: 'folga', rot: 'Folga para perda', un: '%', val: 5 }
+    ],
+    aviso: 'Grama em placas vendida por m². Valores aproximados.',
+    conta(v) {
+      const grama = Math.ceil(v.area * (1 + v.folga / 100)), terra = Math.ceil(v.area * v.terra / 100 * 10) / 10;
+      const mo = maoDeObraVarios([['Plantio', v.area, 'm²', 'plantio']]);
+      return {
+        linhas: [
+          { nome: 'Grama em placas', det: fmtNum(v.area) + ' m² + ' + fmtNum(v.folga) + '%', v: grama + ' m²' },
+          { nome: 'Terra adubada', det: fmtNum(v.area) + ' m² × ' + fmtNum(v.terra) + ' cm', v: fmtNum(terra, 1) + ' m³' },
+          mo.linha
+        ],
+        itens: mo.itens.concat([{ desc: 'Grama em placas', qtd: grama, un: 'm²', valor: 0 }, { desc: 'Terra adubada', qtd: terra, un: 'm³', valor: 0 }].filter(i => i.qtd > 0))
+      };
+    }
+  },
+  split: {
+    nome: '❄️ Ar-condicionado', titulo: 'Ar-condicionado split', prof: ['Climatização'],
+    campos: [
+      { id: 'area', rot: 'Área do cômodo', un: 'm²', val: 15, meia: true },
+      { id: 'pessoas', rot: 'Pessoas no cômodo', un: '', val: 2, meia: true },
+      { id: 'sol', rot: 'Bate sol da tarde?', chips: ['Não', 'Sim'], val: 'Não', meia: true },
+      { id: 'eletro', rot: 'TV / computador', un: 'un', val: 1, meia: true },
+      { id: 'dist', rot: 'Distância entre as unidades', un: 'm', val: 3 }
+    ],
+    aviso: 'Regra prática: 600 BTU por m² (800 com sol da tarde), mais 600 por pessoa a partir da segunda e por aparelho. Confira o manual do equipamento.',
+    conta(v) {
+      const btu = v.area * (v.sol === 'Sim' ? 800 : 600) + Math.max(0, v.pessoas - 1) * 600 + v.eletro * 600;
+      const modelo = [9000, 12000, 18000, 24000, 30000, 36000, 48000, 60000].find(n => n >= btu) || 60000;
+      const tubo = Math.ceil(v.dist + 1), par = modelo <= 12000 ? '1/4" + 3/8"' : modelo <= 24000 ? '1/4" + 1/2"' : '3/8" + 5/8"';
+      const mo = maoDeObraVarios([['Instalação de ar-condicionado split', 1, 'un', 'instalação']]);
+      return {
+        linhas: [
+          { nome: 'Potência indicada', det: 'cálculo: ' + fmtNum(btu, 0) + ' BTUs', v: fmtNum(modelo, 0) + ' BTUs' },
+          { nome: 'Tubo de cobre (par)', det: par + ', distância + 1 m', v: tubo + ' m' },
+          { nome: 'Isolamento térmico', det: 'para os dois tubos', v: tubo * 2 + ' m' },
+          { nome: 'Cabo PP', det: 'ligação entre as unidades', v: tubo + ' m' },
+          { nome: 'Mangueira de dreno', det: 'distância + 1 m', v: tubo + ' m' },
+          { nome: 'Suporte da condensadora', det: 'par de mão francesa', v: '1' },
+          mo.linha
+        ],
+        itens: mo.itens.concat([
+          { desc: 'Tubo de cobre ' + par + ' (par)', qtd: tubo, un: 'm', valor: 0 },
+          { desc: 'Isolamento térmico', qtd: tubo * 2, un: 'm', valor: 0 },
+          { desc: 'Cabo PP', qtd: tubo, un: 'm', valor: 0 },
+          { desc: 'Mangueira de dreno', qtd: tubo, un: 'm', valor: 0 },
+          { desc: 'Suporte para condensadora', qtd: 1, un: 'un', valor: 0 }
+        ])
+      };
+    }
+  },
+  bancada: {
+    nome: '🪨 Bancada', titulo: 'Bancada em pedra', prof: ['Marmorista'],
+    campos: [
+      { id: 'comp', rot: 'Comprimento', un: 'm', val: 2, meia: true },
+      { id: 'prof', rot: 'Profundidade', un: 'cm', val: 60, meia: true },
+      { id: 'saia', rot: 'Saia (frente)', un: 'cm', val: 4, meia: true },
+      { id: 'frontao', rot: 'Frontão (parede)', un: 'cm', val: 10, meia: true },
+      { id: 'recortes', rot: 'Recortes (cuba, cooktop)', un: 'un', val: 1, meia: true },
+      { id: 'folga', rot: 'Folga para perda', un: '%', val: 10, meia: true }
+    ],
+    aviso: 'Valores aproximados. Confira as medidas no local antes de cortar.',
+    conta(v) {
+      const m2 = v.comp * (v.prof + v.saia + v.frontao) / 100, total = Math.ceil(m2 * (1 + v.folga / 100) * 100) / 100;
+      const mo = maoDeObraVarios([['Instalação de pedra', m2, 'm²', 'instalação'], ['Corte e furo para cuba e cooktop', v.recortes, 'un', 'recortes']]);
+      return {
+        linhas: [
+          { nome: 'Pedra', det: fmtNum(v.comp) + ' m × (' + fmtNum(v.prof) + ' + ' + fmtNum(v.saia) + ' + ' + fmtNum(v.frontao) + ' cm) + ' + fmtNum(v.folga) + '%', v: fmtNum(total) + ' m²' },
+          { nome: 'Recortes', det: 'cuba, cooktop', v: String(v.recortes) },
+          { nome: 'Cola / massa plástica', det: 'para emendas e fixação', v: '1' },
+          mo.linha
+        ],
+        itens: mo.itens.concat([{ desc: 'Pedra (m²)', qtd: total, un: 'm²', valor: 0 }, { desc: 'Cola / massa plástica', qtd: 1, un: 'un', valor: 0 }].filter(i => i.qtd > 0))
+      };
+    }
+  },
+  vidro: {
+    nome: '🪟 Vidro', titulo: 'Vidro', prof: ['Vidraceiro'],
+    campos: [
+      { id: 'larg', rot: 'Largura', un: 'm', val: 1, meia: true },
+      { id: 'alt', rot: 'Altura', un: 'm', val: 1.2, meia: true },
+      { id: 'qtd', rot: 'Quantas peças?', un: 'un', val: 2, meia: true },
+      { id: 'esp', rot: 'Espessura', chips: ['4 mm', '6 mm', '8 mm', '10 mm'], val: '8 mm' }
+    ],
+    aviso: 'Médias: 1 tubo de silicone a cada 8 m de borda. Valores aproximados.',
+    conta(v) {
+      const m2 = Math.ceil(v.larg * v.alt * v.qtd * 100) / 100, borda = 2 * (v.larg + v.alt) * v.qtd, silicone = Math.max(1, Math.ceil(borda / 8));
+      return {
+        linhas: [
+          { nome: 'Vidro ' + v.esp, det: fmtNum(v.larg) + ' × ' + fmtNum(v.alt) + ' m × ' + plural(v.qtd, 'peça', 'peças'), v: fmtNum(m2) + ' m²' },
+          { nome: 'Silicone', det: fmtNum(borda) + ' m de borda', v: plural(silicone, 'tubo', 'tubos') }
+        ],
+        itens: [].concat([{ desc: 'Vidro ' + v.esp + ' (m²)', qtd: m2, un: 'm²', valor: 0 }, { desc: 'Silicone (tubo)', qtd: silicone, un: 'un', valor: 0 }].filter(i => i.qtd > 0))
+      };
+    }
+  },
+  piscina: {
+    nome: '🏊 Piscina', titulo: 'Tratamento da piscina', prof: ['Manutenção de piscinas'],
+    campos: [
+      { id: 'comp', rot: 'Comprimento', un: 'm', val: 8, meia: true },
+      { id: 'larg', rot: 'Largura', un: 'm', val: 4, meia: true },
+      { id: 'prof', rot: 'Profundidade média', un: 'm', val: 1.4, meia: true },
+      { id: 'cloro', rot: 'Cloro por m³', un: 'g', val: 4, meia: true },
+      { id: 'alg', rot: 'Algicida por m³', un: 'ml', val: 6 }
+    ],
+    aviso: 'As doses mudam conforme o produto: confira sempre a embalagem. Valores aproximados por aplicação.',
+    conta(v) {
+      const vol = v.comp * v.larg * v.prof, cloro = Math.ceil(vol * v.cloro) / 1000, alg = Math.ceil(vol * v.alg) / 1000;
+      const mo = maoDeObraVarios([['Limpeza e tratamento da piscina', 1, 'un', 'tratamento']]);
+      return {
+        linhas: [
+          { nome: 'Volume de água', det: fmtNum(v.comp) + ' × ' + fmtNum(v.larg) + ' × ' + fmtNum(v.prof) + ' m', v: fmtNum(vol, 1) + ' m³ (' + fmtNum(vol * 1000, 0) + ' litros)' },
+          { nome: 'Cloro', det: fmtNum(v.cloro) + ' g por m³', v: fmtNum(cloro, 2) + ' kg' },
+          { nome: 'Algicida', det: fmtNum(v.alg) + ' ml por m³', v: fmtNum(alg, 2) + ' L' },
+          mo.linha
+        ],
+        itens: mo.itens.concat([{ desc: 'Cloro (kg)', qtd: cloro, un: 'un', valor: 0 }, { desc: 'Algicida (litros)', qtd: alg, un: 'un', valor: 0 }].filter(i => i.qtd > 0))
+      };
+    }
+  },
+  tecido: {
+    nome: '🛋️ Tecido', titulo: 'Reforma de estofado', prof: ['Estofador'],
+    campos: [
+      { id: 'tipo', rot: 'O que vai reformar?', chips: ['Sofá 2 lugares', 'Sofá 3 lugares', 'Poltrona', 'Cadeira'], val: 'Sofá 3 lugares' },
+      { id: 'qtd', rot: 'Quantos?', un: 'un', val: 1, meia: true },
+      { id: 'folga', rot: 'Folga para perda', un: '%', val: 10, meia: true }
+    ],
+    aviso: 'Médias para tecido de 1,40 m de largura: sofá 2 lugares 6 m, 3 lugares 8 m, poltrona 3 m, cadeira 0,7 m. Tecido com estampa pode precisar de mais.',
+    conta(v) {
+      const base = { 'Sofá 2 lugares': 6, 'Sofá 3 lugares': 8, 'Poltrona': 3, 'Cadeira': 0.7 }[v.tipo] || 0;
+      const metros = Math.ceil(base * v.qtd * (1 + v.folga / 100) * 10) / 10;
+      const serv = /^Sofá/.test(v.tipo) ? 'Reforma de sofá' : v.tipo === 'Poltrona' ? 'Reforma de poltrona' : 'Reforma de cadeira';
+      const mo = maoDeObraVarios([[serv, v.qtd, 'un', v.tipo.toLowerCase()]]);
+      return {
+        linhas: [{ nome: 'Tecido', det: v.qtd + ' × ' + fmtNum(base) + ' m + ' + fmtNum(v.folga) + '% (largura 1,40 m)', v: fmtNum(metros, 1) + ' m' }, mo.linha],
+        itens: mo.itens.concat([{ desc: 'Tecido (m)', qtd: metros, un: 'm', valor: 0 }].filter(i => i.qtd > 0))
+      };
+    }
+  },
+  frete: {
+    nome: '🚚 Frete', titulo: 'Custo do frete', prof: ['Freteiro'], resTitulo: 'Custo da viagem',
+    campos: [
+      { id: 'km', rot: 'Distância (ida e volta)', un: 'km', val: 40, meia: true },
+      { id: 'consumo', rot: 'Consumo do veículo', un: 'km/L', val: 8, meia: true },
+      { id: 'litro', rot: 'Preço do litro', un: 'R$', val: 6.2, meia: true },
+      { id: 'pedagio', rot: 'Pedágios', un: 'R$', val: 0, meia: true },
+      { id: 'ajud', rot: 'Ajudantes', un: '', val: 1 }
+    ],
+    aviso: 'Mostra o custo da viagem. Some o seu lucro no valor do frete.',
+    conta(v) {
+      const comb = v.consumo > 0 ? v.km / v.consumo * v.litro : 0;
+      const aj = maoDeObraCalc('Carga e descarga / ajudante', v.ajud, 'un');
+      const custo = comb + v.pedagio + aj.total;
+      return {
+        linhas: [
+          { nome: 'Combustível', det: fmtNum(v.km) + ' km ÷ ' + fmtNum(v.consumo) + ' km/L × ' + fmtBRL(v.litro), v: fmtBRL(comb) },
+          { nome: 'Pedágios', det: 'ida e volta', v: fmtBRL(v.pedagio) },
+          v.ajud > 0 ? Object.assign({}, aj.linha, { nome: 'Ajudantes' }) : { nome: 'Ajudantes', det: 'sem ajudante', v: fmtBRL(0) },
+          { nome: 'Custo da viagem', det: 'combustível + pedágios + ajudantes', v: fmtBRL(custo), am: true }
+        ],
+        itens: [{ desc: 'Combustível (' + fmtNum(v.km) + ' km)', qtd: 1, un: 'un', valor: Math.round(comb * 100) / 100 }]
+          .concat(v.pedagio > 0 ? [{ desc: 'Pedágios', qtd: 1, un: 'un', valor: v.pedagio }] : [])
+          .concat(v.ajud > 0 ? [aj.item] : [])
+      };
+    }
   }
 };
 let calcAtual = 'pintura';
@@ -5060,7 +5382,7 @@ function montarCamposCalc() {
   const c = CALCULOS[calcAtual], v = valoresCalc(calcAtual), host = document.getElementById('calc-campos'); if (!host) return;
   let html = '<h3>' + c.titulo + '</h3>', meia = [];
   const campoHTML = f => {
-    if (f.chips) return '<div><label>' + f.rot + '</label><div class="calc-chips">' + f.chips.map(o => '<button type="button" class="calc-chip' + (o === v[f.id] ? ' on' : '') + '" data-campo="' + f.id + '" data-v="' + o + '">' + fmtNum(o) + (f.sufixo || '') + '</button>').join('') + '</div></div>';
+    if (f.chips) return '<div><label>' + f.rot + '</label><div class="calc-chips">' + f.chips.map(o => '<button type="button" class="calc-chip' + (o === v[f.id] ? ' on' : '') + '" data-campo="' + f.id + '" data-v="' + o + '">' + (typeof o === 'number' ? fmtNum(o) : o) + (f.sufixo || '') + '</button>').join('') + '</div></div>';
     return '<div><label for="calc-' + f.id + '">' + f.rot + '</label><div class="calc-campo"><input type="text" inputmode="decimal" autocomplete="off" id="calc-' + f.id + '" data-campo="' + f.id + '" value="' + fmtNum(v[f.id]) + '"><em>' + f.un + '</em></div></div>';
   };
   c.campos.forEach(f => {
@@ -5076,7 +5398,7 @@ function calcularMaterial() {
   const c = CALCULOS[calcAtual], v = valoresCalc(calcAtual);
   calcResultado = c.conta(v);
   const host = document.getElementById('calc-res'); if (!host) return;
-  host.innerHTML = '<h3>✔ Você vai precisar</h3>' + calcResultado.linhas.map(l =>
+  host.innerHTML = '<h3>✔ ' + (c.resTitulo || 'Você vai precisar') + '</h3>' + calcResultado.linhas.map(l =>
     '<div class="calc-linha"><div><b></b><small></small></div><div class="v' + (l.am ? ' am' : '') + '"></div></div>').join('') + '<p class="calc-aviso"></p>';
   host.querySelectorAll('.calc-linha').forEach((el, i) => {
     const l = calcResultado.linhas[i];
@@ -5091,7 +5413,7 @@ document.addEventListener('click', function (e) {
     document.querySelectorAll('.calc-tipo').forEach(b => b.classList.toggle('on', b === t));
     montarCamposCalc(); return;
   }
-  valoresCalc(calcAtual)[t.dataset.campo] = Number(t.dataset.v);
+  const bruto = t.dataset.v; valoresCalc(calcAtual)[t.dataset.campo] = (bruto !== '' && !isNaN(Number(bruto))) ? Number(bruto) : bruto;
   t.parentNode.querySelectorAll('.calc-chip').forEach(b => b.classList.toggle('on', b === t));
   calcularMaterial();
 });
