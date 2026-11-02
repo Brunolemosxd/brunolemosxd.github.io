@@ -67,6 +67,7 @@
     </application>
 
     <queries>
+        <package android:name="com.android.chrome" />
         <intent>
             <action android:name="android.support.customtabs.action.CustomTabsService" />
         </intent>
