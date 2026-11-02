@@ -23,7 +23,8 @@ Dono: Bruno. Idioma de tudo: português do Brasil. Explicar sempre em linguagem 
 
 ## Estado atual (out/2026)
 - Pronto: orçamentos, recibos (vários modelos), clientes (com CPF/CNPJ), perfil, Pix com validação e QR, débito, quantidades fracionadas, horas H:MM e dias, ditado por voz em campos de texto, backup Pro, selo de plano e dias restantes, conversão orçamento ⇄ recibo, saudação por horário.
-- Pendente: cobrança do Pro (Google Play Billing + Cloud Function, exige plano Blaze do Firebase), empacotar como TWA e publicar na Play Store (aguardando D-U-N-S da D&B para conta de organização do MEI), número real do WhatsApp de suporte (hoje é um placeholder), restringir a chave de API do Firebase e domínios autorizados, possível IA de preenchimento (Gemini, só Pro, chave no servidor, com limite mensal).
+- Pendente: cobrança do Pro (Google Play Billing + Cloud Function, exige plano Blaze do Firebase), empacotar como TWA e publicar na Play Store (aguardando D-U-N-S da D&B para conta de organização do MEI), restringir a chave de API do Firebase e domínios autorizados, possível IA de preenchimento (Gemini, só Pro, chave no servidor, com limite mensal).
+- Venda do Pro: por Pix (QR e copia e cola em `PIX_PRO`, imagens `pix-mensal.png`/`pix-anual.png`, chave CNPJ do MEI); o cliente manda o comprovante pelo WhatsApp de suporte (`WHATSAPP_SUPORTE`) e o Bruno libera o Pro no painel admin.
 - Firestore: regras no arquivo `firestore.rules` deste repositório. Elas precisam estar publicadas no projeto `orcaon-85c7e` (Firestore → Regras → Publicar); sem elas, o app não consegue contar os envios nem fazer backup.
 
 ## Como trabalhar

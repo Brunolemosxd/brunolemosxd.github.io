@@ -2996,6 +2996,18 @@ body.light .orc-chip.active {
 .oferta-pro-close{position:absolute;right:16px;top:16px;z-index:2;width:38px;height:38px;border:1px solid rgba(255,255,255,.65);border-radius:50%;background:rgba(4,18,32,.8);color:#fff;font-size:28px;line-height:1;cursor:pointer}
 .oferta-pro-banner{display:block;width:100%;height:auto;border-radius:12px}
 html:not(.bf-ativa) .bf-promo{display:none!important}
+.pag-pro{color:#fff;padding:22px 16px 16px;text-align:center}
+.pag-pro h2{margin:4px 0 2px;font-size:22px;color:#F4C430}
+.pag-valor{margin:0 0 10px;color:#cbd8e4}
+.pag-valor b{font-size:30px;color:#fff}
+.pag-passo{display:grid;gap:8px;justify-items:center;text-align:center;border:1px solid rgba(255,255,255,.18);border-radius:12px;padding:12px;margin-top:10px}
+.pag-passo>b{display:flex;align-items:center;gap:8px;font-size:16px;justify-self:start}
+.pag-passo>b i{font-style:normal;width:24px;height:24px;border-radius:50%;background:#F4C430;color:#0B1C2C;display:inline-flex;align-items:center;justify-content:center;font-size:13px}
+.pag-passo img{width:200px;height:200px;background:#fff;border-radius:10px;padding:6px;image-rendering:pixelated}
+.pag-passo .btn-primary-lg{width:100%}
+.pag-passo .hint-sm{margin:0;color:#cbd8e4}
+.btn-wpp-lg{width:100%;border:none;border-radius:12px;padding:14px;font-weight:800;font-size:15px;background:#25D366;color:#06301a;cursor:pointer}
+.pag-letra{font-size:12px;color:#94a3b8;margin:12px 4px 0;line-height:1.4}
 .oferta-pro-topo{text-align:center;color:#fff;padding:22px 10px 6px;border-radius:12px;background:radial-gradient(circle at 50% 0,#173a5c,#071a2a 70%)}
 .op-logo{font-size:30px;font-weight:900;letter-spacing:-.5px}
 .op-logo span{color:#2BD67B}
@@ -4127,7 +4139,7 @@ body.light .btn-remove-item{color:#b91c1c}
         </div>
       </div>
       <div id="oferta-pro-msg" class="oferta-pro-msg hidden" aria-live="polite"><h3 id="oferta-pro-msg-titulo"></h3><p id="oferta-pro-msg-texto"></p><ul><li><i class="fas fa-check" aria-hidden="true"></i>Orçamentos e recibos sem limite</li><li><i class="fas fa-check" aria-hidden="true"></i>Veja o recibo antes de enviar</li><li><i class="fas fa-check" aria-hidden="true"></i>Cópia de segurança na nuvem</li></ul></div>
-      <div class="oferta-pro-actions"><button type="button" class="btn-primary-lg" onclick="escolherPlanoPro('anual')"><span class="bf-promo">🔥 </span>Quero o plano anual — R$ 60</button><button type="button" class="btn-outline-lg" onclick="escolherPlanoPro('mensal')">Quero o plano mensal — R$ 10</button><p class="hint">A assinatura do plano Pro será liberada em breve.</p></div>
+      <div class="oferta-pro-actions"><button type="button" class="btn-primary-lg" onclick="escolherPlanoPro('anual')"><span class="bf-promo">🔥 </span>Quero o plano anual — R$ 60</button><button type="button" class="btn-outline-lg" onclick="escolherPlanoPro('mensal')">Quero o plano mensal — R$ 10</button><p class="hint">Pagamento por Pix. O Pro é liberado assim que confirmarmos.</p></div>
     </div>
   </div>
 
@@ -4135,6 +4147,30 @@ body.light .btn-remove-item{color:#b91c1c}
     <div class="legal-dialog">
       <div class="legal-head"><h2 id="instalar-titulo">Instalar o OrçaOn</h2><button type="button" class="legal-close" aria-label="Fechar" onclick="fecharInstalarModal()">×</button></div>
       <div class="legal-body" id="instalar-passos"></div>
+    </div>
+  </div>
+
+  <div id="pagamento-pro-modal" class="oferta-pro-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="pag-titulo" onclick="if(event.target===this)fecharPagamentoPro()">
+    <div class="oferta-pro-dialog pag-pro">
+      <button class="oferta-pro-close" type="button" aria-label="Fechar" onclick="fecharPagamentoPro()">×</button>
+      <h2 id="pag-titulo">Plano anual</h2>
+      <p class="pag-valor"><b id="pag-valor">R$ 60</b> <span id="pag-periodo">por ano</span></p>
+      <div class="pag-passo">
+        <b><i>1</i> Pague com Pix</b>
+        <img id="pag-qr" alt="QR Code do Pix" width="200" height="200">
+        <button type="button" class="btn-primary-lg" onclick="copiarPixPro()">Copiar código Pix (copia e cola)</button>
+        <p class="hint-sm">Abra o app do seu banco, escolha Pix e aponte a câmera para o QR Code ou cole o código.<br>Recebedor: <b>Bruno Lemos Webber Inacio</b> · CNPJ 44.226.530/0001-28</p>
+      </div>
+      <div class="pag-passo">
+        <b><i>2</i> Envie o comprovante</b>
+        <button type="button" class="btn-wpp-lg" onclick="enviarComprovantePro()">Enviar comprovante pelo WhatsApp</button>
+        <p class="hint-sm">A mensagem já vai com o código da sua conta: <b id="pag-codigo">----</b>. É só anexar o comprovante.</p>
+      </div>
+      <div class="pag-passo">
+        <b><i>3</i> Pronto</b>
+        <p class="hint-sm">Assim que confirmarmos o pagamento, o Pro é liberado na sua conta e o selo muda para Pro.</p>
+      </div>
+      <p class="pag-letra">Sem renovação automática: quando acabar o período, é só pagar de novo. Você pode desistir em até 7 dias depois do pagamento e receber o valor de volta.</p>
     </div>
   </div>
 
@@ -4190,6 +4226,7 @@ const LEGAL_TEXTOS = {
 <li><b>Bibliotecas de terceiros</b> (Google/Firebase e Cloudflare) são carregadas pela internet e podem receber seu endereço IP.</li>
 <li><b>FormSubmit (envio de e-mail):</b> quando você envia uma sugestão de modelo, a foto/print e o texto passam por esse serviço e chegam por e-mail ao responsável pelo OrçaOn.</li>
 <li><b>WhatsApp e outros apps:</b> o PDF ou a imagem só sai do app quando você toca em compartilhar e escolhe o destinatário.</li>
+<li><b>Pagamento do Pro:</b> é feito por Pix no app do seu banco; o OrçaOn não recebe dados do seu cartão ou da sua conta bancária. O comprovante que você envia pelo WhatsApp (com o código da sua conta) é usado só para liberar o plano e guardado para controle financeiro e fiscal.</li>
 </ul>
 <h3>5. Dados dos seus clientes</h3>
 <p>Ao cadastrar dados de terceiros, você é responsável por ter autorização para usá-los. Use esses dados somente para os orçamentos e recibos que você emite.</p>
@@ -4220,7 +4257,7 @@ const LEGAL_TEXTOS = {
 <li>Usar o app de forma lícita, sem fraudar documentos nem prejudicar terceiros.</li>
 </ul>
 <h3>4. Plano gratuito e plano Pro</h3>
-<p>O plano gratuito inclui até 10 orçamentos e 10 recibos compartilhados ou baixados. O plano Pro libera recursos adicionais. Preço, renovação e forma de cancelamento serão informados antes da contratação.</p>
+<p>O plano gratuito inclui até 10 orçamentos e 10 recibos compartilhados ou baixados. O plano Pro libera recursos adicionais e custa R$ 10 por mês ou R$ 60 por ano. O pagamento é feito por Pix e o Pro é liberado na sua conta depois que o pagamento é confirmado. Não há renovação automática: ao fim do período, o plano volta a ser gratuito até um novo pagamento. Você pode desistir em até 7 dias após o pagamento e receber o valor de volta (Código de Defesa do Consumidor, art. 49), pedindo pelo botão Ajuda.</p>
 <h3>5. Seus dados e backup</h3>
 <p>Os dados ficam no seu aparelho. Fazer cópia dos documentos importantes é sua responsabilidade: ao desinstalar o app ou limpar seus dados, eles podem ser perdidos.</p>
 <h3>6. Propriedade intelectual</h3>
@@ -4315,7 +4352,47 @@ function mostrarOfertaProPendente(){
 }
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible')setTimeout(mostrarOfertaProPendente,800);});
 function fecharOfertaPro(){const m=document.getElementById('oferta-pro-modal');if(m)m.classList.add('hidden');}
-function escolherPlanoPro(plano){const nome=plano==='anual'?'anual (R$ 60/ano)':'mensal (R$ 10/mês)';alert('Você escolheu o plano '+nome+'. A assinatura do plano Pro será liberada em breve.');}
+// ===== Pagamento do Pro por Pix (liberação manual pelo painel admin) =====
+// Códigos Pix gerados no padrão do Banco Central (chave CNPJ do MEI, valor fixo de cada plano).
+const PIX_PRO = {
+  mensal: { titulo: 'Plano mensal', valor: 'R$ 10', periodo: 'por mês', img: 'pix-mensal.png', codigo: '00020126360014br.gov.bcb.pix011444226530000128520400005303986540510.005802BR5925BRUNO LEMOS WEBBER INACIO6014CAPAO DA CANOA62070503***63049BCD' },
+  anual: { titulo: 'Plano anual', valor: 'R$ 60', periodo: 'por ano', img: 'pix-anual.png', codigo: '00020126360014br.gov.bcb.pix011444226530000128520400005303986540560.005802BR5925BRUNO LEMOS WEBBER INACIO6014CAPAO DA CANOA62070503***6304374E' }
+};
+let planoPixAtual = 'anual', codigoContaPix = '';
+async function escolherPlanoPro(plano) {
+  const u = usuarioFirebase(), gid = googleIdOrca(u);
+  if (!u || !gid) {
+    fecharOfertaPro();
+    alert('Para assinar o Pro, entre com a sua conta Google. Assim o plano fica ligado à sua conta.');
+    try { pushAndShow('screen-login'); } catch (e) { showScreen('screen-login'); }
+    return;
+  }
+  planoPixAtual = PIX_PRO[plano] ? plano : 'anual';
+  const p = PIX_PRO[planoPixAtual];
+  const set = (id, t) => { const el = document.getElementById(id); if (el) el.textContent = t; };
+  set('pag-titulo', p.titulo); set('pag-valor', p.valor); set('pag-periodo', p.periodo);
+  const qr = document.getElementById('pag-qr'); if (qr) qr.src = p.img;
+  codigoContaPix = ''; set('pag-codigo', '…');
+  fecharOfertaPro();
+  const m = document.getElementById('pagamento-pro-modal'); if (m) m.classList.remove('hidden');
+  try { codigoContaPix = (await codigoUsuarioOrca(gid)) || ''; } catch (_) {}
+  set('pag-codigo', codigoContaPix || '(veja em Perfil)');
+}
+function fecharPagamentoPro() { const m = document.getElementById('pagamento-pro-modal'); if (m) m.classList.add('hidden'); }
+async function copiarPixPro() {
+  const cod = PIX_PRO[planoPixAtual].codigo;
+  try { await navigator.clipboard.writeText(cod); alert('Código Pix copiado! Abra o app do seu banco, escolha Pix copia e cola e cole.'); }
+  catch (_) { prompt('Copie o código Pix abaixo:', cod); }
+}
+function enviarComprovantePro() {
+  const p = PIX_PRO[planoPixAtual];
+  const texto = 'Olá! Paguei o ' + p.titulo.toLowerCase() + ' do OrçaOn (' + p.valor + ').\nCódigo da minha conta: ' + (codigoContaPix || '(não apareceu)') + '\nSegue o comprovante:';
+  if (!WHATSAPP_SUPORTE || WHATSAPP_SUPORTE === '5511999999999') {
+    window.location.href = 'mailto:brunolemosxd@gmail.com?subject=' + encodeURIComponent('Comprovante OrçaOn Pro') + '&body=' + encodeURIComponent(texto);
+    return;
+  }
+  window.open('https://wa.me/' + WHATSAPP_SUPORTE + '?text=' + encodeURIComponent(texto), '_blank');
+}
 document.addEventListener('keydown',function(e){if(e.key==='Escape')fecharOfertaPro();});
 
 // State
@@ -5761,7 +5838,7 @@ function salvarRecibo() {
 
 
 // Número do WhatsApp de suporte (troque pelo número real com DDI, só dígitos)
-const WHATSAPP_SUPORTE = '5511999999999';
+const WHATSAPP_SUPORTE = '5551991213438';
 
 function abrirAtendimento() {
   abrirWhatsAppSuporte();
