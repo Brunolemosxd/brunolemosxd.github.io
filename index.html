@@ -9524,8 +9524,9 @@ document.addEventListener('DOMContentLoaded',()=>{renderRecibosSalvos();atualiza
       ov.querySelector('#orcaon-ent-wa').onclick = function(){
         baixar(file);
         var w = null;
-        try { w = window.open('https://wa.me/?text=' + encodeURIComponent('Olá! Estou enviando o arquivo ' + file.name + ' (gerado pelo OrçaOn). Vou anexá-lo agora nesta conversa.'), '_blank'); } catch (e) {}
-        msg.textContent = 'Arquivo baixado. No WhatsApp, toque no clipe e escolha ' + file.name + ' (pasta Downloads).' + (w ? '' : ' Abra o WhatsApp manualmente.');
+        // sem mensagem pronta: com texto, a pessoa acabava mandando só o texto, sem o arquivo
+        try { w = window.open('https://wa.me/', '_blank'); } catch (e) {}
+        msg.textContent = 'Arquivo baixado! No WhatsApp, abra a conversa do cliente, toque no clipe 📎, escolha Documento e depois ' + file.name + ' (pasta Downloads).' + (w ? '' : ' Abra o WhatsApp manualmente.');
       };
       var sh = ov.querySelector('#orcaon-ent-share');
       if (sh) sh.onclick = async function(){
