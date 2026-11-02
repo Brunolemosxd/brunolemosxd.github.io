@@ -16,7 +16,7 @@ Dono: Bruno. Idioma de tudo: português do Brasil. Explicar sempre em linguagem 
 2. Logotipo: "Orça" em branco + "On" em verde `#2BD67B`. Cor de destaque do app: amarelo `#F4C430`. Fundo: `#0B1C2C`.
 3. Painel admin: mostrar apenas o CÓDIGO da conta. Nunca nome, e-mail, CPF, CNPJ ou RG de clientes. Admin = e-mail `brunolemosxd@gmail.com` verificado.
 4. Segurança e Play Store: sem risco. Nada de código remoto, nada de coletar dados além do declarado, política de privacidade sempre alinhada com o que o app faz (backup Pro, voz, e-mail de sugestões).
-5. Plano gratuito: 10 compartilhamentos de orçamento + 10 de recibo. Pro: R$ 7/mês ou R$ 50/ano. Verificação do Pro é no servidor (regras do Firestore, `ehPro()` lê o documento `quotas`), nunca só no celular.
+5. Plano gratuito: 10 compartilhamentos de orçamento + 10 de recibo. Pro: R$ 10/mês ou R$ 60/ano (destaque de Black Friday no anual até 30/11/2026, classe `bf-promo` no `index.html`). Verificação do Pro é no servidor (regras do Firestore, `ehPro()` lê o documento `quotas`), nunca só no celular.
 6. Backup na nuvem: somente plano Pro (coleção `backups`), apagado junto com a conta.
 7. Conta funciona em um celular por vez (documento `sessions`).
 8. Textos para o cliente: sem termos técnicos. Botões e mensagens curtas.
