@@ -1,0 +1,10 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.orcaon.app",
+      "sha256_cert_fingerprints": ["35:67:15:C3:03:46:44:0D:DA:F6:4C:2B:43:C2:44:B2:9D:14:F1:17:61:B5:24:A1:22:46:B9:0C:05:CE:53:60"]
+    }
+  }
+]
