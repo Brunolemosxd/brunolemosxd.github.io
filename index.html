@@ -4537,6 +4537,7 @@ function iniciarFirebaseAuth() {
     firebaseAuthReady = true;
     try { firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL); } catch (_) {}   // mantém o login neste aparelho
     firebase.auth().onAuthStateChanged(async user => {
+      try { if (trocarDadosDaConta(user)) { location.reload(); return; } } catch (e) { console.warn('Troca de dados da conta:', e); }
       if (!user) { try { localStorage.removeItem('orcaon_boot_google'); } catch (_) {} document.documentElement.classList.remove('boot-wait'); cota = null; try { pararSessaoUnica(); } catch (_) {} try { atualizarBarraGratuita(); } catch (_) {} return; }
       try { localStorage.setItem('orcaon_boot_google', '1'); } catch (_) {}
       currentUser.name = user.displayName || user.phoneNumber || (user.email ? user.email.split('@')[0] : 'Usuário');
@@ -7588,6 +7589,66 @@ function goToEditProfile() {
   setTimeout(initAssinaturaPerfil, 150);
 }
 
+// ===== Dados separados por conta no mesmo celular =====
+// Os dados ficam no celular. Só um conjunto fica "ativo" (nas chaves de sempre); o das outras contas
+// fica guardado em orcaon_cofre_<conta>. Quando a conta muda, troca os conjuntos e recarrega o app.
+const DONO_DADOS_KEY = 'orcaon_dono_dados';
+const COFRE_PREFIXO = 'orcaon_cofre_';
+function chaveDaConta(k) {
+  if (k === 'assinaturaDigital' || k === 'profession' || k === 'professionChosenV2') return true;
+  if (!k || k.indexOf('orcaon_') !== 0) return false;
+  if (['orcaon_aparelho_id', 'orcaon_boot_google', 'orcaon_instalar_fechado', 'orcaon_mic_aviso', 'orcaon_oferta_pro_pendente', DONO_DADOS_KEY, 'orcaon_plano', 'orcaon_pro_ativo'].indexOf(k) >= 0) return false;
+  if (k.indexOf(COFRE_PREFIXO) === 0 || k.indexOf('orcaon_backup') === 0 || k.indexOf('orcaon_perfil_inicial_') === 0 || /compartilhados_total$/.test(k)) return false;
+  return true;
+}
+function chavesDaContaAtivas() {
+  const r = [];
+  for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (chaveDaConta(k)) r.push(k); }
+  return r;
+}
+function idContaDados(user) {
+  if (!user) return 'visitante';
+  const gid = (typeof googleIdOrca === 'function' && googleIdOrca(user)) || user.uid;
+  return gid ? 'g' + gid : 'visitante';
+}
+function lerCofre(conta) {
+  try { const t = localStorage.getItem(COFRE_PREFIXO + conta); return t ? JSON.parse(t) : null; } catch (_) { return null; }
+}
+// Devolve true quando trocou os dados (aí o app precisa recarregar)
+function trocarDadosDaConta(user) {
+  if (window.__orcaonExcluindoConta) return false;
+  const conta = idContaDados(user);
+  const dono = localStorage.getItem(DONO_DADOS_KEY) || '';
+  if (dono === conta) return false;
+  const cofreNovo = lerCofre(conta);
+  const ativas = chavesDaContaAtivas();
+  // Primeira conta a usar os dados que já estavam no celular (ou os do modo visitante) fica com eles
+  if ((!dono || dono === 'visitante') && !cofreNovo) { localStorage.setItem(DONO_DADOS_KEY, conta); return false; }
+  // Guarda os dados de quem estava usando (sem dono: guarda como visitante, nada se perde)
+  const guardarComo = dono || 'visitante';
+  if (ativas.length) {
+    const pacote = lerCofre(guardarComo) || {};
+    ativas.forEach(k => { pacote[k] = localStorage.getItem(k); });
+    try { localStorage.setItem(COFRE_PREFIXO + guardarComo, JSON.stringify(pacote)); }
+    catch (e) { alert('O celular está sem espaço para separar os dados desta conta. Libere espaço e abra o app de novo.'); return false; }
+    ativas.forEach(k => localStorage.removeItem(k));
+  }
+  // Coloca os dados da conta que entrou
+  if (cofreNovo) {
+    const postas = [];
+    try { Object.keys(cofreNovo).forEach(k => { if (chaveDaConta(k)) { localStorage.setItem(k, cofreNovo[k]); postas.push(k); } }); }
+    catch (e) {
+      postas.forEach(k => localStorage.removeItem(k));   // o cofre continua guardado; tenta de novo na próxima abertura
+      localStorage.removeItem(DONO_DADOS_KEY);
+      alert('O celular está sem espaço para abrir os dados desta conta. Libere espaço e abra o app de novo.');
+      return true;
+    }
+    localStorage.removeItem(COFRE_PREFIXO + conta);
+  }
+  localStorage.setItem(DONO_DADOS_KEY, conta);
+  return true;
+}
+
 async function fazerLogout() {
   try { await liberarSessaoUnica(); } catch (_) {}
   try { if (window.firebase && firebase.apps && firebase.apps.length) await firebase.auth().signOut(); } catch (_) {}
@@ -7626,6 +7687,7 @@ async function excluirMinhaConta() {
     }
     if (window.firebase && firebase.auth) {
       const user = firebase.auth().currentUser;
+      window.__orcaonExcluindoConta = true;   // não troca os dados de conta enquanto exclui
       try { await liberarSessaoUnica(); } catch (_) {}
       if (user) {
         try { await apagarBackupOrca(); } catch (_) {}
@@ -7687,7 +7749,7 @@ async function excluirMinhaConta() {
     const extras = [];
     for (let i = 0; i < localStorage.length; i++) {
       const k = localStorage.key(i);
-      if (k && (k.indexOf('orcaon_') === 0 || chavesConta.indexOf(k) >= 0)) extras.push(k);
+      if (k && k.indexOf('orcaon_cofre_') !== 0 && (k.indexOf('orcaon_') === 0 || chavesConta.indexOf(k) >= 0)) extras.push(k);
     }
     extras.forEach(function (k) {
       try { localStorage.removeItem(k); } catch (_) {}
@@ -8193,7 +8255,7 @@ function bkChaves(){
       const k = localStorage.key(i);
       if (!k) continue;
       const incl = k.indexOf('orcaon_') === 0 || k === 'assinaturaDigital' || k === 'profession' || k === 'professionChosenV2';
-      const excl = k === 'orcaon_aparelho_id' || k.indexOf('orcaon_backup') === 0 || k === 'orcaon_boot_google' || k.indexOf('orcaon_perfil_inicial_') === 0 || /compartilhados_total$/.test(k) || /^orcaon_(plano|pro_ativo)$/.test(k);
+      const excl = k === 'orcaon_aparelho_id' || k.indexOf('orcaon_cofre_') === 0 || k === 'orcaon_dono_dados' || k.indexOf('orcaon_backup') === 0 || k === 'orcaon_boot_google' || k.indexOf('orcaon_perfil_inicial_') === 0 || /compartilhados_total$/.test(k) || /^orcaon_(plano|pro_ativo)$/.test(k);
       if (incl && !excl) r.push(k);
     }
   } catch (_) {}
@@ -8201,7 +8263,7 @@ function bkChaves(){
 }
 function bkChaveOk(k){
   const incl = k.indexOf('orcaon_') === 0 || k === 'assinaturaDigital' || k === 'profession' || k === 'professionChosenV2';
-  const excl = k === 'orcaon_aparelho_id' || k.indexOf('orcaon_backup') === 0 || k === 'orcaon_boot_google' || k.indexOf('orcaon_perfil_inicial_') === 0 || /compartilhados_total$/.test(k) || /^orcaon_(plano|pro_ativo)$/.test(k);
+  const excl = k === 'orcaon_aparelho_id' || k.indexOf('orcaon_cofre_') === 0 || k === 'orcaon_dono_dados' || k.indexOf('orcaon_backup') === 0 || k === 'orcaon_boot_google' || k.indexOf('orcaon_perfil_inicial_') === 0 || /compartilhados_total$/.test(k) || /^orcaon_(plano|pro_ativo)$/.test(k);
   return incl && !excl && k.length < 80;
 }
 function bkChavesValidas(){ return []; }

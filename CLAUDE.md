@@ -6,6 +6,7 @@ Dono: Bruno. Idioma de tudo: português do Brasil. Explicar sempre em linguagem 
 ## Como o projeto é montado
 - Site estático hospedado no GitHub Pages: https://brunolemosxd.github.io (repositório `brunolemosxd.github.io`, branch `main`).
 - `index.html` é o app inteiro em UM arquivo (HTML + CSS + JS). Dados no `localStorage`; login Google, cotas e backup via Firebase (Auth + Firestore, SDK compat 10.14.1).
+- Dados separados por conta no mesmo celular: só a conta ativa fica nas chaves normais (`orcaon_*`, `assinaturaDigital`, `profession`); as outras ficam em `orcaon_cofre_<conta>` e `orcaon_dono_dados` diz de quem são as ativas. A troca acontece em `trocarDadosDaConta()` (no login/saída) e recarrega o app. Chave nova de dados do usuário: começar com `orcaon_`; preferência do aparelho: incluir na lista de exceções de `chaveDaConta()`.
 - Outros arquivos: `admin.html` (painel só do Bruno), `politica-privacidade.html`, `termos-de-uso.html`, `excluir-conta.html`, `manifest.json`, `sw.js`, ícones PNG.
 - `capa-play-1024x500.png` é só material da Play Store: NÃO vai para o GitHub.
 - App Android (TWA) em `android/`: pacote `com.orcaon.app` (não muda nunca). A chave de assinatura (`orcaon-upload.jks` + senha) fica com o Bruno, NUNCA no GitHub. `/.well-known/assetlinks.json` tem a impressão digital da chave (sem ele aparece a barra de endereço) e `.nojekyll` faz o GitHub Pages publicar essa pasta. Ver `android/LEIA-ME.md`.
