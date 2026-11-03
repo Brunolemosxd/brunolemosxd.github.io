@@ -1,0 +1,376 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#0B1C2C">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<title>OrçaOn — Orçamento e recibo pelo celular</title>
+<meta name="description" content="Faça orçamentos e recibos bonitos pelo celular e mande pelo WhatsApp em PDF. Para pedreiro, eletricista, pintor, encanador, freteiro e todo prestador de serviço. Comece grátis.">
+<link rel="canonical" href="https://brunolemosxd.github.io/site/">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="pt_BR">
+<meta property="og:site_name" content="OrçaOn">
+<meta property="og:title" content="OrçaOn — Orçamento e recibo pelo celular">
+<meta property="og:description" content="Orçamento pronto em minutos, com seu logotipo e Pix. Mande em PDF pelo WhatsApp. Comece grátis.">
+<meta property="og:url" content="https://brunolemosxd.github.io/site/">
+<meta property="og:image" content="https://brunolemosxd.github.io/icon-512.png">
+<meta name="twitter:card" content="summary">
+<link rel="icon" type="image/png" href="../favicon-32.png">
+<link rel="apple-touch-icon" href="../apple-touch-icon.png">
+<script>
+// Black Friday: os destaques (classe bf-promo) aparecem até 30/11/2026, 23h59 de Brasília. Mesma data do app.
+try { if (Date.now() < Date.UTC(2026, 11, 1, 3, 0, 0)) document.documentElement.classList.add('bf-ativa'); } catch (e) {}
+</script>
+<style>
+:root{
+  --fundo:#0B1C2C; --fundo2:#10263B; --cartao:#132D45; --borda:rgba(255,255,255,.10);
+  --texto:#FFFFFF; --texto2:#B8C7D6; --amarelo:#F4C430; --verde:#2BD67B;
+  color-scheme:dark;
+}
+@media (prefers-color-scheme:dark){:root{color-scheme:dark}}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--fundo);color:var(--texto);font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Ubuntu,sans-serif;-webkit-text-size-adjust:100%}
+html:not(.bf-ativa) .bf-promo{display:none!important}
+a{color:inherit}
+img{max-width:100%;display:block}
+.wrap{max-width:1080px;margin:0 auto;padding:0 16px}
+.logo{font-weight:800;letter-spacing:-.5px;text-decoration:none;color:#fff}
+.logo span{color:var(--verde)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:52px;padding:14px 24px;border-radius:14px;font-weight:800;font-size:17px;text-decoration:none;border:0;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:transform .15s ease,box-shadow .15s ease}
+.btn:active{transform:scale(.98)}
+.btn-amarelo{background:var(--amarelo);color:#0B1C2C;box-shadow:0 8px 24px rgba(244,196,48,.25)}
+.btn-contorno{background:transparent;color:#fff;border:2px solid rgba(255,255,255,.25)}
+.btn-zap{background:#25D366;color:#06301A}
+.btn:focus-visible{outline:3px solid #fff;outline-offset:3px}
+
+/* Topo */
+.topo{position:sticky;top:0;z-index:10;background:rgba(11,28,44,.92);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border-bottom:1px solid var(--borda)}
+.topo .wrap{display:flex;align-items:center;justify-content:space-between;height:60px;gap:12px}
+.topo .logo{display:flex;align-items:center;gap:8px;font-size:22px}
+.topo .logo>span{color:#fff}
+.topo .logo img{width:30px;height:30px;border-radius:8px}
+.topo .btn{min-height:40px;padding:8px 16px;font-size:15px;border-radius:12px}
+
+/* Faixa Black Friday */
+.faixa-bf{background:var(--amarelo);color:#0B1C2C;text-align:center;font-weight:800;font-size:14px;padding:8px 16px}
+.faixa-bf a{color:#0B1C2C}
+
+/* Herói */
+.heroi{padding:48px 0 56px;background:radial-gradient(ellipse at 80% 0%,rgba(43,214,123,.12),transparent 55%),radial-gradient(ellipse at 0% 100%,rgba(244,196,48,.10),transparent 50%)}
+.heroi .wrap{display:grid;gap:40px;align-items:center}
+.selo{display:inline-block;background:rgba(43,214,123,.14);color:var(--verde);font-weight:700;font-size:13px;padding:6px 12px;border-radius:999px;margin-bottom:16px}
+h1{font-size:clamp(32px,8vw,52px);line-height:1.08;margin:0 0 16px;letter-spacing:-1px}
+h1 em{font-style:normal;color:var(--amarelo)}
+.heroi p.sub{font-size:18px;color:var(--texto2);margin:0 0 28px;max-width:540px}
+.acoes{display:flex;flex-wrap:wrap;gap:12px}
+.acoes .btn{flex:1 1 220px}
+.miudo{font-size:14px;color:var(--texto2);margin:14px 0 0}
+.miudo b{color:#fff}
+
+/* Celular ilustrativo */
+.celular{justify-self:center;width:280px;max-width:100%;background:#050E17;border-radius:36px;padding:12px;box-shadow:0 30px 60px rgba(0,0,0,.45),0 0 0 2px rgba(255,255,255,.08)}
+.tela{background:#F4F6F8;border-radius:26px;overflow:hidden;color:#111;font-size:12px}
+.tela-topo{background:var(--fundo);color:#fff;padding:14px 14px 12px;display:flex;justify-content:space-between;align-items:center}
+.tela-topo b{font-size:14px}
+.tela-topo small{color:var(--amarelo);font-weight:700}
+.doc{background:#fff;margin:12px;border-radius:12px;padding:14px;box-shadow:0 2px 8px rgba(0,0,0,.08)}
+.doc-cab{display:flex;gap:10px;align-items:center;border-bottom:2px solid var(--amarelo);padding-bottom:10px;margin-bottom:10px}
+.doc-logo{width:36px;height:36px;border-radius:9px;background:var(--fundo);color:var(--amarelo);display:grid;place-items:center;font-weight:900;font-size:16px}
+.doc-cab div{line-height:1.25}
+.doc-cab strong{display:block;font-size:13px}
+.doc-cab span{color:#667085;font-size:11px}
+.doc h4{margin:0 0 6px;font-size:12px;color:#344054}
+.doc table{width:100%;border-collapse:collapse;font-size:11px}
+.doc td{padding:5px 0;border-bottom:1px dashed #E4E7EC}
+.doc td:last-child{text-align:right;font-weight:700;white-space:nowrap}
+.doc .total{display:flex;justify-content:space-between;margin-top:10px;font-size:14px;font-weight:900}
+.doc .pix{display:flex;gap:8px;align-items:center;margin-top:10px;background:#F0FDF4;border-radius:8px;padding:8px;font-size:10px;color:#166534}
+.qr{width:34px;height:34px;flex:0 0 34px;background:
+  conic-gradient(#111 25%,#fff 0 50%,#111 0 75%,#fff 0) 0 0/8px 8px;border:3px solid #111;border-radius:3px}
+.tela-btn{margin:0 12px 14px;background:#25D366;color:#06301A;text-align:center;font-weight:800;padding:11px;border-radius:10px;font-size:13px}
+.ilustra{font-size:12px;color:var(--texto2);text-align:center;margin-top:10px}
+
+/* Seções */
+section{padding:56px 0;scroll-margin-top:60px}
+.alt{background:var(--fundo2)}
+h2{font-size:clamp(26px,6vw,36px);line-height:1.15;margin:0 0 12px;letter-spacing:-.5px}
+.intro{color:var(--texto2);font-size:17px;margin:0 0 32px;max-width:640px}
+.grade{display:grid;gap:16px}
+.cartao{background:var(--cartao);border:1px solid var(--borda);border-radius:18px;padding:22px}
+.cartao h3{margin:0 0 6px;font-size:18px}
+.cartao p{margin:0;color:var(--texto2);font-size:15px}
+.ico{width:48px;height:48px;border-radius:14px;display:grid;place-items:center;font-size:24px;margin-bottom:14px;background:rgba(244,196,48,.14)}
+.passo{position:relative;padding-top:26px}
+.num{position:absolute;top:-14px;left:22px;width:36px;height:36px;border-radius:50%;background:var(--amarelo);color:#0B1C2C;font-weight:900;display:grid;place-items:center;font-size:18px}
+
+/* Profissões */
+.chips{display:flex;flex-wrap:wrap;gap:10px}
+.chips span{background:var(--cartao);border:1px solid var(--borda);border-radius:999px;padding:9px 16px;font-weight:600;font-size:15px}
+
+/* Preços */
+.planos{display:grid;gap:20px;align-items:stretch}
+.plano{background:var(--cartao);border:1px solid var(--borda);border-radius:22px;padding:28px 24px;display:flex;flex-direction:column}
+.plano.pro{border:2px solid var(--amarelo);position:relative;background:linear-gradient(180deg,rgba(244,196,48,.08),var(--cartao) 40%)}
+.plano .etiqueta{position:absolute;top:-14px;right:20px;background:var(--amarelo);color:#0B1C2C;font-weight:800;font-size:13px;padding:5px 12px;border-radius:999px}
+.plano h3{margin:0 0 4px;font-size:22px}
+.plano .preco{font-size:40px;font-weight:900;margin:8px 0 2px;letter-spacing:-1px}
+.plano .preco small{font-size:16px;font-weight:600;color:var(--texto2);letter-spacing:0}
+.plano .obs{color:var(--texto2);font-size:14px;margin:0 0 18px}
+.plano .obs s{color:#ff8a8a}
+.plano ul{list-style:none;padding:0;margin:0 0 24px;flex:1}
+.plano li{padding:7px 0 7px 30px;position:relative;font-size:15px}
+.plano li::before{content:"✓";position:absolute;left:0;top:6px;width:22px;height:22px;border-radius:50%;background:rgba(43,214,123,.16);color:var(--verde);font-weight:900;font-size:13px;display:grid;place-items:center}
+.bf-box{background:rgba(244,196,48,.14);border:1px dashed var(--amarelo);color:var(--amarelo);border-radius:12px;padding:10px 12px;font-weight:800;font-size:14px;margin:0 0 14px}
+.pix-nota{font-size:14px;color:var(--texto2);text-align:center;margin:20px 0 0}
+
+/* Instalar */
+.inst h3{display:flex;align-items:center;gap:10px}
+.inst ol{margin:10px 0 0;padding-left:20px;color:var(--texto2)}
+.inst li{margin:6px 0}
+.inst li b{color:#fff}
+
+/* Perguntas */
+details{background:var(--cartao);border:1px solid var(--borda);border-radius:14px;margin-bottom:10px}
+summary{cursor:pointer;padding:18px 48px 18px 18px;font-weight:700;font-size:16px;list-style:none;position:relative}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"+";position:absolute;right:18px;top:50%;transform:translateY(-50%);font-size:24px;color:var(--amarelo);font-weight:400}
+details[open] summary::after{content:"−"}
+details p{margin:0;padding:0 18px 18px;color:var(--texto2)}
+
+/* Chamada final */
+.final{text-align:center;background:radial-gradient(ellipse at 50% 0%,rgba(244,196,48,.14),transparent 60%)}
+.final .acoes{justify-content:center;max-width:520px;margin:0 auto}
+
+/* Rodapé */
+footer{border-top:1px solid var(--borda);padding:32px 0 100px;color:var(--texto2);font-size:14px}
+footer .wrap{display:flex;flex-wrap:wrap;gap:16px;justify-content:space-between;align-items:center}
+footer nav{display:flex;flex-wrap:wrap;gap:16px}
+footer a{color:var(--texto2)}
+
+/* Botão fixo no celular */
+.fixo{position:fixed;left:0;right:0;bottom:0;z-index:20;padding:10px 16px calc(10px + env(safe-area-inset-bottom));background:rgba(11,28,44,.95);border-top:1px solid var(--borda);transform:translateY(110%);transition:transform .25s ease}
+.fixo.mostrar{transform:none}
+.fixo .btn{width:100%}
+
+@media (min-width:760px){
+  .heroi{padding:72px 0 80px}
+  .heroi .wrap{grid-template-columns:1.2fr 1fr}
+  .acoes .btn{flex:0 0 auto}
+  .g3{grid-template-columns:repeat(3,1fr)}
+  .g2{grid-template-columns:repeat(2,1fr)}
+  .planos{grid-template-columns:1fr 1fr;max-width:820px;margin:0 auto}
+  .fixo{display:none}
+  footer{padding-bottom:32px}
+}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}.btn,.fixo{transition:none}}
+</style>
+</head>
+<body>
+
+<div class="faixa-bf bf-promo">🔥 BLACK FRIDAY: Pro anual de <s>R$ 120</s> por R$ 60 até 30/11 · <a href="#precos">ver planos</a></div>
+
+<header class="topo">
+  <div class="wrap">
+    <a class="logo" href="#inicio" aria-label="OrçaOn, início"><img src="../icon-192.png" alt="" width="30" height="30"><span>Orça<span>On</span></span></a>
+    <a class="btn btn-amarelo" href="/?origem=site">Abrir o app</a>
+  </div>
+</header>
+
+<main id="inicio">
+  <!-- Herói -->
+  <div class="heroi">
+    <div class="wrap">
+      <div>
+        <span class="selo">Para quem presta serviço</span>
+        <h1>Orçamento e recibo pelo celular, <em>pronto em minutos</em></h1>
+        <p class="sub">Monte um orçamento bonito, com seu logotipo e Pix, e mande em PDF pelo WhatsApp. Seu cliente confia mais e você fecha mais serviço.</p>
+        <div class="acoes" id="cta-topo">
+          <a class="btn btn-amarelo" href="/?origem=site">Começar grátis</a>
+          <a class="btn btn-contorno" href="#como-funciona">Ver como funciona</a>
+        </div>
+        <p class="miudo"><b>Grátis para começar.</b> Entre com sua conta Google. Não precisa de cartão.</p>
+      </div>
+
+      <div aria-hidden="true">
+        <div class="celular">
+          <div class="tela">
+            <div class="tela-topo"><b>Orça<span style="color:var(--verde)">On</span></b><small>Orçamento nº 0012</small></div>
+            <div class="doc">
+              <div class="doc-cab">
+                <div class="doc-logo">J</div>
+                <div><strong>João Pinturas</strong><span>(51) 9 0000-0000</span></div>
+              </div>
+              <h4>Cliente: Maria Souza</h4>
+              <table>
+                <tr><td>Pintura da sala (2 dias)</td><td>R$ 600,00</td></tr>
+                <tr><td>Massa corrida (2 latas)</td><td>R$ 180,00</td></tr>
+                <tr><td>Tinta acrílica 18 L</td><td>R$ 320,00</td></tr>
+              </table>
+              <div class="total"><span>Total</span><span>R$ 1.100,00</span></div>
+              <div class="pix"><div class="qr"></div><div><b>Pague com Pix</b><br>Aponte a câmera para o QR</div></div>
+            </div>
+            <div class="tela-btn">Enviar pelo WhatsApp</div>
+          </div>
+        </div>
+        <p class="ilustra">Exemplo ilustrativo</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Como funciona -->
+  <section id="como-funciona" class="alt">
+    <div class="wrap">
+      <h2>Simples assim</h2>
+      <p class="intro">Sem planilha, sem papel, sem computador. Tudo no celular.</p>
+      <div class="grade g3">
+        <div class="cartao passo"><span class="num">1</span><h3>Preencha</h3><p>Coloque o cliente e os serviços. Pode até falar em vez de digitar.</p></div>
+        <div class="cartao passo"><span class="num">2</span><h3>Confira</h3><p>O app soma tudo e monta o documento com seu nome, logotipo e Pix.</p></div>
+        <div class="cartao passo"><span class="num">3</span><h3>Envie</h3><p>Mande em PDF ou imagem pelo WhatsApp. Pronto, cliente recebeu.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Recursos -->
+  <section>
+    <div class="wrap">
+      <h2>Tudo o que você precisa no dia a dia</h2>
+      <p class="intro">Feito para o prestador de serviço que quer passar uma imagem profissional.</p>
+      <div class="grade g3">
+        <div class="cartao"><div class="ico">📄</div><h3>Orçamentos</h3><p>Com itens, quantidades, horas ou dias, validade e condições de pagamento.</p></div>
+        <div class="cartao"><div class="ico">🧾</div><h3>Recibos</h3><p>Vários modelos de recibo, com sua assinatura. Transforme um orçamento em recibo com um toque.</p></div>
+        <div class="cartao"><div class="ico">💸</div><h3>Pix no documento</h3><p>Sua chave Pix e o QR Code aparecem no orçamento. O cliente paga na hora.</p></div>
+        <div class="cartao"><div class="ico">🧮</div><h3>Calculadora de material</h3><p>Calcule tinta, piso, contrapiso, fiação, calha, frete e mais. São 17 cálculos para várias profissões.</p></div>
+        <div class="cartao"><div class="ico">👥</div><h3>Seus clientes</h3><p>Cadastro dos clientes salvo no app. Não precisa digitar tudo de novo.</p></div>
+        <div class="cartao"><div class="ico">🎤</div><h3>Ditado por voz</h3><p>Está com a mão suja? Toque no microfone e fale.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Profissões -->
+  <section class="alt">
+    <div class="wrap">
+      <h2>Para quem é o OrçaOn</h2>
+      <p class="intro">Para qualquer profissional que precisa passar preço e receber pelo serviço.</p>
+      <div class="chips">
+        <span>Pedreiro</span><span>Eletricista</span><span>Pintor</span><span>Encanador</span><span>Freteiro</span><span>Gesseiro</span><span>Marceneiro</span><span>Serralheiro</span><span>Vidraceiro</span><span>Marmorista</span><span>Calheiro</span><span>Jardineiro</span><span>Técnico de ar-condicionado</span><span>Instalador de câmeras</span><span>Piscineiro</span><span>Estofador</span><span>E muito mais</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Preços -->
+  <section id="precos">
+    <div class="wrap">
+      <h2>Comece grátis. Vire Pro quando quiser.</h2>
+      <p class="intro">Teste à vontade. Quando o app virar parte do seu trabalho, o Pro libera tudo.</p>
+      <div class="planos">
+        <div class="plano">
+          <h3>Gratuito</h3>
+          <div class="preco">R$ 0</div>
+          <p class="obs">Para conhecer o app</p>
+          <ul>
+            <li>10 orçamentos enviados</li>
+            <li>10 recibos enviados</li>
+            <li>10 usos da calculadora de material</li>
+            <li>Seu logotipo, assinatura e Pix</li>
+          </ul>
+          <a class="btn btn-contorno" href="/?origem=site">Começar grátis</a>
+        </div>
+        <div class="plano pro">
+          <span class="etiqueta">Mais vantajoso</span>
+          <h3>Pro</h3>
+          <div class="bf-box bf-promo">🔥 BLACK FRIDAY: 50% OFF no anual até 30/11</div>
+          <div class="preco">R$ 60 <small>/ano</small></div>
+          <p class="obs"><s class="bf-promo">R$ 120</s> Sai R$ 5 por mês · ou R$ 10 no plano mensal</p>
+          <ul>
+            <li>Orçamentos e recibos sem limite</li>
+            <li>Calculadora de material sem limite</li>
+            <li>Ver e salvar em PDF antes de mandar</li>
+            <li>Cópia na nuvem: troque de celular sem perder nada</li>
+            <li>Todos os recursos liberados</li>
+          </ul>
+          <a class="btn btn-amarelo" href="/?origem=site">Quero o Pro</a>
+        </div>
+      </div>
+      <p class="pix-nota">Pagamento por Pix, dentro do app. Sem renovação automática e sem cartão.</p>
+    </div>
+  </section>
+
+  <!-- Instalar -->
+  <section class="alt inst">
+    <div class="wrap">
+      <h2>Coloque o OrçaOn na tela do celular</h2>
+      <p class="intro">Não ocupa espaço como um app pesado e abre direto, como qualquer outro aplicativo.</p>
+      <div class="grade g2">
+        <div class="cartao">
+          <h3>🤖 Android</h3>
+          <ol>
+            <li>Toque em <b>Começar grátis</b> e abra no <b>Chrome</b>.</li>
+            <li>Entre com sua conta Google.</li>
+            <li>Toque em <b>Instalar</b> (no app ou no menu ⋮ do Chrome).</li>
+          </ol>
+        </div>
+        <div class="cartao">
+          <h3>🍎 iPhone</h3>
+          <ol>
+            <li>Abra o OrçaOn no <b>Safari</b>.</li>
+            <li>Toque em <b>Compartilhar</b> (o quadrado com a seta para cima).</li>
+            <li>Toque em <b>Adicionar à Tela de Início</b>.</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Perguntas -->
+  <section>
+    <div class="wrap">
+      <h2>Perguntas frequentes</h2>
+      <p class="intro">Ficou alguma dúvida? Chame no WhatsApp.</p>
+      <details><summary>É grátis mesmo?</summary><p>Sim. O plano gratuito tem 10 orçamentos, 10 recibos e 10 usos da calculadora, sem pagar nada e sem cartão. Se quiser usar sem limite, você pode virar Pro.</p></details>
+      <details><summary>Preciso de computador ou impressora?</summary><p>Não. Tudo é feito no celular e o documento vai pelo WhatsApp em PDF ou imagem.</p></details>
+      <details><summary>Funciona no iPhone?</summary><p>Funciona. Abra pelo Safari e use "Adicionar à Tela de Início" para ter o ícone na tela.</p></details>
+      <details><summary>Como pago o Pro?</summary><p>Por Pix, dentro do app. Depois é só mandar o comprovante pelo WhatsApp e o Pro é liberado na sua conta. Não tem renovação automática.</p></details>
+      <details><summary>Meus dados ficam seguros?</summary><p>Seus orçamentos, recibos e clientes ficam guardados no seu celular. No Pro, você também tem uma cópia na nuvem, ligada só à sua conta. Veja a <a href="../politica-privacidade.html">política de privacidade</a>.</p></details>
+      <details><summary>E se eu me arrepender do Pro?</summary><p>Você pode desistir em até 7 dias após o pagamento e receber o valor de volta.</p></details>
+    </div>
+  </section>
+
+  <!-- Chamada final -->
+  <section class="final alt">
+    <div class="wrap">
+      <h2>Seu próximo orçamento já pode sair bonito</h2>
+      <p class="intro" style="margin-left:auto;margin-right:auto">Comece agora, de graça.</p>
+      <div class="acoes">
+        <a class="btn btn-amarelo" href="/?origem=site">Começar grátis</a>
+        <a class="btn btn-zap" href="https://wa.me/5551991213438?text=Ol%C3%A1!%20Tenho%20uma%20d%C3%BAvida%20sobre%20o%20Or%C3%A7aOn." target="_blank" rel="noopener">Tirar dúvida no WhatsApp</a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span><span class="logo">Orça<span>On</span></span> · Orçamentos e recibos</span>
+    <nav>
+      <a href="../politica-privacidade.html">Privacidade</a>
+      <a href="../termos-de-uso.html">Termos de uso</a>
+      <a href="../excluir-conta.html">Excluir conta</a>
+    </nav>
+  </div>
+</footer>
+
+<div class="fixo" id="fixo"><a class="btn btn-amarelo" href="/?origem=site">Começar grátis</a></div>
+
+<script>
+// Botão fixo no rodapé do celular: aparece quando o botão do topo sai da tela.
+(function () {
+  var alvo = document.getElementById('cta-topo'), fixo = document.getElementById('fixo');
+  if (!alvo || !fixo || !('IntersectionObserver' in window)) return;
+  new IntersectionObserver(function (e) { fixo.classList.toggle('mostrar', !e[0].isIntersecting); }).observe(alvo);
+})();
+</script>
+</body>
+</html>
