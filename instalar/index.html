@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#0B1C2C">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<title>Instalar o OrçaOn</title>
+<meta name="description" content="Instale o OrçaOn no seu celular: orçamento e recibo pelo celular, com seu logo e Pix. Grátis para começar.">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="pt_BR">
+<meta property="og:site_name" content="OrçaOn">
+<meta property="og:title" content="Instale o OrçaOn no seu celular">
+<meta property="og:description" content="Orçamento e recibo pelo celular, com seu logo e Pix. Grátis para começar.">
+<meta property="og:url" content="https://brunolemosxd.github.io/instalar/">
+<meta property="og:image" content="https://brunolemosxd.github.io/icon-512.png">
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" type="image/png" href="/favicon-32.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="OrçaOn">
+<script>
+// Se já está aberto como app instalado, vai direto para o app.
+try { if (window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true) location.replace('/?origem=app'); } catch (e) {}
+</script>
+<style>
+:root{--f:#0B1C2C;--f2:#132D45;--borda:rgba(255,255,255,.12);--tx2:#B8C7D6;--am:#F4C430;--vd:#2BD67B;color-scheme:dark}
+@media (prefers-color-scheme:dark){:root{color-scheme:dark}}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;background:var(--f);color:#fff;font:16px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Ubuntu,sans-serif;-webkit-text-size-adjust:100%;
+  background-image:radial-gradient(ellipse at 90% 0%,rgba(43,214,123,.14),transparent 50%),radial-gradient(ellipse at 0% 100%,rgba(244,196,48,.12),transparent 50%)}
+main{max-width:460px;margin:0 auto;padding:32px 16px 40px;text-align:center}
+.icone{width:104px;height:104px;border-radius:26px;display:block;margin:0 auto 14px;box-shadow:0 18px 40px rgba(0,0,0,.45)}
+.logo{font-size:34px;font-weight:900;letter-spacing:-1px;margin:0}
+.logo span{color:var(--vd)}
+.sub{color:var(--tx2);margin:6px 0 26px;font-size:17px}
+.cartao{background:var(--f2);border:1px solid var(--borda);border-radius:22px;padding:22px 18px;text-align:left}
+.cartao h2{margin:0 0 6px;font-size:21px;text-align:center}
+.cartao p{margin:0 0 12px;color:var(--tx2);text-align:center}
+.btn{display:flex;width:100%;align-items:center;justify-content:center;gap:10px;min-height:60px;padding:16px 20px;border:0;border-radius:16px;font:inherit;font-size:20px;font-weight:900;text-decoration:none;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:transform .12s ease}
+.btn:active{transform:scale(.98)}
+.btn:focus-visible{outline:3px solid #fff;outline-offset:3px}
+.amarelo{background:var(--am);color:var(--f);box-shadow:0 10px 26px rgba(244,196,48,.28)}
+.verde{background:var(--vd);color:#06301A}
+.contorno{background:transparent;color:#fff;border:2px solid rgba(255,255,255,.25);font-size:17px;min-height:52px;margin-top:12px}
+.pulsa{animation:pulsa 2.2s ease-in-out infinite}
+@keyframes pulsa{0%,100%{box-shadow:0 10px 26px rgba(244,196,48,.28)}50%{box-shadow:0 10px 36px rgba(244,196,48,.6)}}
+.nota{font-size:14px;color:var(--tx2);text-align:center;margin:12px 0 0}
+ol.passos{list-style:none;counter-reset:p;padding:0;margin:14px 0 0}
+ol.passos li{counter-increment:p;position:relative;padding:12px 0 12px 50px;border-top:1px solid var(--borda);font-size:17px}
+ol.passos li:first-child{border-top:0}
+ol.passos li::before{content:counter(p);position:absolute;left:0;top:10px;width:34px;height:34px;border-radius:50%;background:var(--am);color:var(--f);font-weight:900;display:grid;place-items:center}
+ol.passos b{color:#fff}
+.ico-share{display:inline-block;width:18px;height:20px;vertical-align:-4px;border:2px solid currentColor;border-top:0;border-radius:0 0 4px 4px;position:relative;margin:0 2px}
+.ico-share::before{content:"";position:absolute;left:50%;top:-8px;width:2px;height:14px;margin-left:-1px;background:currentColor}
+.ico-share::after{content:"";position:absolute;left:50%;top:-9px;width:7px;height:7px;margin-left:-4.5px;border-left:2px solid currentColor;border-top:2px solid currentColor;transform:rotate(45deg)}
+.ok{font-size:54px;line-height:1;text-align:center;margin-bottom:6px}
+.beneficios{list-style:none;padding:0;margin:26px 0 0;text-align:left;display:grid;gap:10px}
+.beneficios li{background:rgba(255,255,255,.04);border:1px solid var(--borda);border-radius:14px;padding:12px 14px 12px 46px;position:relative;font-size:15px}
+.beneficios li::before{content:"✓";position:absolute;left:14px;top:11px;width:22px;height:22px;border-radius:50%;background:rgba(43,214,123,.16);color:var(--vd);font-weight:900;font-size:13px;display:grid;place-items:center}
+.links{margin-top:26px;font-size:14px;color:var(--tx2)}
+.links a{color:var(--tx2)}
+[hidden]{display:none!important}
+@media (prefers-reduced-motion:reduce){.pulsa{animation:none}.btn{transition:none}}
+</style>
+</head>
+<body>
+<main>
+  <img class="icone" src="/icon-192.png" alt="" width="104" height="104">
+  <h1 class="logo">Orça<span>On</span></h1>
+  <p class="sub">Orçamento e recibo pelo celular</p>
+
+  <!-- Android/Chrome: instala com um toque -->
+  <section class="cartao" id="v-instalar" hidden>
+    <h2>Instale no seu celular</h2>
+    <p>É grátis e leva poucos segundos.</p>
+    <button type="button" class="btn amarelo pulsa" id="btn-instalar">📲 Instalar o OrçaOn</button>
+    <p class="nota">Depois toque em <b>Instalar</b> na janelinha que aparecer.</p>
+  </section>
+
+  <!-- Chrome sem a janelinha (ou outro navegador): passo a passo pelo menu -->
+  <section class="cartao" id="v-menu" hidden>
+    <h2>Instale pelo menu do navegador</h2>
+    <ol class="passos">
+      <li>Toque nos <b>três pontinhos ⋮</b> no canto de cima.</li>
+      <li>Toque em <b>Instalar app</b> ou <b>Adicionar à tela inicial</b>.</li>
+      <li>Toque em <b>Instalar</b>.</li>
+    </ol>
+    <p class="nota" id="nota-ja">Se não aparecer essa opção, o OrçaOn pode já estar instalado: procure o ícone na tela do celular.</p>
+  </section>
+
+  <!-- Navegador da Samsung -->
+  <section class="cartao" id="v-samsung" hidden>
+    <h2>Instale pelo Chrome</h2>
+    <p>No Chrome o OrçaOn funciona melhor e instala com um toque.</p>
+    <a class="btn amarelo pulsa" id="btn-chrome-s" href="#">Abrir no Chrome</a>
+    <p class="nota" style="margin-top:18px">Prefere este navegador?</p>
+    <ol class="passos">
+      <li>Toque no <b>menu ≡</b> no canto de baixo.</li>
+      <li>Toque em <b>Adicionar página a</b>.</li>
+      <li>Escolha <b>Tela inicial</b>.</li>
+    </ol>
+  </section>
+
+  <!-- Aberto dentro do Instagram, Facebook, WhatsApp etc. (Android) -->
+  <section class="cartao" id="v-outroapp" hidden>
+    <h2>Abra no Chrome para instalar</h2>
+    <p>Você abriu o link dentro de outro aplicativo, e por aqui não dá para instalar.</p>
+    <a class="btn amarelo pulsa" id="btn-chrome" href="#">Abrir no Chrome</a>
+    <button type="button" class="btn contorno" data-copiar>Copiar o link</button>
+    <p class="nota">Se o botão não funcionar: toque nos <b>três pontinhos</b> do canto e escolha <b>Abrir no navegador</b>.</p>
+  </section>
+
+  <!-- iPhone no Safari -->
+  <section class="cartao" id="v-ios" hidden>
+    <h2>Instale no iPhone</h2>
+    <ol class="passos">
+      <li>Toque no botão <b>Compartilhar</b> <span class="ico-share" aria-hidden="true"></span> na barra do Safari.</li>
+      <li>Role e toque em <b>Adicionar à Tela de Início</b>.</li>
+      <li>Toque em <b>Adicionar</b>.</li>
+    </ol>
+  </section>
+
+  <!-- iPhone fora do Safari -->
+  <section class="cartao" id="v-ios-outro" hidden>
+    <h2>Abra no Safari para instalar</h2>
+    <p>No iPhone, só dá para instalar pelo <b>Safari</b>.</p>
+    <button type="button" class="btn amarelo" data-copiar>Copiar o link</button>
+    <ol class="passos">
+      <li>Abra o <b>Safari</b> e cole o link na barra de endereço.</li>
+      <li>Toque em <b>Compartilhar</b> <span class="ico-share" aria-hidden="true"></span> e depois em <b>Adicionar à Tela de Início</b>.</li>
+    </ol>
+  </section>
+
+  <!-- Computador -->
+  <section class="cartao" id="v-pc" hidden>
+    <h2>Abra no seu celular</h2>
+    <p>O OrçaOn foi feito para o celular. Abra este endereço nele:</p>
+    <p style="font-size:20px;font-weight:800;color:#fff">brunolemosxd.github.io/instalar</p>
+    <a class="btn contorno" href="/">Usar no computador mesmo assim</a>
+  </section>
+
+  <!-- Instalado -->
+  <section class="cartao" id="v-pronto" hidden>
+    <div class="ok">✅</div>
+    <h2>Pronto, instalado!</h2>
+    <p>O ícone do OrçaOn já está na tela do seu celular. Entre com sua conta Google e faça seu primeiro orçamento.</p>
+    <a class="btn verde" href="/?origem=app">Abrir o OrçaOn</a>
+  </section>
+
+  <ul class="beneficios">
+    <li>Orçamento e recibo com seu <b>logo, Pix e assinatura</b></li>
+    <li>Envie em <b>PDF pelo WhatsApp</b></li>
+    <li><b>10 orçamentos e 10 recibos grátis</b> para testar</li>
+  </ul>
+
+  <a class="btn contorno" href="/">Usar sem instalar</a>
+
+  <p class="links"><a href="/politica-privacidade.html">Privacidade</a> · <a href="/termos-de-uso.html">Termos de uso</a></p>
+</main>
+
+<script>
+(function () {
+  var ua = navigator.userAgent || '';
+  var ios = /iPhone|iPad|iPod/i.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+  var android = /Android/i.test(ua);
+  var emOutroApp = /FBAN|FBAV|FB_IAB|Instagram|Line\/|; wv\)|WhatsApp|TikTok|musical_ly/i.test(ua);
+  var samsung = /SamsungBrowser/i.test(ua);
+  var iosSafari = ios && /Safari/i.test(ua) && !/CriOS|FxiOS|EdgiOS|OPiOS|GSA\//i.test(ua) && !emOutroApp;
+  var celular = ios || android || /Mobi/i.test(ua);
+  var pedido = null;
+  var ENDERECO = 'https://brunolemosxd.github.io/instalar/';
+
+  function mostrar(id) {
+    ['v-instalar', 'v-menu', 'v-samsung', 'v-outroapp', 'v-ios', 'v-ios-outro', 'v-pc', 'v-pronto'].forEach(function (x) {
+      document.getElementById(x).hidden = (x !== id);
+    });
+  }
+
+  // Abre esta mesma página no Chrome (Android)
+  var intent = 'intent://brunolemosxd.github.io/instalar/#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url=' + encodeURIComponent(ENDERECO) + ';end';
+  document.getElementById('btn-chrome').href = intent;
+  document.getElementById('btn-chrome-s').href = intent;
+
+  // Copiar o link
+  Array.prototype.forEach.call(document.querySelectorAll('[data-copiar]'), function (b) {
+    b.addEventListener('click', function () {
+      var feito = function () { var t = b.textContent; b.textContent = '✓ Link copiado'; setTimeout(function () { b.textContent = t; }, 2500); };
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(ENDERECO).then(feito, function () { prompt('Copie o link:', ENDERECO); });
+      else prompt('Copie o link:', ENDERECO);
+    });
+  });
+
+  // O Chrome avisa quando o app pode ser instalado com um toque
+  window.addEventListener('beforeinstallprompt', function (e) {
+    e.preventDefault();
+    pedido = e;
+    if (!document.getElementById('v-pronto').hidden) return;
+    mostrar('v-instalar');
+  });
+  window.addEventListener('appinstalled', function () {
+    pedido = null;
+    try { localStorage.setItem('orcaon_instalar_fechado', '1'); } catch (e) {}
+    mostrar('v-pronto');
+  });
+
+  document.getElementById('btn-instalar').addEventListener('click', function () {
+    if (!pedido) { mostrar('v-menu'); return; }
+    var ev = pedido; pedido = null;
+    try {
+      ev.prompt();
+      ev.userChoice.then(function (r) {
+        if (r && r.outcome === 'accepted') mostrar('v-pronto');
+        else mostrar('v-instalar');   // desistiu: o botão continua ali
+      }, function () {});
+    } catch (e) { mostrar('v-menu'); }
+  });
+
+  // Tela inicial conforme o celular e o navegador
+  if (emOutroApp && !ios) mostrar('v-outroapp');
+  else if (ios) mostrar(iosSafari ? 'v-ios' : 'v-ios-outro');
+  else if (samsung) mostrar('v-samsung');
+  else if (!celular) mostrar('v-pc');
+  else {
+    // Chrome no Android: mostra o botão já; se a janelinha não estiver disponível, o toque leva ao passo a passo
+    mostrar('v-instalar');
+  }
+
+  // Precisa do "service worker" do app para o Chrome oferecer a instalação
+  if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
+    navigator.serviceWorker.register('/sw.js').catch(function () {});
+  }
+})();
+</script>
+</body>
+</html>
