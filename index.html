@@ -8307,7 +8307,7 @@ const COFRE_PREFIXO = 'orcaon_cofre_';
 function chaveDaConta(k) {
   if (k === 'assinaturaDigital' || k === 'profession' || k === 'professionChosenV2') return true;
   if (!k || k.indexOf('orcaon_') !== 0) return false;
-  if (['orcaon_aparelho_id', 'orcaon_boot_google', 'orcaon_instalar_fechado', 'orcaon_mic_aviso', 'orcaon_oferta_pro_pendente', DONO_DADOS_KEY, 'orcaon_plano', 'orcaon_pro_ativo'].indexOf(k) >= 0) return false;
+  if (['orcaon_aparelho_id', 'orcaon_boot_google', 'orcaon_instalar_fechado', 'orcaon_mic_aviso', 'orcaon_oferta_pro_pendente', DONO_DADOS_KEY, 'orcaon_plano', 'orcaon_pro_ativo', 'orcaon_admin_visto'].indexOf(k) >= 0) return false;
   if (k.indexOf(COFRE_PREFIXO) === 0 || k.indexOf('orcaon_backup') === 0 || k.indexOf('orcaon_perfil_inicial_') === 0 || /compartilhados_total$/.test(k)) return false;
   return true;
 }

@@ -40,6 +40,15 @@ label{display:block;margin:10px 0 4px;color:var(--mut);font-size:.85rem}
 .row{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
 #msg{color:var(--mut);margin:8px 0;min-height:1.2em}
 .cod{white-space:nowrap}
+.user.novo{background:rgba(244,196,48,.09);border-left:4px solid var(--gold);border-radius:10px;padding-left:12px;padding-right:8px;margin:4px 0}
+.aviso-novo{background:var(--gold);color:#0B1C2C;border-radius:14px;padding:14px 16px;margin:0 0 12px;font-weight:700;cursor:pointer}
+.aviso-novo .meta{color:#0B1C2C;opacity:.8;font-weight:500;margin-top:4px}
+.aviso-novo .cod{color:#0B1C2C;font-size:1rem}
+.t-novo{background:var(--gold);color:#0B1C2C}
+.stat.dest{border-color:var(--gold);background:rgba(244,196,48,.12)}
+.novos-bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin:12px 0 0}
+.novos-bar label{display:flex;align-items:center;gap:6px;margin:0;color:var(--txt);font-size:.9rem}
+.novos-bar input{width:auto}
 @media(max-width:640px){.user{grid-template-columns:1fr}.acts{justify-content:flex-start}}
 </style>
 </head>
@@ -63,11 +72,13 @@ label{display:block;margin:10px 0 4px;color:var(--mut);font-size:.85rem}
       <h1>Painel <span>OrçaOn</span></h1>
       <div><button class="sm" id="btn-atualizar">Atualizar</button> <button class="sm" id="btn-sair">Sair</button></div>
     </div>
+    <div id="aviso-novo" class="aviso-novo" role="status" style="display:none"></div>
     <div class="grid" id="stats"></div>
     <div class="box"><b>Novos usuários por dia</b> <span class="meta">(últimos 30 dias)</span><div id="g-novos"></div></div>
     <div class="box"><b>Novos Pro por dia</b> <span class="meta">(últimos 30 dias)</span><div id="g-pro"></div></div>
     <div class="box"><b>Quem usa o app</b><div id="g-dist"></div></div>
     <input id="busca" placeholder="Buscar pelo código do usuário (ex.: K7M2-9QXP)" autocomplete="off" autocapitalize="characters">
+    <div class="novos-bar"><span id="novos-txt" class="meta"></span><span><label><input type="checkbox" id="so-novos"> Só os novos</label></span><button class="sm" id="btn-vistos">Marcar como vistos</button></div>
     <div id="msg"></div>
     <div class="box" id="lista">Carregando…</div>
     <p class="meta">Mostrando até 500 usuários, do mais novo ao mais antigo. O painel não mostra nome, e-mail nem os documentos dos usuários.</p>
@@ -91,6 +102,12 @@ firebase.initializeApp(firebaseConfig);
 const auth=firebase.auth(), db=firebase.firestore();
 const $=id=>document.getElementById(id);
 let usuarios=[];
+// Destaque de login novo: quem se cadastrou depois da última vez que você tocou em "Marcar como vistos" (neste aparelho).
+// Na primeira vez, conta como novo quem entrou nas últimas 24 horas.
+const VISTO_KEY='orcaon_admin_visto';
+function lerVisto(){try{const v=+localStorage.getItem(VISTO_KEY);if(v>0)return v;}catch(e){}return Date.now()-864e5;}
+let vistoAte=lerVisto();
+const ehNovo=u=>ms(u.criado)>vistoAte;
 
 async function codigo(gid){
   const h=new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode('orcapro:'+gid)));
@@ -115,6 +132,13 @@ $('btn-entrar').onclick=async()=>{
 $('btn-sair').onclick=$('btn-sair2').onclick=()=>auth.signOut();
 $('btn-atualizar').onclick=()=>carregar();
 $('busca').oninput=()=>desenhar();
+$('so-novos').onchange=()=>desenhar();
+$('btn-vistos').onclick=()=>{
+  const ult=usuarios.reduce((a,u)=>Math.max(a,ms(u.criado)),0);
+  vistoAte=Math.max(ult,vistoAte);
+  try{localStorage.setItem(VISTO_KEY,String(vistoAte));}catch(e){}
+  $('so-novos').checked=false;stats();desenhar();
+};
 
 auth.onAuthStateChanged(u=>{
   if(!u){show('tela-entrar');return;}
@@ -135,8 +159,19 @@ function stats(){
   const novos=n=>usuarios.filter(u=>agora-ms(u.criado)<=n*dia).length;
   const pro=usuarios.filter(u=>plano(u).ativo).length;
   const orc=usuarios.reduce((a,u)=>a+(+u.orc||0),0),rec=usuarios.reduce((a,u)=>a+(+u.rec||0),0);
-  const itens=[[usuarios.length,'usuários'],[novos(1),'novos hoje'],[novos(7),'novos em 7 dias'],[novos(30),'novos em 30 dias'],[pro,'com Pro ativo'],[orc,'orçamentos emitidos'],[rec,'recibos emitidos']];
-  $('stats').innerHTML=itens.map(([n,t])=>`<div class="stat"><b>${n}</b><span>${t}</span></div>`).join('');
+  const nn=usuarios.filter(ehNovo).length;
+  $('novos-txt').innerHTML=nn?`<b style="color:var(--gold)">${nn} login${nn>1?'s':''} novo${nn>1?'s':''}</b> desde ${new Date(vistoAte).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'})}`:'Nenhum login novo desde '+new Date(vistoAte).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'});
+  $('btn-vistos').style.display=nn?'':'none';
+  // Aviso no topo com o código de cada usuário novo. Tocar mostra só os novos na lista.
+  const recem=usuarios.filter(ehNovo),av=$('aviso-novo');
+  if(recem.length){
+    av.innerHTML=`🎉 ${recem.length>1?recem.length+' usuários novos':'Usuário novo'}!`+recem.slice(0,10).map(u=>`<div class="meta"><span class="cod">${u.cod}</span> · entrou em ${fmt(u.criado)}</div>`).join('')+(recem.length>10?`<div class="meta">e mais ${recem.length-10}…</div>`:'')+'<div class="meta">Toque para ver na lista</div>';
+    av.style.display='';
+    av.onclick=()=>{$('so-novos').checked=true;desenhar();$('busca').scrollIntoView({behavior:'smooth'});};
+  }else av.style.display='none';
+  document.title=(recem.length?'('+recem.length+') ':'')+'Painel OrçaOn';
+  const itens=[[nn,'logins novos','dest'],[usuarios.length,'usuários'],[novos(1),'novos hoje'],[novos(7),'novos em 7 dias'],[novos(30),'novos em 30 dias'],[pro,'com Pro ativo'],[orc,'orçamentos emitidos'],[rec,'recibos emitidos']];
+  $('stats').innerHTML=itens.map(([n,t,c])=>`<div class="stat${c&&n?' '+c:''}"><b>${n}</b><span>${t}</span></div>`).join('');
 }
 function barras(el,datas,vals,cor,vazio){
   const tot=vals.reduce((x,y)=>x+y,0);
@@ -163,12 +198,14 @@ function graficos(){
 }
 function desenhar(){
   const q=$('busca').value.toUpperCase().replace(/[^A-Z0-9]/g,'');
-  const lista=usuarios.filter(u=>!q||u.cod.replace('-','').includes(q));
-  if(!lista.length){$('lista').textContent=q?'Nenhum usuário com esse código.':'Ainda não há usuários.';return;}
+  const so=$('so-novos').checked;
+  const lista=usuarios.filter(u=>(!q||u.cod.replace('-','').includes(q))&&(!so||ehNovo(u)));
+  if(!lista.length){$('lista').textContent=q?'Nenhum usuário com esse código.':so?'Nenhum login novo.':'Ainda não há usuários.';return;}
   $('lista').innerHTML=lista.map(u=>{
     const p=plano(u),o=Math.min(LIMITE,+u.orc||0),r=Math.min(LIMITE,+u.rec||0);
-    return `<div class="user"><div>
-      <div><span class="cod">${u.cod}</span> <span class="tag ${p.cls}">${p.txt}</span></div>
+    const nv=ehNovo(u);
+    return `<div class="user${nv?' novo':''}"><div>
+      <div><span class="cod">${u.cod}</span> ${nv?'<span class="tag t-novo">NOVO</span> ':''}<span class="tag ${p.cls}">${p.txt}</span></div>
       <div class="meta">Cadastro: ${fmt(u.criado)} · Último uso: ${fmt(u.atualizado)}</div>
       <div class="meta">Orçamentos: ${+u.orc||0}/${LIMITE}<div class="bar"><i style="width:${o*10}%"></i></div></div>
       <div class="meta">Recibos: ${+u.rec||0}/${LIMITE}<div class="bar"><i style="width:${r*10}%"></i></div></div>
