@@ -41,6 +41,9 @@ label{display:block;margin:10px 0 4px;color:var(--mut);font-size:.85rem}
 #msg{color:var(--mut);margin:8px 0;min-height:1.2em}
 .cod{white-space:nowrap}
 .user.novo{background:rgba(244,196,48,.09);border-left:4px solid var(--gold);border-radius:10px;padding-left:12px;padding-right:8px;margin:4px 0}
+.aviso-novo{background:var(--gold);color:#0B1C2C;border-radius:14px;padding:14px 16px;margin:0 0 12px;font-weight:700;cursor:pointer}
+.aviso-novo .meta{color:#0B1C2C;opacity:.8;font-weight:500;margin-top:4px}
+.aviso-novo .cod{color:#0B1C2C;font-size:1rem}
 .t-novo{background:var(--gold);color:#0B1C2C}
 .stat.dest{border-color:var(--gold);background:rgba(244,196,48,.12)}
 .novos-bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin:12px 0 0}
@@ -69,6 +72,7 @@ label{display:block;margin:10px 0 4px;color:var(--mut);font-size:.85rem}
       <h1>Painel <span>OrçaOn</span></h1>
       <div><button class="sm" id="btn-atualizar">Atualizar</button> <button class="sm" id="btn-sair">Sair</button></div>
     </div>
+    <div id="aviso-novo" class="aviso-novo" role="status" style="display:none"></div>
     <div class="grid" id="stats"></div>
     <div class="box"><b>Novos usuários por dia</b> <span class="meta">(últimos 30 dias)</span><div id="g-novos"></div></div>
     <div class="box"><b>Novos Pro por dia</b> <span class="meta">(últimos 30 dias)</span><div id="g-pro"></div></div>
@@ -158,6 +162,14 @@ function stats(){
   const nn=usuarios.filter(ehNovo).length;
   $('novos-txt').innerHTML=nn?`<b style="color:var(--gold)">${nn} login${nn>1?'s':''} novo${nn>1?'s':''}</b> desde ${new Date(vistoAte).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'})}`:'Nenhum login novo desde '+new Date(vistoAte).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'});
   $('btn-vistos').style.display=nn?'':'none';
+  // Aviso no topo com o código de cada usuário novo. Tocar mostra só os novos na lista.
+  const recem=usuarios.filter(ehNovo),av=$('aviso-novo');
+  if(recem.length){
+    av.innerHTML=`🎉 ${recem.length>1?recem.length+' usuários novos':'Usuário novo'}!`+recem.slice(0,10).map(u=>`<div class="meta"><span class="cod">${u.cod}</span> · entrou em ${fmt(u.criado)}</div>`).join('')+(recem.length>10?`<div class="meta">e mais ${recem.length-10}…</div>`:'')+'<div class="meta">Toque para ver na lista</div>';
+    av.style.display='';
+    av.onclick=()=>{$('so-novos').checked=true;desenhar();$('busca').scrollIntoView({behavior:'smooth'});};
+  }else av.style.display='none';
+  document.title=(recem.length?'('+recem.length+') ':'')+'Painel OrçaOn';
   const itens=[[nn,'logins novos','dest'],[usuarios.length,'usuários'],[novos(1),'novos hoje'],[novos(7),'novos em 7 dias'],[novos(30),'novos em 30 dias'],[pro,'com Pro ativo'],[orc,'orçamentos emitidos'],[rec,'recibos emitidos']];
   $('stats').innerHTML=itens.map(([n,t,c])=>`<div class="stat${c&&n?' '+c:''}"><b>${n}</b><span>${t}</span></div>`).join('');
 }
