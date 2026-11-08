@@ -1526,7 +1526,6 @@ body.light .btn-add-item span { background: #B45309; color: #fff; }
 body.light .item-subtotal { background: #ECFDF5; border-color: #6EE7B7; }
 body.light .item-subtotal b { color: #047857; }
 .orc-total-flutuante { position: fixed; left: 50%; bottom: calc(14px + env(safe-area-inset-bottom)); transform: translateX(-50%) translateY(140%); z-index: 900; display: flex; align-items: center; gap: 12px; padding: 12px 20px; border-radius: 999px; background: #0B1C2C; border: 2px solid #F4C430; box-shadow: 0 10px 30px rgba(0,0,0,.45); color: #fff; font-size: 14px; font-weight: 700; white-space: nowrap; transition: transform .25s ease, opacity .2s ease; pointer-events: none; opacity: .35; cursor: pointer; -webkit-tap-highlight-color: transparent; }
-.orc-total-flutuante.on { pointer-events: auto; }
 .orc-total-flutuante.forte { opacity: 1; }
 .orc-total-flutuante b { color: #F4C430; font-size: 19px; }
 .orc-total-flutuante.on { transform: translateX(-50%) translateY(0); }
@@ -7122,7 +7121,16 @@ function calcularDescontoOrcamento() {
     const f = document.getElementById('orc-total-flut');
     if (f) {
       let tocadoEm = 0;
-      f.addEventListener('click', function () { f.classList.add('forte'); tocadoEm = Date.now(); });
+      // o toque atravessa a barrinha: se embaixo tiver botão ou campo, ele funciona normal;
+      // se tocar num lugar vazio em cima da barrinha, ela fica forte
+      document.addEventListener('click', function (e) {
+        if (!f.classList.contains('on')) return;
+        const r = f.getBoundingClientRect();
+        if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) return;
+        const alvo = e.target && e.target.closest && e.target.closest('button, a, input, select, textarea, label, summary, [onclick], [role="button"]');
+        if (alvo && alvo !== f) return;
+        f.classList.add('forte'); tocadoEm = Date.now();
+      }, true);
       const enfraquecer = function () { if (Date.now() - tocadoEm > 250) f.classList.remove('forte'); };
       window.addEventListener('scroll', enfraquecer, { passive: true, capture: true });
       window.addEventListener('touchmove', enfraquecer, { passive: true });
