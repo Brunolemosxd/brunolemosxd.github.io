@@ -1525,10 +1525,6 @@ body.light .btn-add-item span { background: #B45309; color: #fff; }
 .item-subtotal.zerado b { color: inherit; }
 body.light .item-subtotal { background: #ECFDF5; border-color: #6EE7B7; }
 body.light .item-subtotal b { color: #047857; }
-.orc-total-flutuante { position: fixed; left: 50%; bottom: calc(14px + env(safe-area-inset-bottom)); transform: translateX(-50%) translateY(140%); z-index: 900; display: flex; align-items: center; gap: 12px; padding: 12px 20px; border-radius: 999px; background: #0B1C2C; border: 2px solid #F4C430; box-shadow: 0 10px 30px rgba(0,0,0,.45); color: #fff; font-size: 14px; font-weight: 700; white-space: nowrap; transition: transform .25s ease, opacity .2s ease; pointer-events: none; opacity: .35; cursor: pointer; -webkit-tap-highlight-color: transparent; }
-.orc-total-flutuante.forte { opacity: 1; }
-.orc-total-flutuante b { color: #F4C430; font-size: 19px; }
-.orc-total-flutuante.on { transform: translateX(-50%) translateY(0); }
 
 .btn-dashed.yellow {
   border-color: var(--accent);
@@ -3743,7 +3739,6 @@ body.light .btn-remove-item{color:#b91c1c}
           <input type="text" id="orc-desc-val" class="money-input" inputmode="numeric" autocomplete="off" placeholder="R$ 0,00" style="display:none">
         </div>
 
-        <div class="orc-total-flutuante" id="orc-total-flut" role="button" tabindex="0" aria-label="Total do orçamento (toque para destacar)"><span>Total</span><b id="orc-total-flut-v">R$ 0,00</b></div>
         <div class="total-bar" id="orc-total-bar">
           <span>TOTAL DO ORÇAMENTO</span>
           <strong id="orc-total">R$ 0,00</strong>
@@ -7106,37 +7101,6 @@ function calcularDescontoOrcamento() {
   }
   return { subtotal, tipo, entrada, desconto, total: Math.max(0, subtotal - desconto) };
 }
-// Total do orçamento sempre à vista: barrinha embaixo da tela enquanto o total do fim da página não aparece
-(function () {
-  let barraVisivel = false;
-  function atualizarFlutuante() {
-    const f = document.getElementById('orc-total-flut'), tela = document.getElementById('screen-new-budget'); if (!f || !tela) return;
-    f.classList.toggle('on', tela.classList.contains('active') && !barraVisivel);
-  }
-  document.addEventListener('DOMContentLoaded', function () {
-    const barra = document.getElementById('orc-total-bar'), tela = document.getElementById('screen-new-budget');
-    if (barra && 'IntersectionObserver' in window) new IntersectionObserver(function (e) { barraVisivel = e[0].isIntersecting; atualizarFlutuante(); }).observe(barra);
-    if (tela && 'MutationObserver' in window) new MutationObserver(atualizarFlutuante).observe(tela, { attributes: true, attributeFilter: ['class'] });
-    // transparente; ao tocar fica forte; ao mexer a tela volta a ficar transparente
-    const f = document.getElementById('orc-total-flut');
-    if (f) {
-      let tocadoEm = 0;
-      // o toque atravessa a barrinha: se embaixo tiver botão ou campo, ele funciona normal;
-      // se tocar num lugar vazio em cima da barrinha, ela fica forte
-      document.addEventListener('click', function (e) {
-        if (!f.classList.contains('on')) return;
-        const r = f.getBoundingClientRect();
-        if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) return;
-        const alvo = e.target && e.target.closest && e.target.closest('button, a, input, select, textarea, label, summary, [onclick], [role="button"]');
-        if (alvo && alvo !== f) return;
-        f.classList.add('forte'); tocadoEm = Date.now();
-      }, true);
-      const enfraquecer = function () { if (Date.now() - tocadoEm > 250) f.classList.remove('forte'); };
-      window.addEventListener('scroll', enfraquecer, { passive: true, capture: true });
-      window.addEventListener('touchmove', enfraquecer, { passive: true });
-    }
-  });
-})();
 // Total de cada item (qtd × valor), embaixo dos campos, para o prestador acompanhar
 function atualizarSubtotaisItens() {
   document.querySelectorAll('#itens-container .item-row').forEach(r => {
@@ -7154,7 +7118,6 @@ function atualizarTotalOrcamento() {
   const d = calcularDescontoOrcamento();
   const el = document.getElementById('orc-total');
   if (el) el.textContent = fmtBRL(d.total);
-  const fl = document.getElementById('orc-total-flut-v'); if (fl) fl.textContent = fmtBRL(d.total);
   const r = document.getElementById('orc-desc-resumo');
   if (r) {
     if (d.desconto > 0) {
