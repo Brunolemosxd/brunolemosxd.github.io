@@ -1498,6 +1498,37 @@ body {
   margin-top: 8px;
 }
 
+.btn-add-item {
+  width: 100%;
+  min-height: 54px;
+  margin-top: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: rgba(244,196,48,.14);
+  border: 2px solid var(--accent, #F4C430);
+  color: var(--accent, #F4C430);
+  border-radius: 14px;
+  font-size: 17px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.btn-add-item span { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: var(--accent, #F4C430); color: #0B1C2C; font-size: 18px; font-weight: 900; line-height: 1; }
+.btn-add-item:active { transform: scale(.98); }
+body.light .btn-add-item { background: #FEF3C7; border-color: #B45309; color: #92400E; }
+body.light .btn-add-item span { background: #B45309; color: #fff; }
+.item-subtotal { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-top: 10px; padding: 10px 14px; border-radius: 12px; background: rgba(43,214,123,.10); border: 1px solid rgba(43,214,123,.35); font-size: 14px; font-weight: 700; }
+.item-subtotal small { font-weight: 500; opacity: .75; font-size: 12px; }
+.item-subtotal b { font-size: 17px; color: #2BD67B; white-space: nowrap; }
+.item-subtotal.zerado { background: transparent; border-style: dashed; opacity: .7; }
+.item-subtotal.zerado b { color: inherit; }
+body.light .item-subtotal { background: #ECFDF5; border-color: #6EE7B7; }
+body.light .item-subtotal b { color: #047857; }
+.orc-total-flutuante { position: fixed; left: 50%; bottom: calc(14px + env(safe-area-inset-bottom)); transform: translateX(-50%) translateY(140%); z-index: 900; display: flex; align-items: center; gap: 12px; padding: 12px 20px; border-radius: 999px; background: #0B1C2C; border: 2px solid #F4C430; box-shadow: 0 10px 30px rgba(0,0,0,.45); color: #fff; font-size: 14px; font-weight: 700; white-space: nowrap; transition: transform .25s ease; pointer-events: none; }
+.orc-total-flutuante b { color: #F4C430; font-size: 19px; }
+.orc-total-flutuante.on { transform: translateX(-50%) translateY(0); }
+
 .btn-dashed.yellow {
   border-color: var(--accent);
   color: var(--accent);
@@ -3606,7 +3637,7 @@ body.light .btn-remove-item{color:#b91c1c}
           <h3>Itens do Orçamento</h3>
           
           <div class="item-box" id="itens-container"><!-- itens criados via JS, cada um com suas sugestões --></div>
-          <button class="btn-dashed" type="button" onclick="adicionarItem()">+ Adicionar item</button>
+          <button class="btn-add-item" type="button" onclick="adicionarItem()"><span aria-hidden="true">＋</span> Adicionar item</button>
           <button class="btn-calc" type="button" onclick="abrirCalculadora()">🧮 Calculadora de material</button>
         </div>
 
@@ -3702,6 +3733,7 @@ body.light .btn-remove-item{color:#b91c1c}
           <button type="button" class="recibo-logo-remove" onclick="limparLogoNovoOrc()"><i class="fas fa-trash-alt"></i> Remover logotipo deste orçamento</button>
         </div>
 
+        <div class="orc-total-flutuante" id="orc-total-flut" aria-hidden="true"><span>Total</span><b id="orc-total-flut-v">R$ 0,00</b></div>
         <div class="total-bar" id="orc-total-bar">
           <span>TOTAL DO ORÇAMENTO</span>
           <strong id="orc-total">R$ 0,00</strong>
@@ -4770,6 +4802,7 @@ function itemRowHTML(n) {
         <input type="text" inputmode="decimal" pattern="[0-9.,R$ ]*" value="R$ 0,00" class="item-valor">
       </div>
     </div>
+    <div class="item-subtotal" aria-live="polite"><span>Total do item <small></small></span><b>R$ 0,00</b></div>
   `;
 }
 
@@ -6979,10 +7012,37 @@ function calcularDescontoOrcamento() {
   }
   return { subtotal, tipo, entrada, desconto, total: Math.max(0, subtotal - desconto) };
 }
+// Total do orçamento sempre à vista: barrinha embaixo da tela enquanto o total do fim da página não aparece
+(function () {
+  let barraVisivel = false;
+  function atualizarFlutuante() {
+    const f = document.getElementById('orc-total-flut'), tela = document.getElementById('screen-new-budget'); if (!f || !tela) return;
+    f.classList.toggle('on', tela.classList.contains('active') && !barraVisivel);
+  }
+  document.addEventListener('DOMContentLoaded', function () {
+    const barra = document.getElementById('orc-total-bar'), tela = document.getElementById('screen-new-budget');
+    if (barra && 'IntersectionObserver' in window) new IntersectionObserver(function (e) { barraVisivel = e[0].isIntersecting; atualizarFlutuante(); }).observe(barra);
+    if (tela && 'MutationObserver' in window) new MutationObserver(atualizarFlutuante).observe(tela, { attributes: true, attributeFilter: ['class'] });
+  });
+})();
+// Total de cada item (qtd × valor), embaixo dos campos, para o prestador acompanhar
+function atualizarSubtotaisItens() {
+  document.querySelectorAll('#itens-container .item-row').forEach(r => {
+    let box = r.querySelector('.item-subtotal');
+    if (!box) { box = document.createElement('div'); box.className = 'item-subtotal'; box.innerHTML = '<span>Total do item <small></small></span><b></b>'; r.appendChild(box); }
+    const q = qtdLinha(r), v = parseBRL((r.querySelector('.item-valor') || {}).value);
+    box.querySelector('b').textContent = fmtBRL(q * v);
+    const qtxt = ((r.querySelector('.item-qtd') || {}).value || '').trim();
+    box.querySelector('small').textContent = v > 0 && qtxt ? '(' + qtxt + ' × ' + fmtBRL(v) + ')' : '';
+    box.classList.toggle('zerado', !(q * v > 0));
+  });
+}
 function atualizarTotalOrcamento() {
+  try { atualizarSubtotaisItens(); } catch (_) {}
   const d = calcularDescontoOrcamento();
   const el = document.getElementById('orc-total');
   if (el) el.textContent = fmtBRL(d.total);
+  const fl = document.getElementById('orc-total-flut-v'); if (fl) fl.textContent = fmtBRL(d.total);
   const r = document.getElementById('orc-desc-resumo');
   if (r) {
     if (d.desconto > 0) {
