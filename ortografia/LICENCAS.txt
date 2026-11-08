@@ -1,0 +1,56 @@
+Corretor de ortografia do OrçaOn - arquivos de terceiros (sem alteração)
+
+== pt_BR.aff / pt_BR.dic: dicionário de português do Brasil (VERO / LibreOffice), via pacote npm dictionary-pt 4.0.0 ==
+Author: Raimundo Moura <raimundomoura@openoffice.org>
+
+en-US: This dictionary is under continuous development by Raimundo Moura and his team. It is
+licensed under the terms of the GNU Lesser General Public License version 3 (LGPLv3),
+as published by the Free Software Foundation, and Mozilla Public License as published by
+The Mozilla Foundation.  The credits are available at
+http://pt-br.libreoffice.org/projetos/projeto-vero-verificador-ortografico/ and you can
+find new releases at
+http://extensions.libreoffice.org
+
+Copyright (C) 2006 - 2013 by Raimundo Santos Moura <raimundo.smoura@gmail.com>
+
+============
+INTRODUCTION
+============
+
+The LibreOffice Spell Checker and Hyphenation  is a colaborative project developed
+by the Brazilian community.
+The complete list of participants in this project is at
+http://pt-br.libreoffice.org/projetos/projeto-vero-verificador-ortografico/
+
+***********************************************************************
+* This is a dictionary for spell correction and hyphenation for the   *
+* Brazilian Portuguese language for hunspell.                         *
+* This is a free program and it can be redistributed and/or           *
+* modified under the terms of the GNU Lesser General Public License   *
+* (LGPL) version 3 and Mozilla Public License.                        *
+*                                                                     *
+***********************************************************************
+
+== hunspell.min.js: hunspell-asm 4.0.2 (Hunspell compilado para WebAssembly), empacotado com esbuild ==
+MIT License
+
+Copyright (c) 2017 OJ Kwon
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+Hunspell: tri-licença MPL 1.1 / GPL 2.0 / LGPL 2.1 - https://github.com/hunspell/hunspell

@@ -1615,12 +1615,16 @@ body.light .btn-corrigir{color:#047857;border-color:#059669;background:#ECFDF5}
 .corretor-box{background:var(--bg-card,#132D45);color:var(--text,#fff);width:min(560px,100%);max-height:86vh;overflow:auto;border-radius:20px;padding:18px;border:1px solid var(--border,rgba(255,255,255,.15))}
 .corretor-box h3{margin:0 0 4px}
 .corretor-lista{display:flex;flex-direction:column;gap:8px;margin:12px 0}
-.corretor-item{display:flex;gap:12px;align-items:flex-start;padding:12px;border:1px solid var(--border,rgba(255,255,255,.15));border-radius:12px;cursor:pointer}
-.corretor-item input{width:22px!important;height:22px;margin:2px 0 0!important;flex:0 0 22px}
-.corretor-item b{display:block;font-size:13px;color:var(--text-secondary,#B8C7D6);margin-bottom:4px}
-.corretor-troca{font-size:16px;line-height:1.5}
-.corretor-troca del{color:#ff8a8a}
-.corretor-troca ins{color:#2BD67B;text-decoration:none;font-weight:800}
+.corretor-item{padding:12px;border:1px solid var(--border,rgba(255,255,255,.15));border-radius:12px}
+.corretor-item b{display:block;font-size:13px;color:var(--text-secondary,#B8C7D6);margin-bottom:6px}
+.corretor-troca{font-size:16px;line-height:1.4;padding:6px 0;border-top:1px solid var(--border,rgba(255,255,255,.1))}
+.corretor-troca:first-of-type{border-top:0}
+.corretor-troca del{color:#ff8a8a;font-weight:700}
+.corretor-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.corretor-chip{border:1.5px solid var(--border,rgba(255,255,255,.25));background:transparent;color:inherit;border-radius:999px;padding:8px 14px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit}
+.corretor-chip.on{background:#2BD67B;border-color:#2BD67B;color:#06301A}
+.corretor-chip.manter.on{background:#F4C430;border-color:#F4C430;color:#0B1C2C}
+.corretor-carregando{padding:18px 0}
 .corretor-bts{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .corretor-bts button{margin:0!important}
 .doc-sec{margin-bottom:12px}
@@ -6043,29 +6047,60 @@ function usarSugestaoRecibo(nome) {
 }
 function adicionarItemRecibo() { reciboItens.push({descricao:'',qtd:1,valor:0}); renderizarItensRecibo(); }
 function removerItemRecibo(index) { reciboItens.splice(index,1); if (!reciboItens.length) reciboItens.push({descricao:'',qtd:1,valor:0}); renderizarItensRecibo(); if (typeof atualizarRecibo==='function') atualizarRecibo(); }
-// ===== Corretor de ortografia (sem internet: o texto não sai do celular) =====
-// Lista de erros comuns de quem preenche orçamento e recibo (acentos, cedilha e palavras das profissões).
-const CORRECOES_PALAVRAS = {"servico": "serviço", "servicos": "serviços", "serviso": "serviço", "servisso": "serviço", "servisos": "serviços", "orcamento": "orçamento", "orcamentos": "orçamentos", "orsamento": "orçamento", "orsamentos": "orçamentos", "orssamento": "orçamento", "orçamentto": "orçamento", "mao": "mão", "maos": "mãos", "instalacao": "instalação", "instalacoes": "instalações", "instalaçao": "instalação", "manutencao": "manutenção", "manutençao": "manutenção", "construcao": "construção", "construçao": "construção", "demolicao": "demolição", "aplicacao": "aplicação", "impermeabilizacao": "impermeabilização", "ligacao": "ligação", "fixacao": "fixação", "preparacao": "preparação", "protecao": "proteção", "reparacao": "reparação", "substituicao": "substituição", "colocacao": "colocação", "execucao": "execução", "medicao": "medição", "remocao": "remoção", "elevacao": "elevação", "iluminacao": "iluminação", "tubulacao": "tubulação", "fiacao": "fiação", "conexao": "conexão", "conexoes": "conexões", "extensao": "extensão", "pressao": "pressão", "tensao": "tensão", "padrao": "padrão", "padroes": "padrões", "portao": "portão", "portoes": "portões", "alcapao": "alçapão", "higienizacao": "higienização", "limpesa": "limpeza", "ceramica": "cerâmica", "ceramicas": "cerâmicas", "calcada": "calçada", "calcadas": "calçadas", "agua": "água", "aguas": "águas", "eletrica": "elétrica", "eletrico": "elétrico", "eletricas": "elétricas", "eletricos": "elétricos", "hidraulica": "hidráulica", "hidraulico": "hidráulico", "hidraulicas": "hidráulicas", "area": "área", "areas": "áreas", "unico": "único", "unica": "única", "numero": "número", "endereco": "endereço", "enderecos": "endereços", "cartao": "cartão", "credito": "crédito", "debito": "débito", "deposito": "depósito", "transferencia": "transferência", "saida": "saída", "inicio": "início", "previsao": "previsão", "conclusao": "conclusão", "ja": "já", "tambem": "também", "nao": "não", "sao": "são", "estao": "estão", "entao": "então", "apos": "após", "voce": "você", "voces": "vocês", "porem": "porém", "alem": "além", "tres": "três", "sabado": "sábado", "terca": "terça", "proximo": "próximo", "proxima": "próxima", "ultimo": "último", "ultima": "última", "possivel": "possível", "disponivel": "disponível", "necessario": "necessário", "necessaria": "necessária", "nescessario": "necessário", "necesario": "necessário", "horario": "horário", "horarios": "horários", "diaria": "diária", "diarias": "diárias", "veiculo": "veículo", "caminhao": "caminhão", "mudanca": "mudança", "mudancas": "mudanças", "combustivel": "combustível", "pedagio": "pedágio", "pedagios": "pedágios", "distancia": "distância", "armario": "armário", "armarios": "armários", "porao": "porão", "comodo": "cômodo", "comodos": "cômodos", "sotao": "sótão", "escritorio": "escritório", "predio": "prédio", "edificio": "edifício", "residencia": "residência", "comercio": "comércio", "vidraca": "vidraça", "vidracas": "vidraças", "marmore": "mármore", "aluminio": "alumínio", "lampada": "lâmpada", "lampadas": "lâmpadas", "eletrodomesticos": "eletrodomésticos", "eletronicos": "eletrônicos", "camera": "câmera", "cameras": "câmeras", "gas": "gás", "botijao": "botijão", "rocada": "roçada", "rocagem": "roçagem", "sofa": "sofá", "sofas": "sofás", "movel": "móvel", "moveis": "móveis", "valvula": "válvula", "sifao": "sifão", "sanitario": "sanitário", "sanitarios": "sanitários", "pecas": "peças", "concerto": "conserto", "concertos": "consertos", "concertar": "consertar", "imcluso": "incluso", "incluzo": "incluso", "inclusso": "incluso", "emboco": "emboço", "regunte": "rejunte", "argamaça": "argamassa", "argamasa": "argamassa", "masa": "massa", "drywal": "drywall", "drywoll": "drywall", "eletrecista": "eletricista", "eletrisista": "eletricista", "incanador": "encanador", "incanamento": "encanamento", "vizita": "visita", "vizitas": "visitas", "tecnica": "técnica", "tecnico": "técnico", "tecnicas": "técnicas", "tecnicos": "técnicos", "uteis": "úteis", "util": "útil", "excessao": "exceção", "excessão": "exceção", "avista": "à vista", "dagua": "d'água", "contrapizo": "contrapiso", "pizo": "piso", "pisso": "piso", "telhadu": "telhado", "alvenária": "alvenaria", "ferrajem": "ferragem", "materiaes": "materiais", "garantía": "garantia", "garamtia": "garantia", "pagamemto": "pagamento", "pagameto": "pagamento", "parselado": "parcelado", "parselas": "parcelas", "parsela": "parcela", "parcelamemto": "parcelamento", "quantidae": "quantidade", "quantidadi": "quantidade", "unidadi": "unidade", "metru": "metro", "banhero": "banheiro", "banheru": "banheiro", "quartu": "quarto", "garajem": "garagem"};
-const CORRECOES_FRASES = [["mao de obra", "mão de obra"], ["mão-de-obra", "mão de obra"], ["mao-de-obra", "mão de obra"], ["contra piso", "contrapiso"], ["contra-piso", "contrapiso"], ["dry wall", "drywall"], ["caixa d agua", "caixa d'água"], ["caixa dagua", "caixa d'água"], ["ar condicionado", "ar-condicionado"], ["pagamento a vista", "pagamento à vista"], ["valor a vista", "valor à vista"], ["a vista no pix", "à vista no Pix"], ["dias uteis", "dias úteis"], ["visita tecnica", "visita técnica"], ["vaso sanitario", "vaso sanitário"], ["massa corida", "massa corrida"], ["masa corrida", "massa corrida"]];
+// ===== Corretor de ortografia com dicionário completo (Hunspell + dicionário pt-BR VERO) =====
+// Os arquivos ficam no próprio site (pasta ortografia/), são baixados só na 1ª vez que tocar no botão
+// e depois ficam guardados no aparelho. O texto não sai do celular.
+const PALAVRAS_EXTRA_ORTOGRAFIA = ['Pix', 'pix', 'drywall', 'MDF', 'metalon', 'grafiato', 'OrçaOn', 'WhatsApp', 'Whats', 'zap', 'porcelanato', 'contrapiso', 'rejunte', 'spot', 'spots', 'led', 'LED', 'leds', 'split', 'inverter', 'self', 'box', 'blindex', 'pvc', 'PVC', 'kit', 'kits', 'drywalls', 'steel', 'frame', 'fachada', 'gesseiro', 'calheiro', 'marmorista', 'piscineiro', 'freteiro', 'CNPJ', 'CPF', 'RG', 'MEI', 'online', 'app'];
+let corretorPronto = null;
+function carregarCorretor() {
+  if (corretorPronto) return corretorPronto;
+  corretorPronto = (async () => {
+    if (!window.OrcaHunspell) await new Promise((ok, erro) => { const sc = document.createElement('script'); sc.src = 'ortografia/hunspell.min.js'; sc.onload = ok; sc.onerror = () => erro(new Error('script')); document.head.appendChild(sc); });
+    const [aff, dic] = await Promise.all(['ortografia/pt_BR.aff', 'ortografia/pt_BR.dic'].map(u => fetch(u).then(r => { if (!r.ok) throw new Error(u); return r.arrayBuffer(); })));
+    const fab = await window.OrcaHunspell.loadModule();
+    const h = fab.create(fab.mountBuffer(new Uint8Array(aff), 'pt_BR.aff'), fab.mountBuffer(new Uint8Array(dic), 'pt_BR.dic'));
+    const extras = PALAVRAS_EXTRA_ORTOGRAFIA.slice();
+    try { const emp = dadosEmpresaPerfil(); [emp.nome, emp.empresa].forEach(t => String(t || '').split(/[^\p{L}]+/u).forEach(w => w && extras.push(w))); } catch (_) {}
+    try { Object.keys(lerPrecos()).forEach(t => String(t).split(/[^\p{L}]+/u).forEach(w => w && extras.push(w))); } catch (_) {}
+    extras.forEach(w => { try { h.addWord(w); } catch (_) {} });
+    return h;
+  })();
+  corretorPronto.catch(() => { corretorPronto = null; });
+  return corretorPronto;
+}
+const semAcentoOrt = t => String(t).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+function distanciaOrt(a, b) {
+  a = a.toLowerCase(); b = b.toLowerCase(); const m = a.length, n = b.length; if (Math.abs(m - n) > 3) return 9;
+  let ant = Array.from({ length: n + 1 }, (_, j) => j);
+  for (let i = 1; i <= m; i++) { const at = [i]; for (let j = 1; j <= n; j++) at[j] = Math.min(ant[j] + 1, at[j - 1] + 1, ant[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)); ant = at; }
+  return ant[n];
+}
 function casarCaixa(orig, novo) {
   if (orig.length > 1 && orig === orig.toUpperCase() && orig !== orig.toLowerCase()) return novo.toUpperCase();
   const c = orig.charAt(0);
   if (c && c === c.toUpperCase() && c !== c.toLowerCase()) return novo.charAt(0).toUpperCase() + novo.slice(1);
   return novo;
 }
-function corrigirTexto(texto) {
-  const trocas = []; let s = String(texto || '');
-  if (!s.trim()) return { texto: s, trocas };
-  const escRe = x => x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  CORRECOES_FRASES.forEach(([errado, certo]) => {
-    const re = new RegExp('(^|[^\\p{L}\\p{N}])(' + escRe(errado) + ')(?![\\p{L}\\p{N}])', 'giu');
-    s = s.replace(re, (m, antes, achado) => { const r = casarCaixa(achado, certo); if (r !== achado) trocas.push([achado, r]); return antes + r; });
-  });
-  s = s.replace(/\p{L}+/gu, w => {
-    const c = CORRECOES_PALAVRAS[w.toLowerCase()]; if (!c) return w;
-    const r = casarCaixa(w, c); if (r !== w) trocas.push([w, r]); return r;
-  });
-  return { texto: s, trocas };
+// Acha as palavras que não existem no dicionário e as sugestões de cada uma
+function errosDoTexto(h, texto) {
+  const erros = [], re = /\p{L}+(?:['’-]\p{L}+)*/gu; let m;
+  while ((m = re.exec(texto))) {
+    const w = m[0];
+    if (w.length < 2) continue;
+    if (w === w.toUpperCase() && w.length <= 6) continue;   // siglas (CPF, PVC…)
+    let ok = false; try { ok = h.spell(w); } catch (_) { ok = true; }
+    if (ok) continue;
+    // sugestões pela palavra em minúsculas (o dicionário sugere melhor assim) + as do jeito que foi escrita
+    let sug = []; try { sug = (w !== w.toLowerCase() ? (h.suggest(w.toLowerCase()) || []) : []).concat(h.suggest(w) || []); } catch (_) {}
+    sug = sug.filter(x => !/\s/.test(x) && (w.includes('-') || !x.includes('-'))).map(x => casarCaixa(w, x));
+    // primeiro a que só muda acento ou cedilha (ex.: mao → mão), depois a ordem do dicionário
+    sug.sort((x, y) => (semAcentoOrt(y) === semAcentoOrt(w)) - (semAcentoOrt(x) === semAcentoOrt(w)));
+    sug = sug.filter((x, i) => sug.indexOf(x) === i).slice(0, 4);
+    // já vem marcada a 1ª sugestão quando ela é bem parecida (acento, cedilha ou 1-2 letras)
+    const escolha = sug.length && (semAcentoOrt(sug[0]) === semAcentoOrt(w) || distanciaOrt(sug[0], w) <= 2) ? 0 : -1;
+    erros.push({ ini: m.index, fim: m.index + w.length, palavra: w, sug, escolha });
+  }
+  return erros;
 }
 // Campos de texto livre de cada tela (nome de cliente e endereço ficam de fora)
 function camposParaCorrigir(tela) {
@@ -6090,37 +6125,60 @@ function camposParaCorrigir(tela) {
   return lista;
 }
 let correcoesPendentes = [];
-function abrirCorretor(tela) {
-  correcoesPendentes = camposParaCorrigir(tela).map(c => Object.assign(c, corrigirTexto(c.el.value))).filter(c => c.trocas.length);
-  if (!correcoesPendentes.length) { try { orcaonToast('✓ Não achei erros de ortografia.'); } catch (_) { alert('Não achei erros de ortografia.'); } return; }
+function modalCorretor() {
   let m = document.getElementById('corretor-modal');
   if (!m) {
     m = document.createElement('div'); m.id = 'corretor-modal'; m.className = 'corretor-overlay'; m.setAttribute('role', 'dialog'); m.setAttribute('aria-modal', 'true'); m.setAttribute('aria-label', 'Correções de ortografia');
     m.addEventListener('click', e => { if (e.target === m) fecharCorretor(); });
     document.body.appendChild(m);
   }
-  const total = correcoesPendentes.reduce((t, c) => t + c.trocas.length, 0);
-  m.innerHTML = '<div class="corretor-box"><h3>✔ Correções de ortografia</h3><p class="hint">Encontrei ' + total + (total > 1 ? ' correções' : ' correção') + '. Confira e desmarque o que não quiser mudar.</p><div class="corretor-lista"></div>'
+  m.style.display = 'flex';
+  return m;
+}
+async function abrirCorretor(tela) {
+  const campos = camposParaCorrigir(tela);
+  if (!campos.length) { try { orcaonToast('Preencha os campos antes de corrigir.'); } catch (_) {} return; }
+  const m = modalCorretor();
+  m.innerHTML = '<div class="corretor-box"><h3>✔ Corrigir ortografia</h3><p class="hint corretor-carregando">Abrindo o dicionário… Na primeira vez pode levar alguns segundos.</p></div>';
+  let h;
+  try { h = await carregarCorretor(); }
+  catch (_) { m.innerHTML = '<div class="corretor-box"><h3>Não foi possível abrir o dicionário</h3><p class="hint">Na primeira vez o celular precisa de internet para baixar o dicionário. Tente de novo com internet.</p><div class="corretor-bts" style="grid-template-columns:1fr"><button type="button" class="btn-primary-lg" onclick="fecharCorretor()">Fechar</button></div></div>'; return; }
+  correcoesPendentes = campos.map(c => Object.assign(c, { texto: c.el.value, erros: errosDoTexto(h, c.el.value) })).filter(c => c.erros.length);
+  if (!correcoesPendentes.length) { fecharCorretor(); try { orcaonToast('✓ Não achei erros de ortografia.'); } catch (_) { alert('Não achei erros de ortografia.'); } return; }
+  const total = correcoesPendentes.reduce((t, c) => t + c.erros.length, 0);
+  m.innerHTML = '<div class="corretor-box"><h3>✔ Corrigir ortografia</h3><p class="hint">Encontrei ' + total + (total > 1 ? ' palavras' : ' palavra') + ' que não estão no dicionário. Toque na forma certa ou em "Manter".</p><div class="corretor-lista"></div>'
     + '<div class="corretor-bts"><button type="button" class="btn-outline-lg" onclick="fecharCorretor()">Cancelar</button><button type="button" class="btn-primary-lg" onclick="aplicarCorrecoes()">Aplicar correções</button></div></div>';
   const lista = m.querySelector('.corretor-lista');
-  correcoesPendentes.forEach((c, i) => {
-    const lab = document.createElement('label'); lab.className = 'corretor-item';
-    const cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = true; cb.dataset.i = i;
-    const txt = document.createElement('div'); const b = document.createElement('b'); b.textContent = c.rotulo; txt.appendChild(b);
-    c.trocas.forEach(([de, para]) => { const l = document.createElement('div'); l.className = 'corretor-troca'; const d1 = document.createElement('del'); d1.textContent = de; const s1 = document.createElement('span'); s1.textContent = ' → '; const i1 = document.createElement('ins'); i1.textContent = para; l.append(d1, s1, i1); txt.appendChild(l); });
-    lab.append(cb, txt); lista.appendChild(lab);
+  correcoesPendentes.forEach((c, ci) => {
+    const box = document.createElement('div'); box.className = 'corretor-item';
+    const b = document.createElement('b'); b.textContent = c.rotulo; box.appendChild(b);
+    c.erros.forEach((er, ei) => {
+      const linha = document.createElement('div'); linha.className = 'corretor-troca';
+      const d1 = document.createElement('del'); d1.textContent = er.palavra; linha.appendChild(d1);
+      const chips = document.createElement('div'); chips.className = 'corretor-chips';
+      er.sug.concat(['Manter']).forEach((txt, k) => {
+        const idx = k < er.sug.length ? k : -1;
+        const bt = document.createElement('button'); bt.type = 'button'; bt.className = 'corretor-chip' + (idx === -1 ? ' manter' : '') + (idx === er.escolha ? ' on' : '');
+        bt.textContent = txt;
+        bt.onclick = () => { er.escolha = idx; chips.querySelectorAll('.corretor-chip').forEach(x => x.classList.toggle('on', x === bt)); };
+        chips.appendChild(bt);
+      });
+      linha.appendChild(chips); box.appendChild(linha);
+    });
+    lista.appendChild(box);
   });
-  m.classList.remove('hidden'); m.style.display = 'flex';
 }
 function fecharCorretor() { const m = document.getElementById('corretor-modal'); if (m) m.style.display = 'none'; }
 function aplicarCorrecoes() {
-  const m = document.getElementById('corretor-modal'); let n = 0;
-  correcoesPendentes.forEach((c, i) => {
-    const cb = m && m.querySelector('input[data-i="' + i + '"]'); if (cb && !cb.checked) return;
-    c.el.value = c.texto; n += c.trocas.length;
-    c.el.dispatchEvent(new Event('input', { bubbles: true }));
+  let n = 0;
+  correcoesPendentes.forEach(c => {
+    if (c.el.value !== c.texto) return;   // o campo mudou enquanto a janela estava aberta
+    let t = c.texto;
+    c.erros.slice().sort((x, y) => y.ini - x.ini).forEach(er => { if (er.escolha < 0) return; t = t.slice(0, er.ini) + er.sug[er.escolha] + t.slice(er.fim); n++; });
+    if (t !== c.texto) { c.el.value = t; c.el.dispatchEvent(new Event('input', { bubbles: true })); }
   });
-  if (typeof atualizarRecibo === 'function' && document.getElementById('screen-novo-recibo') && document.getElementById('screen-novo-recibo').classList.contains('active')) atualizarRecibo();
+  const tr = document.getElementById('screen-novo-recibo');
+  if (typeof atualizarRecibo === 'function' && tr && tr.classList.contains('active')) atualizarRecibo();
   fecharCorretor();
   try { orcaonToast(n ? '✓ ' + n + (n > 1 ? ' correções aplicadas.' : ' correção aplicada.') : 'Nada foi mudado.'); } catch (_) {}
 }
