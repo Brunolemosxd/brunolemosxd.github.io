@@ -3030,6 +3030,16 @@ html:not(.bf-ativa) .bf-promo{display:none!important}
 .calc-trava b{font-size:17px}
 .calc-trava p{margin:0;font-size:13px;color:#cbd8e4}
 .calc-res h3{color:#2BD67B!important}
+.calc-valores{margin-top:14px;padding-top:12px;border-top:2px dashed var(--border)}
+.calc-valores h4{margin:0 0 2px;font-size:15px;color:#F4C430}
+.calc-val-dica{margin:0 0 8px;font-size:12px;color:var(--text-secondary)}
+.calc-val-item{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)}
+.calc-val-txt{min-width:0;flex:1}
+.calc-val-txt b{display:block;font-size:14px;overflow-wrap:anywhere}
+.calc-val-txt small{display:block;font-size:12px;color:var(--text-secondary)}
+.calc-val-item input{flex:0 0 118px;width:118px;text-align:right;padding:10px!important;font-weight:700}
+.calc-val-total{display:flex;justify-content:space-between;align-items:center;padding-top:10px;font-size:15px}
+.calc-val-total b{color:#F4C430;font-size:18px}
 .calc-linha{display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);font-size:14px}
 .calc-linha:last-of-type{border-bottom:0}
 .calc-linha small{display:block;color:var(--text-secondary);font-size:12px;margin-top:2px}
@@ -4902,9 +4912,9 @@ function embalagensTinta(litros) {   // latas de 18 L, galões de 3,6 L e quarto
 }
 function maoDeObraCalc(servico, qtd, un) {
   const p = precoServico(servico);
-  if (!p) return { linha: { nome: 'Mão de obra', det: 'Cadastre o preço de "' + servico + '" em Perfil > Meus preços', v: '—' }, item: { desc: servico, qtd, un, valor: 0 }, total: 0 };
+  if (!p) return { linha: { nome: 'Mão de obra', det: 'Coloque o valor de "' + servico + '" em Valores no orçamento, logo abaixo', v: '—' }, item: { desc: servico, qtd, un, valor: 0, mo: servico }, total: 0 };
   const total = qtd * p.valor;
-  return { linha: { nome: 'Mão de obra', det: fmtNum(qtd) + ' ' + un + ' × ' + fmtBRL(p.valor) + ' (Meus preços)', v: fmtBRL(total), am: true }, item: { desc: servico, qtd, un, valor: p.valor }, total };
+  return { linha: { nome: 'Mão de obra', det: fmtNum(qtd) + ' ' + un + ' × ' + fmtBRL(p.valor) + ' (Meus preços)', v: fmtBRL(total), am: true }, item: { desc: servico, qtd, un, valor: p.valor, mo: servico }, total };
 }
 // Mão de obra com vários serviços de Meus preços: lista de [serviço, quantidade, unidade, rótulo]
 function maoDeObraVarios(lista) {
@@ -4912,7 +4922,7 @@ function maoDeObraVarios(lista) {
   const comPreco = partes.filter(x => x.r.total > 0), total = comPreco.reduce((t, x) => t + x.r.total, 0);
   const linha = comPreco.length
     ? { nome: 'Mão de obra', det: comPreco.map(x => x.l[3] + ' ' + x.r.linha.det.replace(' (Meus preços)', '')).join(' + ') + ' (Meus preços)', v: fmtBRL(total), am: true }
-    : { nome: 'Mão de obra', det: 'Cadastre o preço de ' + partes.map(x => '"' + x.l[0] + '"').join(' e ') + ' em Perfil > Meus preços', v: '—' };
+    : { nome: 'Mão de obra', det: 'Coloque o valor de ' + partes.map(x => '"' + x.l[0] + '"').join(' e ') + ' em Valores no orçamento, logo abaixo', v: '—' };
   return { linha, itens: partes.map(x => x.r.item) };
 }
 const CALCULOS = {
@@ -4959,7 +4969,7 @@ const CALCULOS = {
       const moTotal = moC.total + moD.total;
       const linhaMo = (moC.total || moD.total)
         ? { nome: 'Mão de obra', det: [moC.total ? 'calha ' + moC.linha.det.replace(' (Meus preços)', '') : '', moD.total ? 'condutor ' + moD.linha.det.replace(' (Meus preços)', '') : ''].filter(Boolean).join(' + ') + ' (Meus preços)', v: fmtBRL(moTotal), am: true }
-        : { nome: 'Mão de obra', det: 'Cadastre o preço de "Instalação de calha" e "Condutor vertical" em Perfil > Meus preços', v: '—' };
+        : { nome: 'Mão de obra', det: 'Coloque o valor de "Instalação de calha" e "Condutor vertical" em Valores no orçamento, logo abaixo', v: '—' };
       const pecas = [
         ['Calha', fmtNum(v.comp) + ' m + ' + fmtNum(v.folga) + '% de folga', barras + ' barras de ' + fmtNum(v.barra) + ' m', 'Calha (barra de ' + fmtNum(v.barra) + ' m)', barras],
         ['Emendas', 'entre as barras', String(emendas), 'Emenda de calha', emendas],
@@ -5410,9 +5420,17 @@ function atualizarAvisoCalc() {
   el.textContent = pro ? '' : Math.min(calcUsos(), CALC_GRATIS) + ' de ' + CALC_GRATIS + ' cálculos grátis';
 }
 let calcAtual = 'pintura';
-const calcValores = {};
+// Medidas e valores da calculadora ficam salvos (a pessoa não precisa digitar de novo no próximo orçamento)
+const CALC_VALORES_KEY = 'orcaon_calc_valores', CALC_PRECOS_KEY = 'orcaon_calc_precos';
+const calcValores = (function () { try { const o = JSON.parse(localStorage.getItem(CALC_VALORES_KEY) || '{}'); return (o && typeof o === 'object') ? o : {}; } catch (_) { return {}; } })();
+function gravarCalcValores() { try { localStorage.setItem(CALC_VALORES_KEY, JSON.stringify(calcValores)); } catch (_) {} }
+// Preço de cada material da calculadora (nome do item → valor por unidade)
+function lerPrecosCalc() { try { const o = JSON.parse(localStorage.getItem(CALC_PRECOS_KEY) || '{}'); return (o && typeof o === 'object') ? o : {}; } catch (_) { return {}; } }
+// Valores trocados à mão em itens que a conta calcula (combustível, pedágio): valem só enquanto a calculadora está aberta
+let calcAjustes = {};
 function abrirCalculadora() {
   calcContados = new Set();
+  calcAjustes = {};
   atualizarAvisoCalc();
   const prof = profissaoAtual();
   const daProf = Object.keys(CALCULOS).filter(k => CALCULOS[k].prof.includes(prof));
@@ -5424,7 +5442,8 @@ function abrirCalculadora() {
   pushAndShow('screen-calculadora');
 }
 function valoresCalc(k) {
-  if (!calcValores[k]) { calcValores[k] = {}; CALCULOS[k].campos.forEach(c => calcValores[k][c.id] = c.val); }
+  if (!calcValores[k] || typeof calcValores[k] !== 'object') calcValores[k] = {};
+  CALCULOS[k].campos.forEach(c => { const x = calcValores[k][c.id]; if (x === undefined || x === null || (typeof c.val === 'number' && typeof x !== 'number')) calcValores[k][c.id] = c.val; });
   return calcValores[k];
 }
 function montarCamposCalc() {
@@ -5454,6 +5473,7 @@ function calcularMaterial() {
     el.querySelector('b').textContent = l.nome; el.querySelector('small').textContent = l.det; el.querySelector('.v').textContent = l.v;
   });
   host.querySelector('.calc-aviso').textContent = c.aviso;
+  renderValoresCalc(host);
   // acabou o grátis: resultado embaçado com o convite do Pro
   const travar = !calcLiberada() && !calcContados.has(calcAtual);
   host.classList.toggle('travado', travar);
@@ -5467,6 +5487,7 @@ document.addEventListener('click', function (e) {
     montarCamposCalc(); return;
   }
   const bruto = t.dataset.v; valoresCalc(calcAtual)[t.dataset.campo] = (bruto !== '' && !isNaN(Number(bruto))) ? Number(bruto) : bruto;
+  gravarCalcValores();
   t.parentNode.querySelectorAll('.calc-chip').forEach(b => b.classList.toggle('on', b === t));
   calcularMaterial();
 });
@@ -5475,7 +5496,72 @@ document.addEventListener('input', function (e) {
   let t = el.value.replace(/[^0-9.,]/g, '').replace('.', ','); const i = t.indexOf(','); if (i >= 0) t = t.slice(0, i + 1) + t.slice(i + 1).replace(/,/g, '');
   if (t !== el.value) el.value = t;
   valoresCalc(calcAtual)[el.dataset.campo] = parseFloat(t.replace(',', '.')) || 0;
+  gravarCalcValores();
   calcularMaterial();
+});
+// Tipo de cada item: mão de obra (preço em Meus preços), material (preço salvo da calculadora) ou calculado pela conta
+function tipoItemCalc(it) { return it.mo ? 'mo' : (Number(it.valor) > 0 ? 'conta' : 'mat'); }
+function precoItemCalc(it) {
+  const t = tipoItemCalc(it);
+  if (t === 'mo') { const p = precoServico(it.mo); return p ? p.valor : 0; }
+  if (t === 'mat') return Number(lerPrecosCalc()[it.desc]) || 0;
+  const aj = (calcAjustes[calcAtual] || {})[it.desc];
+  return aj != null ? aj : Number(it.valor) || 0;
+}
+function itensCalcComPrecos() { return (calcResultado ? calcResultado.itens : []).map(it => Object.assign({}, it, { valor: precoItemCalc(it) })); }
+function renderValoresCalc(host) {
+  const itens = itensCalcComPrecos(); if (!itens.length) return;
+  const box = document.createElement('div'); box.className = 'calc-valores';
+  box.innerHTML = '<h4>💲 Valores no orçamento</h4><p class="calc-val-dica">Toque no valor para mudar. Fica salvo para os próximos orçamentos.</p>'
+    + itens.map((it, i) => '<div class="calc-val-item" data-i="' + i + '"><div class="calc-val-txt"><b></b><small></small></div>'
+      + '<input type="text" class="money-input calc-preco" inputmode="numeric" autocomplete="off" placeholder="R$ 0,00" aria-label="" data-i="' + i + '"></div>').join('')
+    + '<div class="calc-val-total"><span>Total no orçamento</span><b></b></div>';
+  box.querySelectorAll('.calc-val-item').forEach((el, i) => {
+    const it = itens[i], inp = el.querySelector('input');
+    el.querySelector('b').textContent = it.desc;
+    inp.value = it.valor > 0 ? fmtBRL(it.valor) : '';
+    inp.setAttribute('aria-label', 'Valor de ' + it.desc + ' por ' + it.un);
+  });
+  host.appendChild(box);
+  atualizarTotaisCalc();
+}
+function atualizarTotaisCalc() {
+  const box = document.querySelector('#calc-res .calc-valores'); if (!box) return;
+  const itens = itensCalcComPrecos(); let total = 0;
+  box.querySelectorAll('.calc-val-item').forEach((el, i) => {
+    const it = itens[i]; if (!it) return;
+    const sub = (Number(it.qtd) || 0) * (Number(it.valor) || 0); total += sub;
+    el.querySelector('small').textContent = it.valor > 0 ? fmtQtd(it.qtd) + ' ' + it.un + ' × ' + fmtBRL(it.valor) + ' = ' + fmtBRL(sub) : fmtQtd(it.qtd) + ' ' + it.un + ' · sem valor';
+  });
+  box.querySelector('.calc-val-total b').textContent = fmtBRL(total);
+}
+// Atualiza só as linhas do resultado (sem refazer os campos de valor, para o teclado não fechar)
+function atualizarLinhasCalc() {
+  const c = CALCULOS[calcAtual]; calcResultado = c.conta(valoresCalc(calcAtual));
+  document.querySelectorAll('#calc-res .calc-linha').forEach((el, i) => {
+    const l = calcResultado.linhas[i]; if (!l) return;
+    el.querySelector('small').textContent = l.det; el.querySelector('.v').textContent = l.v;
+    el.querySelector('.v').classList.toggle('am', !!l.am);
+  });
+  atualizarTotaisCalc();
+}
+document.addEventListener('input', function (e) {
+  const el = e.target; if (!el || !el.classList || !el.classList.contains('calc-preco') || !calcResultado) return;
+  const it = calcResultado.itens[Number(el.dataset.i)]; if (!it) return;
+  const valor = parseBRL(el.value), t = tipoItemCalc(it);
+  if (t === 'mo') {
+    const precos = lerPrecos(), antigo = precos[it.mo] || {};
+    if (antigo.proprio) precos[it.mo] = Object.assign({}, antigo, { valor });
+    else if (valor > 0) precos[it.mo] = { un: PRECO_UNIDADES.includes(antigo.un) ? antigo.un : (PRECO_UNIDADES.includes(it.un) ? it.un : 'un'), valor };
+    else delete precos[it.mo];
+    gravarPrecos(precos);
+  } else if (t === 'mat') {
+    const m = lerPrecosCalc(); if (valor > 0) m[it.desc] = valor; else delete m[it.desc];
+    try { localStorage.setItem(CALC_PRECOS_KEY, JSON.stringify(m)); } catch (_) {}
+  } else {
+    (calcAjustes[calcAtual] = calcAjustes[calcAtual] || {})[it.desc] = valor;
+  }
+  atualizarLinhasCalc();
 });
 // Coloca um item no orçamento: usa a primeira linha vazia ou cria uma nova
 function colocarItemNoOrcamento(it) {
@@ -5492,12 +5578,13 @@ function colocarItemNoOrcamento(it) {
 function adicionarCalculoAoOrcamento() {
   if (!calcResultado) return;
   if (!usarCalculo()) return;
-  calcResultado.itens.forEach(colocarItemNoOrcamento);
+  const itens = itensCalcComPrecos();
+  itens.forEach(colocarItemNoOrcamento);
   if (typeof renumerarItens === 'function') renumerarItens();
   if (typeof atualizarTotalOrcamento === 'function') atualizarTotalOrcamento();
   goBack();
-  const sem = calcResultado.itens.filter(i => !i.valor).length;
-  try { orcaonToast(calcResultado.itens.length + ' itens adicionados.' + (sem ? ' Coloque o valor dos materiais.' : '')); } catch (_) {}
+  const sem = itens.filter(i => !i.valor).length;
+  try { orcaonToast(itens.length + ' itens adicionados.' + (sem ? ' Coloque o valor dos itens que ficaram sem preço.' : '')); } catch (_) {}
 }
 function enviarListaMaterial() {
   if (!calcResultado) return;
