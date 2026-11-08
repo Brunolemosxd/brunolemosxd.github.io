@@ -3037,9 +3037,13 @@ html:not(.bf-ativa) .bf-promo{display:none!important}
 .calc-val-txt{min-width:0;flex:1}
 .calc-val-txt b{display:block;font-size:14px;overflow-wrap:anywhere}
 .calc-val-txt small{display:block;font-size:12px;color:var(--text-secondary)}
-.calc-val-item input{flex:0 0 118px;width:118px;text-align:right;padding:10px!important;font-weight:700}
+.calc-val-item input{flex:0 0 110px;width:110px;text-align:right;padding:10px!important;font-weight:700}
 .calc-val-item.oculto{opacity:.6}
-.calc-val-item.oculto b::after{content:" 🔒";font-size:12px}
+.calc-lock{flex:0 0 40px;width:40px;height:40px;border-radius:12px;border:1px solid var(--border);background:transparent;font-size:18px;line-height:1;cursor:pointer;padding:0}
+.calc-lock.vazio{border:0}
+.calc-val-item.oculto .calc-lock{background:rgba(244,196,48,.16);border-color:#F4C430}
+.calc-val-item.oculto{opacity:1}
+.calc-val-item.oculto .calc-val-txt,.calc-val-item.oculto input{opacity:.6}
 .calc-val-total{display:flex;justify-content:space-between;align-items:center;padding-top:10px;font-size:15px}
 .calc-val-total b{color:#F4C430;font-size:18px}
 .calc-linha{display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);font-size:14px}
@@ -5379,15 +5383,13 @@ const CALCULOS = {
       { id: 'litro', rot: 'Preço do litro', un: 'R$', val: 6.2, meia: true },
       { id: 'pedagio', rot: 'Pedágios', un: 'R$', val: 0, meia: true },
       { id: 'ajud', rot: 'Ajudantes', un: '', val: 1 },
-      { id: 'cobrar', rot: 'Quanto você quer cobrar pelo frete (total)', un: 'R$', val: 0 },
-      { id: 'mostrar', rot: 'Mostrar o custo da viagem (combustível, pedágio, ajudante) no orçamento?', chips: ['Não', 'Sim'], val: 'Não' }
+      { id: 'cobrar', rot: 'Quanto você quer cobrar pelo frete (total)', un: 'R$', val: 0 }
     ],
-    get aviso() { return 'Mostra o custo da viagem e o seu lucro. Com "Mostrar o custo" em Não, o cliente vê só o valor do frete.'; },
+    aviso: 'Mostra o custo da viagem e o seu lucro. Em "Valores no orçamento", toque no cadeado para escolher o que o cliente vê.',
     conta(v) {
       const comb = v.consumo > 0 ? v.km / v.consumo * v.litro : 0;
       const aj = maoDeObraCalc('Carga e descarga / ajudante', v.ajud, 'un');
       const custo = comb + v.pedagio + aj.total, cobrar = Number(v.cobrar) || 0, lucro = cobrar - custo;
-      const mostrar = v.mostrar === 'Sim';
       const linhas = [
         { nome: 'Combustível', det: fmtNum(v.km) + ' km ÷ ' + fmtNum(v.consumo) + ' km/L × ' + fmtBRL(v.litro), v: fmtBRL(comb) },
         { nome: 'Pedágios', det: 'ida e volta', v: fmtBRL(v.pedagio) },
@@ -5395,17 +5397,20 @@ const CALCULOS = {
         { nome: 'Custo da viagem', det: 'combustível + pedágios + ajudantes', v: fmtBRL(custo), am: true }
       ];
       if (cobrar > 0) linhas.push(
-        { nome: 'Valor do frete', det: mostrar ? 'cliente vê os custos + o serviço de frete' : 'é o que o cliente vê no orçamento', v: fmtBRL(cobrar), am: true },
+        { nome: 'Valor do frete', det: 'é o total que o cliente vê no orçamento', v: fmtBRL(cobrar), am: true },
         { nome: lucro >= 0 ? 'Seu lucro' : 'Prejuízo', det: 'valor do frete − custo da viagem', v: fmtBRL(Math.abs(lucro)), am: lucro >= 0 });
-      // custos: com valor de frete e "Não", ficam só na sua conta (não vão para o orçamento)
-      const oculto = cobrar > 0 && !mostrar;
-      const custos = [{ desc: 'Combustível (' + fmtNum(v.km) + ' km)', qtd: 1, un: 'un', valor: Math.round(comb * 100) / 100, tipo: 'conta' }]
-        .concat(v.pedagio > 0 ? [{ desc: 'Pedágios', qtd: 1, un: 'un', valor: v.pedagio, tipo: 'conta' }] : [])
-        .concat(v.ajud > 0 ? [aj.item] : [])
-        .map(it => oculto ? Object.assign({}, it, { oculto: true }) : it);
+      // custos: com valor a cobrar, começam trancados (o cliente não vê); cada um pode ser destrancado no cadeado
+      const custos = [{ desc: 'Combustível (' + fmtNum(v.km) + ' km)', qtd: 1, un: 'un', valor: Math.round(comb * 100) / 100, tipo: 'conta', chave: 'combustivel' }]
+        .concat(v.pedagio > 0 ? [{ desc: 'Pedágios', qtd: 1, un: 'un', valor: v.pedagio, tipo: 'conta', chave: 'pedagio' }] : [])
+        .concat(v.ajud > 0 ? [Object.assign({}, aj.item, { chave: 'ajudante' })] : [])
+        .map(it => Object.assign(it, { ocultoPadrao: cobrar > 0 }));
       let itens = custos;
-      if (cobrar > 0 && !mostrar) itens = custos.concat([{ desc: 'Frete (' + fmtNum(v.km) + ' km)', qtd: 1, un: 'un', valor: cobrar, tipo: 'conta' }]);
-      if (cobrar > 0 && mostrar && lucro > 0) itens = custos.concat([{ desc: 'Serviço de frete', qtd: 1, un: 'un', valor: Math.round(lucro * 100) / 100, tipo: 'conta' }]);
+      if (cobrar > 0) {
+        // o que o cliente vê dos custos + o restante no item do frete = valor total
+        const visiveis = custos.filter(it => !itemCalcOculto(v, it)).reduce((t, it) => t + it.qtd * (it.valor || 0), 0);
+        const resto = Math.round((cobrar - visiveis) * 100) / 100;
+        if (resto > 0) itens = custos.concat([{ desc: visiveis > 0 ? 'Serviço de frete' : 'Frete (' + fmtNum(v.km) + ' km)', qtd: 1, un: 'un', valor: resto, tipo: 'conta', chave: 'frete', fixo: true }]);
+      }
       return { linhas, itens };
     }
   }
@@ -5521,18 +5526,36 @@ function precoItemCalc(it) {
   const aj = (calcAjustes[calcAtual] || {})[it.desc];
   return aj != null ? aj : Number(it.valor) || 0;
 }
-function itensCalcComPrecos() { return (calcResultado ? calcResultado.itens : []).map(it => Object.assign({}, it, { valor: precoItemCalc(it) })); }
+// Cadeado: item trancado não vai para o orçamento (fica só na conta da pessoa). A escolha fica salva por item.
+function chaveItemCalc(it) { return it.chave || String(it.desc || '').replace(/\s*\(.*\)\s*$/, '').trim(); }
+function itemCalcOculto(v, it) {
+  if (it.fixo) return false;
+  const o = (v && v.__ocultos) || {}, k = chaveItemCalc(it);
+  return Object.prototype.hasOwnProperty.call(o, k) ? !!o[k] : !!it.ocultoPadrao;
+}
+function itensCalcComPrecos() { const v = valoresCalc(calcAtual); return (calcResultado ? calcResultado.itens : []).map(it => Object.assign({}, it, { valor: precoItemCalc(it), oculto: itemCalcOculto(v, it) })); }
+function alternarCadeadoCalc(i) {
+  const it = calcResultado && calcResultado.itens[i]; if (!it || it.fixo) return;
+  const v = valoresCalc(calcAtual); if (!v.__ocultos || typeof v.__ocultos !== 'object') v.__ocultos = {};
+  v.__ocultos[chaveItemCalc(it)] = !itemCalcOculto(v, it);
+  gravarCalcValores();
+  calcularMaterial();
+}
 function renderValoresCalc(host) {
   const itens = itensCalcComPrecos(); if (!itens.length) return;
   const box = document.createElement('div'); box.className = 'calc-valores';
-  box.innerHTML = '<h4>💲 Valores no orçamento</h4><p class="calc-val-dica">Toque no valor para mudar. Fica salvo para os próximos orçamentos.</p>'
+  box.innerHTML = '<h4>💲 Valores no orçamento</h4><p class="calc-val-dica">Toque no valor para mudar. Toque no cadeado para esconder o item do cliente (🔒 não vai para o orçamento). Tudo fica salvo para os próximos.</p>'
     + itens.map((it, i) => '<div class="calc-val-item" data-i="' + i + '"><div class="calc-val-txt"><b></b><small></small></div>'
+      + (itens[i].fixo ? '<span class="calc-lock vazio"></span>' : '<button type="button" class="calc-lock" onclick="alternarCadeadoCalc(' + i + ')"></button>')
       + '<input type="text" class="money-input calc-preco" inputmode="numeric" autocomplete="off" placeholder="R$ 0,00" aria-label="" data-i="' + i + '"></div>').join('')
     + '<div class="calc-val-total"><span>Total no orçamento</span><b></b></div>';
   box.querySelectorAll('.calc-val-item').forEach((el, i) => {
     const it = itens[i], inp = el.querySelector('input');
     el.querySelector('b').textContent = it.desc;
     if (it.oculto) el.classList.add('oculto');
+    const cad = el.querySelector('button.calc-lock');
+    if (cad) { cad.textContent = it.oculto ? '🔒' : '🔓'; cad.setAttribute('aria-pressed', it.oculto ? 'true' : 'false');
+      cad.setAttribute('aria-label', (it.oculto ? 'Mostrar ' : 'Esconder ') + it.desc + (it.oculto ? ' no orçamento' : ' do cliente')); }
     inp.value = it.valor > 0 ? fmtBRL(it.valor) : '';
     inp.setAttribute('aria-label', 'Valor de ' + it.desc + ' por ' + it.un);
   });
@@ -5549,7 +5572,7 @@ function atualizarTotaisCalc() {
     const inp = el.querySelector('input');
     if (tipoItemCalc(it) === 'conta' && document.activeElement !== inp && (calcAjustes[calcAtual] || {})[it.desc] == null) inp.value = it.valor > 0 ? fmtBRL(it.valor) : '';
     el.querySelector('small').textContent = (it.valor > 0 ? fmtQtd(it.qtd) + ' ' + it.un + ' × ' + fmtBRL(it.valor) + ' = ' + fmtBRL(sub) : fmtQtd(it.qtd) + ' ' + it.un + ' · sem valor')
-      + (it.oculto ? ' · só para sua conta, não vai para o cliente' : '');
+      + (it.oculto ? ' · escondido do cliente' : '');
   });
   box.querySelector('.calc-val-total b').textContent = fmtBRL(total);
 }
