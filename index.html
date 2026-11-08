@@ -1609,6 +1609,20 @@ input.pix-invalido{border-color:#EF4444!important}
 .perfil-sec>summary::after,.perfil-sub>summary::after{content:'';margin-left:auto;width:9px;height:9px;flex:0 0 9px;border-right:2px solid var(--accent,#F4C430);border-bottom:2px solid var(--accent,#F4C430);transform:rotate(45deg);transition:transform .2s}
 .perfil-sec[open]>summary::after,.perfil-sub[open]>summary::after{transform:rotate(-135deg)}
 .perfil-sec-tit{display:flex;flex-direction:column;gap:2px}
+.btn-corrigir{width:100%;min-height:50px;margin:0 0 12px;border-radius:14px;border:2px solid #2BD67B;background:rgba(43,214,123,.10);color:#2BD67B;font-size:16px;font-weight:800;cursor:pointer;font-family:inherit}
+body.light .btn-corrigir{color:#047857;border-color:#059669;background:#ECFDF5}
+.corretor-overlay{position:fixed;inset:0;z-index:100000;background:rgba(0,0,0,.7);display:none;align-items:flex-end;justify-content:center;padding:12px}
+.corretor-box{background:var(--bg-card,#132D45);color:var(--text,#fff);width:min(560px,100%);max-height:86vh;overflow:auto;border-radius:20px;padding:18px;border:1px solid var(--border,rgba(255,255,255,.15))}
+.corretor-box h3{margin:0 0 4px}
+.corretor-lista{display:flex;flex-direction:column;gap:8px;margin:12px 0}
+.corretor-item{display:flex;gap:12px;align-items:flex-start;padding:12px;border:1px solid var(--border,rgba(255,255,255,.15));border-radius:12px;cursor:pointer}
+.corretor-item input{width:22px!important;height:22px;margin:2px 0 0!important;flex:0 0 22px}
+.corretor-item b{display:block;font-size:13px;color:var(--text-secondary,#B8C7D6);margin-bottom:4px}
+.corretor-troca{font-size:16px;line-height:1.5}
+.corretor-troca del{color:#ff8a8a}
+.corretor-troca ins{color:#2BD67B;text-decoration:none;font-weight:800}
+.corretor-bts{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.corretor-bts button{margin:0!important}
 .doc-sec{margin-bottom:12px}
 .doc-sec .recibo-logo-card{border:0!important;padding:0!important;background:transparent!important;margin:0}
 .doc-sec .recibo-logo-heading{display:none}
@@ -3753,6 +3767,7 @@ body.light .btn-remove-item{color:#b91c1c}
         </div>
         <p class="hint" id="orc-desc-resumo" style="display:none;text-align:right;margin:-6px 0 12px"></p>
 
+        <button type="button" class="btn-corrigir" onclick="abrirCorretor('orcamento')">✔ Corrigir ortografia</button>
         <button class="btn-primary-lg" onclick="salvarOrcamento()">Salvar</button>
       </div>
     </div>
@@ -4038,6 +4053,7 @@ body.light .btn-remove-item{color:#b91c1c}
         </div>
         </div></details>
 
+        <button type="button" class="btn-corrigir" onclick="abrirCorretor('recibo')">✔ Corrigir ortografia</button>
         <div class="recibo-acoes">
           <button class="btn-primary-lg" type="button" onclick="salvarReciboNaBiblioteca()"><i class="fas fa-save"></i> Salvar recibo</button>
           <button id="recibo-visualizar-pro" class="btn-outline-lg" type="button" style="display:none" onclick="compartilharReciboPDF('preview')"><i class="fas fa-eye"></i> Visualizar antes de enviar <span class="pro-feature-tag">PRO</span></button>
@@ -6027,6 +6043,87 @@ function usarSugestaoRecibo(nome) {
 }
 function adicionarItemRecibo() { reciboItens.push({descricao:'',qtd:1,valor:0}); renderizarItensRecibo(); }
 function removerItemRecibo(index) { reciboItens.splice(index,1); if (!reciboItens.length) reciboItens.push({descricao:'',qtd:1,valor:0}); renderizarItensRecibo(); if (typeof atualizarRecibo==='function') atualizarRecibo(); }
+// ===== Corretor de ortografia (sem internet: o texto não sai do celular) =====
+// Lista de erros comuns de quem preenche orçamento e recibo (acentos, cedilha e palavras das profissões).
+const CORRECOES_PALAVRAS = {"servico": "serviço", "servicos": "serviços", "serviso": "serviço", "servisso": "serviço", "servisos": "serviços", "orcamento": "orçamento", "orcamentos": "orçamentos", "orsamento": "orçamento", "orsamentos": "orçamentos", "orssamento": "orçamento", "orçamentto": "orçamento", "mao": "mão", "maos": "mãos", "instalacao": "instalação", "instalacoes": "instalações", "instalaçao": "instalação", "manutencao": "manutenção", "manutençao": "manutenção", "construcao": "construção", "construçao": "construção", "demolicao": "demolição", "aplicacao": "aplicação", "impermeabilizacao": "impermeabilização", "ligacao": "ligação", "fixacao": "fixação", "preparacao": "preparação", "protecao": "proteção", "reparacao": "reparação", "substituicao": "substituição", "colocacao": "colocação", "execucao": "execução", "medicao": "medição", "remocao": "remoção", "elevacao": "elevação", "iluminacao": "iluminação", "tubulacao": "tubulação", "fiacao": "fiação", "conexao": "conexão", "conexoes": "conexões", "extensao": "extensão", "pressao": "pressão", "tensao": "tensão", "padrao": "padrão", "padroes": "padrões", "portao": "portão", "portoes": "portões", "alcapao": "alçapão", "higienizacao": "higienização", "limpesa": "limpeza", "ceramica": "cerâmica", "ceramicas": "cerâmicas", "calcada": "calçada", "calcadas": "calçadas", "agua": "água", "aguas": "águas", "eletrica": "elétrica", "eletrico": "elétrico", "eletricas": "elétricas", "eletricos": "elétricos", "hidraulica": "hidráulica", "hidraulico": "hidráulico", "hidraulicas": "hidráulicas", "area": "área", "areas": "áreas", "unico": "único", "unica": "única", "numero": "número", "endereco": "endereço", "enderecos": "endereços", "cartao": "cartão", "credito": "crédito", "debito": "débito", "deposito": "depósito", "transferencia": "transferência", "saida": "saída", "inicio": "início", "previsao": "previsão", "conclusao": "conclusão", "ja": "já", "tambem": "também", "nao": "não", "sao": "são", "estao": "estão", "entao": "então", "apos": "após", "voce": "você", "voces": "vocês", "porem": "porém", "alem": "além", "tres": "três", "sabado": "sábado", "terca": "terça", "proximo": "próximo", "proxima": "próxima", "ultimo": "último", "ultima": "última", "possivel": "possível", "disponivel": "disponível", "necessario": "necessário", "necessaria": "necessária", "nescessario": "necessário", "necesario": "necessário", "horario": "horário", "horarios": "horários", "diaria": "diária", "diarias": "diárias", "veiculo": "veículo", "caminhao": "caminhão", "mudanca": "mudança", "mudancas": "mudanças", "combustivel": "combustível", "pedagio": "pedágio", "pedagios": "pedágios", "distancia": "distância", "armario": "armário", "armarios": "armários", "porao": "porão", "comodo": "cômodo", "comodos": "cômodos", "sotao": "sótão", "escritorio": "escritório", "predio": "prédio", "edificio": "edifício", "residencia": "residência", "comercio": "comércio", "vidraca": "vidraça", "vidracas": "vidraças", "marmore": "mármore", "aluminio": "alumínio", "lampada": "lâmpada", "lampadas": "lâmpadas", "eletrodomesticos": "eletrodomésticos", "eletronicos": "eletrônicos", "camera": "câmera", "cameras": "câmeras", "gas": "gás", "botijao": "botijão", "rocada": "roçada", "rocagem": "roçagem", "sofa": "sofá", "sofas": "sofás", "movel": "móvel", "moveis": "móveis", "valvula": "válvula", "sifao": "sifão", "sanitario": "sanitário", "sanitarios": "sanitários", "pecas": "peças", "concerto": "conserto", "concertos": "consertos", "concertar": "consertar", "imcluso": "incluso", "incluzo": "incluso", "inclusso": "incluso", "emboco": "emboço", "regunte": "rejunte", "argamaça": "argamassa", "argamasa": "argamassa", "masa": "massa", "drywal": "drywall", "drywoll": "drywall", "eletrecista": "eletricista", "eletrisista": "eletricista", "incanador": "encanador", "incanamento": "encanamento", "vizita": "visita", "vizitas": "visitas", "tecnica": "técnica", "tecnico": "técnico", "tecnicas": "técnicas", "tecnicos": "técnicos", "uteis": "úteis", "util": "útil", "excessao": "exceção", "excessão": "exceção", "avista": "à vista", "dagua": "d'água", "contrapizo": "contrapiso", "pizo": "piso", "pisso": "piso", "telhadu": "telhado", "alvenária": "alvenaria", "ferrajem": "ferragem", "materiaes": "materiais", "garantía": "garantia", "garamtia": "garantia", "pagamemto": "pagamento", "pagameto": "pagamento", "parselado": "parcelado", "parselas": "parcelas", "parsela": "parcela", "parcelamemto": "parcelamento", "quantidae": "quantidade", "quantidadi": "quantidade", "unidadi": "unidade", "metru": "metro", "banhero": "banheiro", "banheru": "banheiro", "quartu": "quarto", "garajem": "garagem"};
+const CORRECOES_FRASES = [["mao de obra", "mão de obra"], ["mão-de-obra", "mão de obra"], ["mao-de-obra", "mão de obra"], ["contra piso", "contrapiso"], ["contra-piso", "contrapiso"], ["dry wall", "drywall"], ["caixa d agua", "caixa d'água"], ["caixa dagua", "caixa d'água"], ["ar condicionado", "ar-condicionado"], ["pagamento a vista", "pagamento à vista"], ["valor a vista", "valor à vista"], ["a vista no pix", "à vista no Pix"], ["dias uteis", "dias úteis"], ["visita tecnica", "visita técnica"], ["vaso sanitario", "vaso sanitário"], ["massa corida", "massa corrida"], ["masa corrida", "massa corrida"]];
+function casarCaixa(orig, novo) {
+  if (orig.length > 1 && orig === orig.toUpperCase() && orig !== orig.toLowerCase()) return novo.toUpperCase();
+  const c = orig.charAt(0);
+  if (c && c === c.toUpperCase() && c !== c.toLowerCase()) return novo.charAt(0).toUpperCase() + novo.slice(1);
+  return novo;
+}
+function corrigirTexto(texto) {
+  const trocas = []; let s = String(texto || '');
+  if (!s.trim()) return { texto: s, trocas };
+  const escRe = x => x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  CORRECOES_FRASES.forEach(([errado, certo]) => {
+    const re = new RegExp('(^|[^\\p{L}\\p{N}])(' + escRe(errado) + ')(?![\\p{L}\\p{N}])', 'giu');
+    s = s.replace(re, (m, antes, achado) => { const r = casarCaixa(achado, certo); if (r !== achado) trocas.push([achado, r]); return antes + r; });
+  });
+  s = s.replace(/\p{L}+/gu, w => {
+    const c = CORRECOES_PALAVRAS[w.toLowerCase()]; if (!c) return w;
+    const r = casarCaixa(w, c); if (r !== w) trocas.push([w, r]); return r;
+  });
+  return { texto: s, trocas };
+}
+// Campos de texto livre de cada tela (nome de cliente e endereço ficam de fora)
+function camposParaCorrigir(tela) {
+  const lista = [], add = (el, rotulo) => { if (el && typeof el.value === 'string' && el.value.trim()) lista.push({ el, rotulo }); };
+  if (tela === 'orcamento') {
+    add(document.getElementById('orc-titulo'), 'Título do serviço');
+    document.querySelectorAll('#itens-container .item-row').forEach((r, i) => {
+      add(r.querySelector('.item-desc'), 'Item ' + (i + 1));
+      add(r.querySelector('.item-detalhes'), 'Detalhes do item ' + (i + 1));
+    });
+    add(document.getElementById('orc-pagamento'), 'Forma de pagamento');
+    add(document.getElementById('orc-obs'), 'Observações');
+    add(document.getElementById('orc-s3-titulo'), 'Título do orçamento');
+  } else {
+    add(document.getElementById('rec-referente'), 'Referente a');
+    add(document.getElementById('rec-extenso'), 'Valor por extenso');
+    add(document.getElementById('rec-complemento-mo'), 'Continuação da descrição');
+    add(document.getElementById('rec-complemento-locacao'), 'Complemento');
+    add(document.getElementById('rec-mensagem-termico'), 'Mensagem no final');
+    document.querySelectorAll('#recibo-itens-editor input[aria-label="Descrição do item"]').forEach((el, i) => add(el, 'Item ' + (i + 1)));
+  }
+  return lista;
+}
+let correcoesPendentes = [];
+function abrirCorretor(tela) {
+  correcoesPendentes = camposParaCorrigir(tela).map(c => Object.assign(c, corrigirTexto(c.el.value))).filter(c => c.trocas.length);
+  if (!correcoesPendentes.length) { try { orcaonToast('✓ Não achei erros de ortografia.'); } catch (_) { alert('Não achei erros de ortografia.'); } return; }
+  let m = document.getElementById('corretor-modal');
+  if (!m) {
+    m = document.createElement('div'); m.id = 'corretor-modal'; m.className = 'corretor-overlay'; m.setAttribute('role', 'dialog'); m.setAttribute('aria-modal', 'true'); m.setAttribute('aria-label', 'Correções de ortografia');
+    m.addEventListener('click', e => { if (e.target === m) fecharCorretor(); });
+    document.body.appendChild(m);
+  }
+  const total = correcoesPendentes.reduce((t, c) => t + c.trocas.length, 0);
+  m.innerHTML = '<div class="corretor-box"><h3>✔ Correções de ortografia</h3><p class="hint">Encontrei ' + total + (total > 1 ? ' correções' : ' correção') + '. Confira e desmarque o que não quiser mudar.</p><div class="corretor-lista"></div>'
+    + '<div class="corretor-bts"><button type="button" class="btn-outline-lg" onclick="fecharCorretor()">Cancelar</button><button type="button" class="btn-primary-lg" onclick="aplicarCorrecoes()">Aplicar correções</button></div></div>';
+  const lista = m.querySelector('.corretor-lista');
+  correcoesPendentes.forEach((c, i) => {
+    const lab = document.createElement('label'); lab.className = 'corretor-item';
+    const cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = true; cb.dataset.i = i;
+    const txt = document.createElement('div'); const b = document.createElement('b'); b.textContent = c.rotulo; txt.appendChild(b);
+    c.trocas.forEach(([de, para]) => { const l = document.createElement('div'); l.className = 'corretor-troca'; const d1 = document.createElement('del'); d1.textContent = de; const s1 = document.createElement('span'); s1.textContent = ' → '; const i1 = document.createElement('ins'); i1.textContent = para; l.append(d1, s1, i1); txt.appendChild(l); });
+    lab.append(cb, txt); lista.appendChild(lab);
+  });
+  m.classList.remove('hidden'); m.style.display = 'flex';
+}
+function fecharCorretor() { const m = document.getElementById('corretor-modal'); if (m) m.style.display = 'none'; }
+function aplicarCorrecoes() {
+  const m = document.getElementById('corretor-modal'); let n = 0;
+  correcoesPendentes.forEach((c, i) => {
+    const cb = m && m.querySelector('input[data-i="' + i + '"]'); if (cb && !cb.checked) return;
+    c.el.value = c.texto; n += c.trocas.length;
+    c.el.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+  if (typeof atualizarRecibo === 'function' && document.getElementById('screen-novo-recibo') && document.getElementById('screen-novo-recibo').classList.contains('active')) atualizarRecibo();
+  fecharCorretor();
+  try { orcaonToast(n ? '✓ ' + n + (n > 1 ? ' correções aplicadas.' : ' correção aplicada.') : 'Nada foi mudado.'); } catch (_) {}
+}
 function atualizarItemRecibo(index, key, value) {
   if (!reciboItens[index]) return;
   if (key === 'valor') reciboItens[index][key] = Math.max(0, parseBRL(value));
