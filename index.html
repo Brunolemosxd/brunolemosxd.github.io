@@ -3702,6 +3702,7 @@ body.light .btn-remove-item{color:#b91c1c}
               <span class="slider"></span>
             </label>
           </div>
+          <div id="orc-ass-bloco-form" style="margin-top:14px"></div>
         </div>
 
         <button type="button" class="btn-dashed yellow" id="orc-desc-toggle" onclick="alternarDescontoOrcamento()">% Adicionar desconto</button>
@@ -7777,7 +7778,7 @@ function selecionarModelo(nome) {
   const atual = orcamentos.find(o => o.id === ultimoOrcamentoId);
   if (atual) { atual.modelo = nome; gravarOrcamentos(); }
   atualizarPainelModeloOrc();
-  renderBlocoAss('orc-ass-bloco', 'orcamento');
+  renderBlocosAssOrc();
 }
 function escaparHTMLOrc(v) {
   return String(v == null ? '' : v).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -7869,7 +7870,7 @@ function mudarAjusteAssinatura(campo, passo, modelo) {
   }
   try { localStorage.setItem('orcaon_ass_ajuste', JSON.stringify(t)); } catch (_) {}
   atualizarPreviaAjusteAssinatura();
-  renderBlocoAss('rec-ass-bloco', 'recibo'); renderBlocoAss('orc-ass-bloco', 'orcamento');
+  renderBlocoAss('rec-ass-bloco', 'recibo'); renderBlocosAssOrc();
   if (typeof atualizarRecibo === 'function') atualizarRecibo();
 }
 function atualizarPreviaAjusteAssinatura() {
@@ -7884,6 +7885,7 @@ function srcAssinaturaDoc(tipo) {
   if (tipo === 'recibo' && modeloReciboAtual === 'Recibo de Pagamento PJ' && typeof pjAssinaturaData !== 'undefined' && pjAssinaturaData) return pjAssinaturaData;
   try { return localStorage.getItem('assinaturaDigital') || ''; } catch (_) { return ''; }
 }
+function renderBlocosAssOrc() { renderBlocoAss('orc-ass-bloco', 'orcamento'); renderBlocoAss('orc-ass-bloco-form', 'orcamento'); }
 function renderBlocoAss(hostId, tipo) {
   const host = document.getElementById(hostId); if (!host) return;
   if (tipo === 'orcamento') { const cb = document.getElementById('orc-model-sign'); host.style.display = (cb && !cb.checked) ? 'none' : ''; }
@@ -7918,7 +7920,12 @@ document.addEventListener('DOMContentLoaded', function () {
     window.atualizarRecibo._comAjusteAss = true;
   }
 });
-document.addEventListener('change', function (e) { if (e.target && e.target.id === 'orc-model-sign') renderBlocoAss('orc-ass-bloco', 'orcamento'); });
+document.addEventListener('change', function (e) { if (e.target && e.target.id === 'orc-model-sign') renderBlocosAssOrc(); });
+// No formulário do orçamento: o quadro aparece ao abrir a tela (novo ou editando), com o modelo escolhido
+document.addEventListener('DOMContentLoaded', function () {
+  const tela = document.getElementById('screen-new-budget');
+  if (tela && 'MutationObserver' in window) new MutationObserver(function () { if (tela.classList.contains('active')) { try { renderBlocoAss('orc-ass-bloco-form', 'orcamento'); } catch (e) {} } }).observe(tela, { attributes: true, attributeFilter: ['class'] });
+});
 function assinaturaAtualOrc() {
   let a = '';
   try { a = localStorage.getItem('assinaturaDigital') || ''; } catch (e) {}
