@@ -3067,6 +3067,14 @@ body.light .orc-chip.active {
 .oferta-pro-close{position:absolute;right:16px;top:16px;z-index:2;width:38px;height:38px;border:1px solid rgba(255,255,255,.65);border-radius:50%;background:rgba(4,18,32,.8);color:#fff;font-size:28px;line-height:1;cursor:pointer}
 .oferta-pro-banner{display:block;width:100%;height:auto;border-radius:12px}
 html:not(.bf-ativa) .bf-promo{display:none!important}
+.bf-faixa{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;width:100%;margin:0 0 14px;padding:12px 14px;border:2px solid #F4C430;border-radius:16px;background:linear-gradient(135deg,#000,#1a1a1a);color:#fff;text-align:left;cursor:pointer;font-family:inherit;box-shadow:0 6px 18px rgba(244,196,48,.25)}
+.bf-faixa-tit{flex:1 1 100%;font-size:14px;font-weight:800;color:#F4C430}
+.bf-faixa-tit b{color:#fff}.bf-faixa-tit s{color:#ff8a8a;font-weight:600;margin-left:4px}
+.bf-faixa-tempo{flex:1;font-size:14px;font-weight:600}
+.bf-contador{font-variant-numeric:tabular-nums;color:#F4C430;font-weight:900;letter-spacing:.3px}
+.bf-faixa-bt{flex:0 0 auto;background:#F4C430;color:#0B1C2C;font-weight:900;font-size:13px;padding:8px 12px;border-radius:10px}
+.op-contador{margin:-4px 0 12px;font-size:15px;font-weight:700;text-align:center}
+body.light .bf-faixa{color:#fff}
 /* O app já tem tema escuro: este aviso faz o Samsung Internet não aplicar o modo escuro dele por cima (deixava o amarelo marrom) */
 @media (prefers-color-scheme:dark){:root{color-scheme:dark}}
 .btn-calc{display:block;width:100%;margin-top:10px;padding:13px;border-radius:12px;border:1px solid var(--accent,#F4C430);background:rgba(244,196,48,.08);color:var(--accent,#F4C430);font-weight:800;font-size:15px;cursor:pointer;font-family:inherit}
@@ -3391,6 +3399,11 @@ body.light .btn-remove-item{color:#b91c1c}
             </div>
           </div>
 
+          <button type="button" class="bf-faixa bf-promo" id="bf-faixa" onclick="abrirOfertaPro()">
+            <span class="bf-faixa-tit">🔥 BLACK FRIDAY · Pro anual por <b>R$ 60</b> <s>R$ 120</s></span>
+            <span class="bf-faixa-tempo">⏳ Acaba em <b class="bf-contador">—</b></span>
+            <span class="bf-faixa-bt">Aproveitar</span>
+          </button>
           <div class="instalar-card" id="instalar-card" style="display:none">
             <img src="icon-192.png" alt="" width="44" height="44">
             <div><strong>Instale o OrçaOn</strong><p>Abra direto pela tela do celular, como um aplicativo.</p></div>
@@ -4261,6 +4274,7 @@ body.light .btn-remove-item{color:#b91c1c}
         </ul>
         <p class="ab-price">A partir de <b>R$ 10/mês</b> ou <b>R$ 60/ano</b></p>
         <p class="op-bf bf-promo">🔥 BLACK FRIDAY: plano anual por R$ 60 (50% de desconto)</p>
+        <p class="op-contador bf-promo">⏳ Acaba em <b class="bf-contador">—</b></p>
         <button type="button" class="btn-primary-lg" onclick="assinarProDoBanner()">Quero assinar o Pro</button>
       </div>
       <p id="ab-ja-pro" class="ab-ja-pro" style="display:none">Você já é Pro. Obrigado por apoiar o OrçaOn!</p>
@@ -4274,6 +4288,7 @@ body.light .btn-remove-item{color:#b91c1c}
         <div class="op-logo">Orça<span>On</span> <b>PRO</b></div>
         <p class="op-sub">Orçamentos, recibos e calculadora de material sem limite, backup na nuvem e todos os recursos.</p>
         <div class="op-bf bf-promo">🔥 BLACK FRIDAY · 50% OFF no plano anual</div>
+        <p class="op-contador bf-promo">⏳ Acaba em <b class="bf-contador">—</b></p>
         <div class="op-planos">
           <div class="op-plano"><small>Mensal</small><strong>R$ 10</strong><span>por mês</span></div>
           <div class="op-plano op-anual"><em class="op-selo">Mais vantajoso</em><small>Anual</small><s class="bf-promo">R$ 120</s><strong>R$ 60</strong><span>por ano · sai R$ 5/mês</span></div>
@@ -9375,6 +9390,20 @@ function atualizarSaudacao(){
   el.textContent = h >= 5 && h < 12 ? 'Bom dia' : (h >= 12 && h < 18 ? 'Boa tarde' : 'Boa noite');
 }
 try { atualizarSaudacao(); setInterval(atualizarSaudacao, 60000); document.addEventListener('visibilitychange', atualizarSaudacao); } catch (_) {}
+// Contagem regressiva da Black Friday (mesma data do topo do arquivo: 30/11/2026, 23h59 de Brasília)
+const BF_FIM = Date.UTC(2026, 11, 1, 3, 0, 0);
+function textoContadorBF(ms) {
+  const s = Math.max(0, Math.floor(ms / 1000)), d = Math.floor(s / 86400), h = Math.floor(s % 86400 / 3600), m = Math.floor(s % 3600 / 60), seg = s % 60;
+  const dois = n => String(n).padStart(2, '0');
+  return (d > 0 ? d + (d === 1 ? ' dia ' : ' dias ') : '') + dois(h) + 'h ' + dois(m) + 'min ' + dois(seg) + 's';
+}
+function atualizarContadorBF() {
+  const falta = BF_FIM - Date.now();
+  if (falta <= 0) { document.documentElement.classList.remove('bf-ativa'); clearInterval(window.__bfTimer); return; }
+  const t = textoContadorBF(falta);
+  document.querySelectorAll('.bf-contador').forEach(el => { if (el.textContent !== t) el.textContent = t; });
+}
+if (document.documentElement.classList.contains('bf-ativa')) { atualizarContadorBF(); window.__bfTimer = setInterval(atualizarContadorBF, 1000); }
 function atualizarSeloPlano(){
   const el = document.getElementById('plano-selo'); if (!el) return;
   let cls = 'plano-free', ic = 'fa-leaf', txt = 'Gratuito';
@@ -9397,6 +9426,7 @@ function atualizarSeloPlano(){
       if (ms && ms - Date.now() <= 7 * 86400000) { mostrar = true; rotulo = 'Renovar'; }
     }
     bt.style.display = mostrar ? '' : 'none';
+    const fx = document.getElementById('bf-faixa'); if (fx) fx.style.display = mostrar ? '' : 'none';
     const sp = bt.querySelector('span'); if (sp) sp.textContent = rotulo;
   }
   el.className = 'plano-selo ' + cls;
