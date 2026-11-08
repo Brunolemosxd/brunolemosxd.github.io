@@ -3038,6 +3038,8 @@ html:not(.bf-ativa) .bf-promo{display:none!important}
 .calc-val-txt b{display:block;font-size:14px;overflow-wrap:anywhere}
 .calc-val-txt small{display:block;font-size:12px;color:var(--text-secondary)}
 .calc-val-item input{flex:0 0 118px;width:118px;text-align:right;padding:10px!important;font-weight:700}
+.calc-val-item.oculto{opacity:.6}
+.calc-val-item.oculto b::after{content:" 🔒";font-size:12px}
 .calc-val-total{display:flex;justify-content:space-between;align-items:center;padding-top:10px;font-size:15px}
 .calc-val-total b{color:#F4C430;font-size:18px}
 .calc-linha{display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);font-size:14px}
@@ -5376,24 +5378,35 @@ const CALCULOS = {
       { id: 'consumo', rot: 'Consumo do veículo', un: 'km/L', val: 8, meia: true },
       { id: 'litro', rot: 'Preço do litro', un: 'R$', val: 6.2, meia: true },
       { id: 'pedagio', rot: 'Pedágios', un: 'R$', val: 0, meia: true },
-      { id: 'ajud', rot: 'Ajudantes', un: '', val: 1 }
+      { id: 'ajud', rot: 'Ajudantes', un: '', val: 1 },
+      { id: 'cobrar', rot: 'Quanto você quer cobrar pelo frete (total)', un: 'R$', val: 0 },
+      { id: 'mostrar', rot: 'Mostrar o custo da viagem (combustível, pedágio, ajudante) no orçamento?', chips: ['Não', 'Sim'], val: 'Não' }
     ],
-    aviso: 'Mostra o custo da viagem. Some o seu lucro no valor do frete.',
+    get aviso() { return 'Mostra o custo da viagem e o seu lucro. Com "Mostrar o custo" em Não, o cliente vê só o valor do frete.'; },
     conta(v) {
       const comb = v.consumo > 0 ? v.km / v.consumo * v.litro : 0;
       const aj = maoDeObraCalc('Carga e descarga / ajudante', v.ajud, 'un');
-      const custo = comb + v.pedagio + aj.total;
-      return {
-        linhas: [
-          { nome: 'Combustível', det: fmtNum(v.km) + ' km ÷ ' + fmtNum(v.consumo) + ' km/L × ' + fmtBRL(v.litro), v: fmtBRL(comb) },
-          { nome: 'Pedágios', det: 'ida e volta', v: fmtBRL(v.pedagio) },
-          v.ajud > 0 ? Object.assign({}, aj.linha, { nome: 'Ajudantes' }) : { nome: 'Ajudantes', det: 'sem ajudante', v: fmtBRL(0) },
-          { nome: 'Custo da viagem', det: 'combustível + pedágios + ajudantes', v: fmtBRL(custo), am: true }
-        ],
-        itens: [{ desc: 'Combustível (' + fmtNum(v.km) + ' km)', qtd: 1, un: 'un', valor: Math.round(comb * 100) / 100 }]
-          .concat(v.pedagio > 0 ? [{ desc: 'Pedágios', qtd: 1, un: 'un', valor: v.pedagio }] : [])
-          .concat(v.ajud > 0 ? [aj.item] : [])
-      };
+      const custo = comb + v.pedagio + aj.total, cobrar = Number(v.cobrar) || 0, lucro = cobrar - custo;
+      const mostrar = v.mostrar === 'Sim';
+      const linhas = [
+        { nome: 'Combustível', det: fmtNum(v.km) + ' km ÷ ' + fmtNum(v.consumo) + ' km/L × ' + fmtBRL(v.litro), v: fmtBRL(comb) },
+        { nome: 'Pedágios', det: 'ida e volta', v: fmtBRL(v.pedagio) },
+        v.ajud > 0 ? Object.assign({}, aj.linha, { nome: 'Ajudantes' }) : { nome: 'Ajudantes', det: 'sem ajudante', v: fmtBRL(0) },
+        { nome: 'Custo da viagem', det: 'combustível + pedágios + ajudantes', v: fmtBRL(custo), am: true }
+      ];
+      if (cobrar > 0) linhas.push(
+        { nome: 'Valor do frete', det: mostrar ? 'cliente vê os custos + o serviço de frete' : 'é o que o cliente vê no orçamento', v: fmtBRL(cobrar), am: true },
+        { nome: lucro >= 0 ? 'Seu lucro' : 'Prejuízo', det: 'valor do frete − custo da viagem', v: fmtBRL(Math.abs(lucro)), am: lucro >= 0 });
+      // custos: com valor de frete e "Não", ficam só na sua conta (não vão para o orçamento)
+      const oculto = cobrar > 0 && !mostrar;
+      const custos = [{ desc: 'Combustível (' + fmtNum(v.km) + ' km)', qtd: 1, un: 'un', valor: Math.round(comb * 100) / 100, tipo: 'conta' }]
+        .concat(v.pedagio > 0 ? [{ desc: 'Pedágios', qtd: 1, un: 'un', valor: v.pedagio, tipo: 'conta' }] : [])
+        .concat(v.ajud > 0 ? [aj.item] : [])
+        .map(it => oculto ? Object.assign({}, it, { oculto: true }) : it);
+      let itens = custos;
+      if (cobrar > 0 && !mostrar) itens = custos.concat([{ desc: 'Frete (' + fmtNum(v.km) + ' km)', qtd: 1, un: 'un', valor: cobrar, tipo: 'conta' }]);
+      if (cobrar > 0 && mostrar && lucro > 0) itens = custos.concat([{ desc: 'Serviço de frete', qtd: 1, un: 'un', valor: Math.round(lucro * 100) / 100, tipo: 'conta' }]);
+      return { linhas, itens };
     }
   }
 };
@@ -5500,7 +5513,7 @@ document.addEventListener('input', function (e) {
   calcularMaterial();
 });
 // Tipo de cada item: mão de obra (preço em Meus preços), material (preço salvo da calculadora) ou calculado pela conta
-function tipoItemCalc(it) { return it.mo ? 'mo' : (Number(it.valor) > 0 ? 'conta' : 'mat'); }
+function tipoItemCalc(it) { return it.mo ? 'mo' : (it.tipo || (Number(it.valor) > 0 ? 'conta' : 'mat')); }
 function precoItemCalc(it) {
   const t = tipoItemCalc(it);
   if (t === 'mo') { const p = precoServico(it.mo); return p ? p.valor : 0; }
@@ -5519,6 +5532,7 @@ function renderValoresCalc(host) {
   box.querySelectorAll('.calc-val-item').forEach((el, i) => {
     const it = itens[i], inp = el.querySelector('input');
     el.querySelector('b').textContent = it.desc;
+    if (it.oculto) el.classList.add('oculto');
     inp.value = it.valor > 0 ? fmtBRL(it.valor) : '';
     inp.setAttribute('aria-label', 'Valor de ' + it.desc + ' por ' + it.un);
   });
@@ -5530,8 +5544,12 @@ function atualizarTotaisCalc() {
   const itens = itensCalcComPrecos(); let total = 0;
   box.querySelectorAll('.calc-val-item').forEach((el, i) => {
     const it = itens[i]; if (!it) return;
-    const sub = (Number(it.qtd) || 0) * (Number(it.valor) || 0); total += sub;
-    el.querySelector('small').textContent = it.valor > 0 ? fmtQtd(it.qtd) + ' ' + it.un + ' × ' + fmtBRL(it.valor) + ' = ' + fmtBRL(sub) : fmtQtd(it.qtd) + ' ' + it.un + ' · sem valor';
+    const sub = (Number(it.qtd) || 0) * (Number(it.valor) || 0); if (!it.oculto) total += sub;
+    // valor calculado pela conta (ex.: serviço de frete) acompanha as mudanças, se a pessoa não estiver digitando nele
+    const inp = el.querySelector('input');
+    if (tipoItemCalc(it) === 'conta' && document.activeElement !== inp && (calcAjustes[calcAtual] || {})[it.desc] == null) inp.value = it.valor > 0 ? fmtBRL(it.valor) : '';
+    el.querySelector('small').textContent = (it.valor > 0 ? fmtQtd(it.qtd) + ' ' + it.un + ' × ' + fmtBRL(it.valor) + ' = ' + fmtBRL(sub) : fmtQtd(it.qtd) + ' ' + it.un + ' · sem valor')
+      + (it.oculto ? ' · só para sua conta, não vai para o cliente' : '');
   });
   box.querySelector('.calc-val-total b').textContent = fmtBRL(total);
 }
@@ -5540,7 +5558,7 @@ function atualizarLinhasCalc() {
   const c = CALCULOS[calcAtual]; calcResultado = c.conta(valoresCalc(calcAtual));
   document.querySelectorAll('#calc-res .calc-linha').forEach((el, i) => {
     const l = calcResultado.linhas[i]; if (!l) return;
-    el.querySelector('small').textContent = l.det; el.querySelector('.v').textContent = l.v;
+    el.querySelector('b').textContent = l.nome; el.querySelector('small').textContent = l.det; el.querySelector('.v').textContent = l.v;
     el.querySelector('.v').classList.toggle('am', !!l.am);
   });
   atualizarTotaisCalc();
@@ -5578,7 +5596,7 @@ function colocarItemNoOrcamento(it) {
 function adicionarCalculoAoOrcamento() {
   if (!calcResultado) return;
   if (!usarCalculo()) return;
-  const itens = itensCalcComPrecos();
+  const itens = itensCalcComPrecos().filter(i => !i.oculto);
   itens.forEach(colocarItemNoOrcamento);
   if (typeof renumerarItens === 'function') renumerarItens();
   if (typeof atualizarTotalOrcamento === 'function') atualizarTotalOrcamento();
@@ -5590,7 +5608,7 @@ function enviarListaMaterial() {
   if (!calcResultado) return;
   if (!usarCalculo()) return;
   const c = CALCULOS[calcAtual];
-  const texto = 'Lista de material: ' + c.titulo + '\n' + calcResultado.linhas.filter(l => l.nome !== 'Mão de obra').map(l => '• ' + l.nome + ': ' + l.v).join('\n') + '\n\n(feito no app OrçaOn)';
+  const texto = 'Lista de material: ' + c.titulo + '\n' + calcResultado.linhas.filter(l => !['Mão de obra', 'Seu lucro', 'Prejuízo'].includes(l.nome)).map(l => '• ' + l.nome + ': ' + l.v).join('\n') + '\n\n(feito no app OrçaOn)';
   window.open('https://wa.me/?text=' + encodeURIComponent(texto), '_blank');
 }
 
