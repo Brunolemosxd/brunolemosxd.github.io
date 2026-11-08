@@ -4746,6 +4746,12 @@ function loginWithGoogle() {
   if (loginIndisponivelNoArquivo()) return;
   if (!firebaseAuthReady && !iniciarFirebaseAuth()) { authSetupAviso(); return; }
   const provider = new firebase.auth.GoogleAuthProvider();
+  // No celular, pede ao Google a tela de escolher conta no formato de celular (tela cheia),
+  // e não a caixinha pequena de janela de computador.
+  try {
+    const celular = /Android|iPhone|iPad|iPod|Mobi/i.test(navigator.userAgent || '') || (navigator.maxTouchPoints > 1 && /Macintosh/.test(navigator.userAgent || ''));
+    provider.setCustomParameters(celular ? { display: 'touch', prompt: 'select_account' } : { prompt: 'select_account' });
+  } catch (_) {}
   // "Carregando…" desde o toque: a tela de login não aparece de novo ao voltar da escolha da conta
   const raiz = document.documentElement;
   raiz.classList.add('boot-wait');
