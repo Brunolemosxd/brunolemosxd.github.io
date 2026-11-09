@@ -1657,6 +1657,9 @@ body.light .btn-corrigir{color:#047857;border-color:#059669;background:#ECFDF5}
 .preco-card .units{margin:0 0 8px}
 .preco-card label{font-size:13px;color:var(--text-secondary)}
 .preco-salvo{font-size:12px;color:#2BD67B;min-height:16px;margin-top:4px}
+.sugestao-chip{position:relative;padding-right:30px!important}
+.sug-x{position:absolute;top:50%;right:6px;transform:translateY(-50%);width:20px;height:20px;border-radius:50%;display:grid;place-items:center;font-size:15px;line-height:1;font-weight:700;opacity:.55;background:rgba(127,127,127,.18)}
+.sug-x:hover,.sug-x:focus{opacity:1;background:#ef4444;color:#fff;outline:none}
 .sugestao-chip small{display:block;font-size:11px;font-weight:700;color:#2BD67B;margin-top:2px}
 .sugestao-chip.active small{color:#0B1C2C}
 .pix-qr-area img{max-width:150px;max-height:150px;object-fit:contain;background:#fff;padding:6px;border-radius:8px;display:block;margin:0 auto 8px}
@@ -4896,11 +4899,21 @@ function preencherSugestoesItem(row) {
     const preco = precoServico(item);
     if (preco) { const sm = document.createElement('small'); sm.textContent = textoPreco(preco); btn.appendChild(sm); }
     btn.onclick = () => usarSugestao(btn);
+    btn.appendChild(xSugestao(item));
     box.appendChild(btn);
   });
   marcarSugestaoAtiva(row);
 }
 
+// "×" de cada sugestão: tira da lista sem usar a sugestão
+function xSugestao(nome) {
+  const x = document.createElement('span');
+  x.className = 'sug-x'; x.textContent = '×'; x.setAttribute('role', 'button'); x.setAttribute('aria-label', 'Tirar ' + nome + ' das sugestões'); x.tabIndex = 0;
+  const tirar = e => { e.preventDefault(); e.stopPropagation(); removerSugestao(nome); };
+  x.addEventListener('click', tirar);
+  x.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') tirar(e); });
+  return x;
+}
 function marcarSugestaoAtiva(row) {
   const desc = row.querySelector('.item-desc');
   const atual = desc ? desc.value.trim() : '';
@@ -6071,6 +6084,7 @@ function renderSugestoesRecibo() {
     const preco = precoServico(nome);
     if (preco) { const sm = document.createElement('small'); sm.textContent = textoPreco(preco); btn.appendChild(sm); }
     btn.onclick = () => usarSugestaoRecibo(nome);
+    btn.appendChild(xSugestao(nome));
     box.appendChild(btn);
   });
 }
@@ -7584,6 +7598,7 @@ function salvarOrcamento() {
   };
   if (logoNovoOrc !== undefined) orc.logo = logoNovoOrc;
   if (orcAssinaturaData) orc.assinaturaImg = orcAssinaturaData;
+  try { guardarItensComoSugestao(itens); } catch (e) { console.warn('Sugestões:', e); }
   if ((modeloNovoOrcamento || modeloOrcamentoEscolhido) === 'Modelo Simples 3') {
     const via = v('orc-s3-via'), tit = v('orc-s3-titulo');
     if (via) orc.via = via; if (tit) orc.tituloDoc = tit;
@@ -8993,9 +9008,44 @@ function padroesProprios() {
   const o = lerPrecos();
   return Object.keys(o).filter(k => o[k] && o[k].proprio).sort((a, b) => (o[a].criado || 0) - (o[b].criado || 0));
 }
+// Sugestões que a pessoa tirou no "×" (as da profissão ficam escondidas; os padrões dela são apagados)
+const SUG_OCULTAS_KEY = 'orcaon_sugestoes_ocultas';
+function sugestoesOcultas() { try { const a = JSON.parse(localStorage.getItem(SUG_OCULTAS_KEY) || '[]'); return Array.isArray(a) ? a : []; } catch (_) { return []; } }
+function gravarSugestoesOcultas(a) { try { if (a.length) localStorage.setItem(SUG_OCULTAS_KEY, JSON.stringify(a)); else localStorage.removeItem(SUG_OCULTAS_KEY); } catch (_) {} }
 function listaSugestoes() {
-  const base = SUGESTOES[profissaoAtual()] || SUGESTOES['Outro'];
-  return base.concat(padroesProprios().filter(n => !base.includes(n)));
+  const base = SUGESTOES[profissaoAtual()] || SUGESTOES['Outro'], ocultas = sugestoesOcultas();
+  return base.filter(n => !ocultas.includes(n)).concat(padroesProprios().filter(n => !base.includes(n)));
+}
+function removerSugestao(nome) {
+  const precos = lerPrecos();
+  if (!confirm('Tirar "' + nome + '" das sugestões?')) return;
+  if (precos[nome] && precos[nome].proprio) { delete precos[nome]; gravarPrecos(precos); }
+  else { const o = sugestoesOcultas(); if (!o.includes(nome)) o.push(nome); gravarSugestoesOcultas(o); }
+  atualizarTodasSugestoes();
+}
+function mostrarSugestoesOcultas() { gravarSugestoesOcultas([]); atualizarTodasSugestoes(); }
+function atualizarTodasSugestoes() {
+  try { carregarSugestoes(); } catch (_) {}
+  try { renderSugestoesRecibo(); } catch (_) {}
+  try { if (document.getElementById('screen-edit-profile') && document.getElementById('screen-edit-profile').classList.contains('active')) renderMeusPrecos(); } catch (_) {}
+}
+// Ao salvar o orçamento, cada item vira (ou atualiza) uma sugestão com unidade e valor por unidade
+function guardarItensComoSugestao(itens) {
+  const precos = lerPrecos(), base = SUGESTOES[profissaoAtual()] || SUGESTOES['Outro'];
+  let ocultas = sugestoesOcultas(), mudou = false;
+  (itens || []).forEach(it => {
+    const nome = String(it.desc || '').replace(/\s+/g, ' ').trim().slice(0, 80); if (!nome) return;
+    const un = PRECO_UNIDADES.includes(String(it.unidade || '').trim()) ? String(it.unidade).trim() : 'un';
+    const valor = Math.round((Number(it.valor) || 0) * 100) / 100, antigo = precos[nome];
+    if (antigo) {
+      const novo = Object.assign({}, antigo, { un }); if (valor > 0) novo.valor = valor;
+      if (JSON.stringify(novo) !== JSON.stringify(antigo)) { precos[nome] = novo; mudou = true; }
+    } else if (base.includes(nome)) {
+      if (valor > 0) { precos[nome] = { un, valor }; mudou = true; }
+    } else { precos[nome] = { un, valor, proprio: true, criado: Date.now() }; mudou = true; }
+    if (ocultas.includes(nome)) { ocultas = ocultas.filter(n => n !== nome); gravarSugestoesOcultas(ocultas); mudou = true; }
+  });
+  if (mudou && gravarPrecos(precos)) atualizarTodasSugestoes();
 }
 function gravarPrecos(precos) {
   try { localStorage.setItem('orcaon_precos', JSON.stringify(precos)); return true; } catch (_) { alert('Não foi possível salvar. O celular está sem espaço.'); return false; }
@@ -9054,6 +9104,12 @@ function renderMeusPrecos() {
     card.querySelector('.money-input').value = p ? fmtBRL(p.valor) : '';
     host.appendChild(card);
   });
+  const ocultas = sugestoesOcultas();
+  if (ocultas.length) {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'btn-text';
+    b.textContent = 'Mostrar de novo as sugestões que tirei (' + ocultas.length + ')';
+    b.onclick = mostrarSugestoesOcultas; host.appendChild(b);
+  }
 }
 document.addEventListener('input', function(e) {
   const card = e.target && e.target.closest && e.target.closest('.preco-card');
