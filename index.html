@@ -755,6 +755,10 @@ body {
 .pre-tab{flex:0 0 auto;border:1.5px solid var(--border);background:var(--bg-card);color:var(--text-primary,#fff);border-radius:12px;padding:8px 12px;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit;text-align:left}
 .pre-tab small{display:block;font-weight:500;font-size:11px;color:var(--text-secondary)}
 .pre-tab.on{border-color:var(--accent,#F4C430);background:rgba(244,196,48,.14)}
+.pre-tab{position:relative;padding-right:30px!important}
+.pre-tab.mais{padding-right:12px!important}
+.pre-tab-x{position:absolute;top:4px;right:5px;width:20px;height:20px;border-radius:50%;display:grid;place-items:center;font-size:15px;font-weight:700;line-height:1;opacity:.6;background:rgba(127,127,127,.2)}
+.pre-tab-x:hover,.pre-tab-x:focus{opacity:1;background:#ef4444;color:#fff;outline:none}
 .pre-tab.mais{border-style:dashed;color:var(--accent,#F4C430)}
 .pre-tipos{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 10px}
 .pre-tipo{border:1.5px solid var(--border);background:transparent;color:inherit;border-radius:999px;padding:7px 12px;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit}
@@ -4134,6 +4138,7 @@ body.light .btn-remove-item{color:#b91c1c}
       <div class="content">
         <p class="hint-sm">Na visita, anote as medidas e veja o desenho na hora. Em casa, transforme em orçamento com um toque.</p>
         <button type="button" class="btn-primary-lg" onclick="novoPreOrcamento()">📐 Novo pré-orçamento</button>
+        <p class="calc-gratis" id="pre-gratis" style="text-align:center"></p>
         <div id="pre-lista" style="margin-top:14px"></div>
       </div>
     </div>
@@ -4151,11 +4156,14 @@ body.light .btn-remove-item{color:#b91c1c}
           <label for="pre-local">Local / obra (opcional)</label>
           <input type="text" id="pre-local" placeholder="Ex.: Casa da praia" autocomplete="off">
         </div>
+        <details class="form-card perfil-sec" id="pre-notas-sec"><summary><span class="perfil-sec-tit"><b>📝 Anotações (rascunho)</b><small id="pre-notas-st">Só você vê. Não vai para o orçamento.</small></span></summary>
+          <div class="perfil-sec-corpo"><textarea id="pre-notas" rows="4" placeholder="Ex.: cliente quer começar em janeiro, comprar material na loja X, ver a cor da tinta…"></textarea></div></details>
         <div class="pre-pecas" id="pre-pecas"></div>
         <div class="form-card" id="pre-peca"></div>
         <div class="form-card" id="pre-resumo"></div>
-        <button type="button" class="btn-primary-lg" onclick="transformarPreEmOrcamento()">➜ Transformar em orçamento</button>
-        <p class="hint-sm" style="text-align:center">Tudo fica salvo sozinho neste celular.</p>
+        <button type="button" class="btn-outline-lg" onclick="salvarPreBotao()">💾 Salvar</button>
+        <button type="button" class="btn-primary-lg" style="margin-top:10px" onclick="transformarPreEmOrcamento()">➜ Transformar em orçamento</button>
+        <p class="hint-sm" style="text-align:center">Também salva sozinho enquanto você preenche.</p>
       </div>
     </div>
 
@@ -4512,7 +4520,9 @@ const OFERTA_PRO_TEXTOS={
   'ultimo-orcamento':['Você usou seus 10 orçamentos grátis','Parabéns pelo trabalho! Para continuar enviando orçamentos sem parar, vire Pro.'],
   'ultimo-recibo':['Você usou seus 10 recibos grátis','Parabéns pelo trabalho! Para continuar enviando recibos sem parar, vire Pro.'],
   'limite-calc':['Seus 10 cálculos grátis acabaram','Com o OrçaOn Pro você usa a calculadora de material sem limite e monta seus orçamentos em segundos.'],
-  'ultimo-calc':['Você usou seus 10 cálculos grátis','Gostou da calculadora? Com o OrçaOn Pro ela fica liberada sem limite.']
+  'ultimo-calc':['Você usou seus 10 cálculos grátis','Gostou da calculadora? Com o OrçaOn Pro ela fica liberada sem limite.'],
+  'limite-pre':['Seus 10 pré-orçamentos grátis acabaram','Com o OrçaOn Pro você mede quantas obras quiser, com desenho na hora, e transforma em orçamento com um toque.'],
+  'ultimo-pre':['Você usou seus 10 pré-orçamentos grátis','Gostou de medir na visita? Com o OrçaOn Pro fica liberado sem limite.']
 };
 // ===== Instalar o app (ícone na tela do celular, sem passar pela loja) =====
 let pedidoInstalacao = null;
@@ -5793,10 +5803,23 @@ const PRE_TIPOS = {
   outro:  { nome: 'Outro', a: 'Comprimento', b: 'Largura', cor: 'outro', servico: [] }
 };
 let preAtual = null, prePecaIdx = 0;
+// Plano grátis: 10 pré-orçamentos (conta quando ele começa a preencher); no Pro, sem limite
+const PRE_GRATIS = 10, PRE_USOS_KEY = 'orcaon_pre_usos';
+function preUsos() { try { return Math.max(0, parseInt(localStorage.getItem(PRE_USOS_KEY), 10) || 0); } catch (_) { return 0; } }
+function preTemPro() { return typeof usuarioTemPro === 'function' && usuarioTemPro(); }
+function preTemConteudo(pr) { return !!((pr.cliente || '').trim() || (pr.local || '').trim() || (pr.notas || '').trim() || (pr.pecas || []).some(pc => (pc.nome || '').trim() || (pc.descontos || []).length || pc.a !== novaPecaPre(pc.tipo).a || pc.b !== novaPecaPre(pc.tipo).b)); }
+function contarPreSePreciso(pr) {
+  if (!pr || pr.contado || preTemPro() || !preTemConteudo(pr)) return;
+  const u = preUsos() + 1; pr.contado = true;
+  try { localStorage.setItem(PRE_USOS_KEY, String(u)); if (u === PRE_GRATIS) localStorage.setItem(OFERTA_PRO_PENDENTE_KEY, 'ultimo-pre'); } catch (_) {}
+  atualizarAvisoPre();
+}
+function atualizarAvisoPre() { const el = document.getElementById('pre-gratis'); if (el) el.textContent = preTemPro() ? '' : Math.min(preUsos(), PRE_GRATIS) + ' de ' + PRE_GRATIS + ' pré-orçamentos grátis'; }
 function lerPres() { try { const a = JSON.parse(localStorage.getItem(PRE_KEY) || '[]'); return Array.isArray(a) ? a : []; } catch (_) { return []; } }
 function gravarPres(a) { try { localStorage.setItem(PRE_KEY, JSON.stringify(a)); return true; } catch (_) { alert('Não foi possível salvar. O celular está sem espaço.'); return false; } }
 function salvarPreAtual() {
   if (!preAtual) return;
+  contarPreSePreciso(preAtual);
   preAtual.atualizado = Date.now();
   const a = lerPres(), i = a.findIndex(x => x.id === preAtual.id);
   if (i >= 0) a[i] = preAtual; else a.unshift(preAtual);
@@ -5823,7 +5846,12 @@ function areaPeca(pc) {
 const fmtM = n => (Number(n) || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const m2 = n => fmtM(n) + ' m²';
 function nomePeca(pc, i) { return (pc.nome || '').trim() || (PRE_TIPOS[pc.tipo].nome + ' ' + (i + 1)); }
-function abrirPreOrcamentos() { renderListaPre(); pushAndShow('screen-pre-lista'); }
+function abrirPreOrcamentos() { renderListaPre(); atualizarAvisoPre(); pushAndShow('screen-pre-lista'); }
+function salvarPreBotao() {
+  salvarPreAtual(); renderListaPre();
+  try { orcaonToast('✓ Pré-orçamento salvo.'); } catch (_) {}
+  goBack();
+}
 function renderListaPre() {
   const host = document.getElementById('pre-lista'); if (!host) return;
   const a = lerPres();
@@ -5833,13 +5861,14 @@ function renderListaPre() {
     const tot = (pr.pecas || []).length;
     div.innerHTML = '<div class="pre-item-txt"><b></b><small></small></div><button type="button" class="pre-del" aria-label="Apagar">🗑</button>';
     div.querySelector('b').textContent = (pr.cliente || 'Sem nome') + (pr.local ? ' · ' + pr.local : '');
-    div.querySelector('small').textContent = tot + (tot === 1 ? ' medida' : ' medidas') + ' · ' + new Date(pr.atualizado || pr.criado).toLocaleDateString('pt-BR') + (pr.virouOrcamento ? ' · ✓ virou orçamento' : '');
+    div.querySelector('small').textContent = tot + (tot === 1 ? ' medida' : ' medidas') + ' · ' + new Date(pr.atualizado || pr.criado).toLocaleDateString('pt-BR') + (pr.virouOrcamento ? ' · ✓ virou orçamento' : '') + ((pr.notas || '').trim() ? ' · 📝 anotações' : '');
     div.querySelector('.pre-item-txt').onclick = () => abrirPreEditor(pr.id);
     div.querySelector('.pre-del').onclick = () => { if (!confirm('Apagar o pré-orçamento de ' + (pr.cliente || 'sem nome') + '?')) return; gravarPres(lerPres().filter(x => x.id !== pr.id)); renderListaPre(); };
     host.appendChild(div);
   });
 }
 function novoPreOrcamento() {
+  if (!preTemPro() && preUsos() >= PRE_GRATIS) { abrirOfertaPro('limite-pre'); return; }
   preAtual = { id: Date.now(), cliente: '', local: '', criado: Date.now(), pecas: [novaPecaPre()] };
   prePecaIdx = 0; salvarPreAtual(); abrirPreEditor(preAtual.id);
 }
@@ -5849,6 +5878,8 @@ function abrirPreEditor(id) {
   prePecaIdx = 0;
   document.getElementById('pre-cliente').value = pr.cliente || '';
   document.getElementById('pre-local').value = pr.local || '';
+  const nt = document.getElementById('pre-notas'); if (nt) nt.value = pr.notas || '';
+  const ns = document.getElementById('pre-notas-sec'); if (ns) ns.open = !!(pr.notas || '').trim();
   renderPreEditor();
   pushAndShow('screen-pre-editor');
 }
@@ -5862,11 +5893,23 @@ function renderPreTabs() {
     b.innerHTML = '<span></span><small></small>';
     b.querySelector('span').textContent = nomePeca(pc, i); b.querySelector('small').textContent = m2(areaPeca(pc).final);
     b.onclick = () => { prePecaIdx = i; renderPreEditor(); };
+    const x = document.createElement('span'); x.className = 'pre-tab-x'; x.textContent = '×'; x.setAttribute('role', 'button'); x.tabIndex = 0; x.setAttribute('aria-label', 'Excluir ' + nomePeca(pc, i));
+    const excluir = ev => { ev.preventDefault(); ev.stopPropagation(); excluirPecaPre(i); };
+    x.addEventListener('click', excluir); x.addEventListener('keydown', ev => { if (ev.key === 'Enter' || ev.key === ' ') excluir(ev); });
+    b.appendChild(x);
     host.appendChild(b);
   });
   const mais = document.createElement('button'); mais.type = 'button'; mais.className = 'pre-tab mais'; mais.textContent = '+ Nova medida';
   mais.onclick = () => { const atual = preAtual.pecas[prePecaIdx]; preAtual.pecas.push(novaPecaPre(atual ? atual.tipo : null)); prePecaIdx = preAtual.pecas.length - 1; salvarPreAtual(); renderPreEditor(); };
   host.appendChild(mais);
+}
+function excluirPecaPre(i) {
+  const pc = preAtual.pecas[i]; if (!pc) return;
+  if (!confirm('Excluir a medida "' + nomePeca(pc, i) + '"?')) return;
+  preAtual.pecas.splice(i, 1);
+  if (!preAtual.pecas.length) preAtual.pecas.push(novaPecaPre());
+  if (prePecaIdx >= preAtual.pecas.length) prePecaIdx = preAtual.pecas.length - 1; else if (i < prePecaIdx) prePecaIdx--;
+  salvarPreAtual(); renderPreEditor();
 }
 function campoPre(id, rot, valor, un) {
   return '<div><label for="' + id + '">' + rot + '</label><div class="calc-campo"><input type="text" inputmode="decimal" autocomplete="off" id="' + id + '" value="' + (valor ? fmtQtd(valor) : '') + '" placeholder="0,00"><em>' + un + '</em></div></div>';
@@ -5883,8 +5926,7 @@ function renderPrePeca() {
   }
   if (pc.tipo === 'piso') h += '<div class="pre-med" style="margin-top:8px">' + campoPre('pre-perda', 'Perda e recorte', pc.perda, '%') + '<div></div></div>';
   h += '<label for="pre-servico" style="margin-top:10px">Serviço no orçamento</label><input type="text" id="pre-servico" list="pre-servicos" autocomplete="off" placeholder="' + esc(servicoPadraoPre(pc)) + '"><datalist id="pre-servicos">' + listaSugestoes().map(n => '<option value="' + esc(n) + '">').join('') + '</datalist>'
-    + '<div class="pre-area"><span id="pre-area-rot">Área</span><b id="pre-area-v"></b></div>'
-    + (preAtual.pecas.length > 1 ? '<button type="button" class="btn-text" style="color:#ef4444" id="pre-apagar-peca">Apagar esta medida</button>' : '');
+    + '<div class="pre-area"><span id="pre-area-rot">Área</span><b id="pre-area-v"></b></div>';
   host.innerHTML = h;
   document.getElementById('pre-nome').value = pc.nome || '';
   document.getElementById('pre-servico').value = pc.servico || '';
@@ -5971,6 +6013,7 @@ document.addEventListener('input', function (e) {
   const pc = preAtual.pecas[prePecaIdx];
   if (id === 'pre-cliente') preAtual.cliente = e.target.value;
   else if (id === 'pre-local') preAtual.local = e.target.value;
+  else if (id === 'pre-notas') preAtual.notas = e.target.value;
   else if (id === 'pre-nome') { pc.nome = e.target.value; renderPreTabs(); renderPreResumo(); }
   else if (id === 'pre-servico') pc.servico = e.target.value;
   else if (id === 'pre-a' || id === 'pre-b' || id === 'pre-perda') {
@@ -5991,10 +6034,6 @@ document.addEventListener('click', function (e) {
     pc.descontos = pc.descontos || [];
     pc.descontos.push(nome === 'Porta' ? { nome: 'Porta', l: 0.8, a: 2.1 } : nome === 'Janela' ? { nome: 'Janela', l: 1.2, a: 1 } : { nome: 'Vão', l: 1, a: 1 });
     salvarPreAtual(); renderPreDescontos(); desenharPre(); atualizarAreaPre(); return;
-  }
-  if (e.target.id === 'pre-apagar-peca') {
-    if (!confirm('Apagar a medida "' + nomePeca(preAtual.pecas[prePecaIdx], prePecaIdx) + '"?')) return;
-    preAtual.pecas.splice(prePecaIdx, 1); prePecaIdx = Math.max(0, prePecaIdx - 1); salvarPreAtual(); renderPreEditor();
   }
 });
 // Em casa: cada medida vira um item do orçamento (área em m², valor de "Meus preços" se tiver)
