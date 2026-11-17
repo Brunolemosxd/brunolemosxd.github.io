@@ -769,6 +769,27 @@ body {
 .pre-desenho{background:#0a1826;border:1px dashed rgba(244,196,48,.45);border-radius:14px;margin:12px 0;display:flex;justify-content:center;padding:4px}
 .pre-desenho svg{width:100%;max-width:360px;height:auto;display:block}
 .pre-sec{padding:16px!important;margin-bottom:12px}
+#screen-pre-editor .pp-esc{display:none!important}
+#pre-peca .pre-sec-tit{display:none}
+.pp-topo{position:sticky;top:0;z-index:30;background:var(--bg-primary,#0B1C2C);padding:10px 16px 12px;border-bottom:1px solid var(--border)}
+.pp-l{display:flex;justify-content:space-between;gap:10px;font-size:14px;color:var(--text-secondary);font-weight:700}
+.pp-l b{color:var(--accent,#F4C430)}
+.pp-med{max-width:45%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pp-bar{height:8px;border-radius:5px;background:var(--border);margin-top:8px;overflow:hidden}
+.pp-bar i{display:block;height:100%;background:var(--accent,#F4C430);border-radius:5px;transition:width .25s}
+.pp-dots{display:flex;justify-content:space-between;margin-top:9px}
+.pp-dots button{width:30px;height:30px;border-radius:50%;border:0;display:grid;place-items:center;font-size:13px;font-weight:900;background:var(--border);color:var(--text-secondary);cursor:pointer;font-family:inherit;padding:0}
+.pp-dots button.ok{background:#2BD67B;color:#06301A}
+.pp-dots button.on{background:var(--accent,#F4C430);color:#0B1C2C;box-shadow:0 0 0 3px rgba(244,196,48,.35)}
+.pp-q{font-size:23px;font-weight:900;margin:6px 2px 14px;line-height:1.2}
+.pp-q small{display:block;font-size:14.5px;font-weight:500;color:var(--text-secondary);margin-top:5px;line-height:1.35}
+.pp-content{padding-bottom:120px!important}
+.pp-nav{position:fixed;left:0;right:0;bottom:0;z-index:40;display:none;gap:10px;padding:12px 16px calc(14px + env(safe-area-inset-bottom));background:var(--bg-primary,#0B1C2C);border-top:1px solid var(--border)}
+#screen-pre-editor.active .pp-nav{display:flex}
+.pp-nav button{flex:1;min-height:56px;border-radius:14px;font-size:17px;font-weight:900;font-family:inherit;border:2px solid var(--accent,#F4C430);cursor:pointer}
+.pp-nav .pp-v{background:transparent;color:var(--accent,#F4C430);flex:0 0 36%}
+.pp-nav .pp-p{background:var(--accent,#F4C430);color:#0B1C2C}
+body.light .pp-topo,body.light .pp-nav{background:#fff}
 .pre-sec-tit{display:flex;gap:12px;align-items:center;margin-bottom:10px}
 .pre-sec-tit b{display:block;font-size:18px;line-height:1.2}
 .pre-sec-tit small{display:block;font-size:13px;color:var(--text-secondary);margin-top:2px;line-height:1.35}
@@ -4186,23 +4207,26 @@ body.light .btn-remove-item{color:#b91c1c}
         <button class="back-btn" onclick="fecharPreEditor()">Voltar</button>
         <h1>Pré-orçamento</h1>
       </header>
-      <div class="content">
-        <div class="form-card">
+      <div class="pp-topo" id="pp-topo"></div>
+      <div class="content pp-content">
+        <div class="pp-q" id="pp-q"></div>
+        <div class="form-card" data-passo="cliente">
           <label for="pre-cliente">Cliente</label>
           <input type="text" id="pre-cliente" placeholder="Nome do cliente" autocomplete="off">
           <label for="pre-local">Local / obra (opcional)</label>
           <input type="text" id="pre-local" placeholder="Ex.: Casa da praia" autocomplete="off">
         </div>
-        <details class="form-card perfil-sec" id="pre-notas-sec"><summary><span class="perfil-sec-tit"><b>📝 Anotações (rascunho)</b><small id="pre-notas-st">Só você vê. Não vai para o orçamento.</small></span></summary>
+        <details class="form-card perfil-sec" id="pre-notas-sec" data-passo="cliente"><summary><span class="perfil-sec-tit"><b>📝 Anotações (rascunho)</b><small id="pre-notas-st">Só você vê. Não vai para o orçamento.</small></span></summary>
           <div class="perfil-sec-corpo"><textarea id="pre-notas" rows="4" placeholder="Ex.: cliente quer começar em janeiro, comprar material na loja X, ver a cor da tinta…"></textarea></div></details>
-        <h3 class="pre-titulo-lista">📏 Medidas desta visita <small>toque numa para editar · + para outra</small></h3>
-        <div class="pre-pecas" id="pre-pecas"></div>
         <div id="pre-peca"></div>
-        <div class="form-card pre-sec" id="pre-resumo"></div>
-        <button type="button" class="btn-outline-lg" onclick="salvarPreBotao()">💾 Salvar</button>
-        <button type="button" class="btn-primary-lg" style="margin-top:10px" onclick="transformarPreEmOrcamento()">➜ Transformar em orçamento</button>
-        <p class="hint-sm" style="text-align:center">Também salva sozinho enquanto você preenche.</p>
+        <div class="form-card pre-sec" id="pre-resumo" data-passo="resumo"></div>
+        <h3 class="pre-titulo-lista" data-passo="resumo">📏 Medidas desta visita <small>toque numa para corrigir</small></h3>
+        <div class="pre-pecas" id="pre-pecas" data-passo="resumo"></div>
+        <button type="button" class="btn-outline-lg" data-passo="resumo" onclick="medirOutraPre()">＋ Medir outra coisa</button>
+        <button type="button" class="btn-primary-lg" data-passo="resumo" style="margin-top:10px" onclick="transformarPreEmOrcamento()">➜ Transformar em orçamento</button>
+        <p class="hint-sm" data-passo="resumo" style="text-align:center">Tudo fica salvo sozinho enquanto você preenche.</p>
       </div>
+      <div class="pp-nav" id="pp-nav"></div>
     </div>
 
     <div id="screen-calculadora" class="screen">
@@ -6005,10 +6029,11 @@ function renderListaPre() {
 function novoPreOrcamento() {
   if (!preTemPro() && preUsos() >= PRE_GRATIS) { abrirOfertaPro('limite-pre'); return; }
   preAtual = { id: Date.now(), cliente: '', local: '', criado: Date.now(), pecas: [novaPecaPre()] };
-  prePecaIdx = 0; salvarPreAtual(); abrirPreEditor(preAtual.id);
+  prePecaIdx = 0; salvarPreAtual(); abrirPreEditor(preAtual.id, 'cliente');
 }
-function abrirPreEditor(id) {
+function abrirPreEditor(id, passo) {
   const pr = lerPres().find(x => x.id === id); if (!pr) return;
+  prePasso = passo || 'resumo';
   preAtual = pr; if (!Array.isArray(preAtual.pecas) || !preAtual.pecas.length) preAtual.pecas = [novaPecaPre()];
   prePecaIdx = 0;
   document.getElementById('pre-cliente').value = pr.cliente || '';
@@ -6019,7 +6044,57 @@ function abrirPreEditor(id) {
   pushAndShow('screen-pre-editor');
 }
 function fecharPreEditor() { salvarPreAtual(); renderListaPre(); goBack(); }
-function renderPreEditor() { renderPreTabs(); renderPrePeca(); renderPreResumo(); }
+function renderPreEditor() { renderPreTabs(); renderPrePeca(); renderPreResumo(); aplicarPassoPre(); }
+// ---- Passo a passo: uma pergunta por tela ----
+let prePasso = 'cliente';
+const PRE_PASSOS = {
+  cliente:   ['Cliente', 'Para quem é o orçamento?', 'Nome do cliente e o local da obra'],
+  tipo:      ['Tipo', 'O que você vai medir?', 'Escolha a profissão e toque no tipo de medida'],
+  medidas:   ['Medidas', 'Quais são as medidas?', 'O desenho muda a cada número'],
+  detalhes:  ['Detalhes', 'Como vai ser?', 'Bitola, diâmetro, espessura… toque para trocar ou em ✎ Outro'],
+  materiais: ['Materiais', 'Material que vai gastar', 'Já calculado. Mude o número se precisar e desmarque o que não vai'],
+  resumo:    ['Pronto', 'Tudo certo! Confira o resumo', 'Salve, meça outra coisa ou transforme em orçamento']
+};
+function passosPre() {
+  const pc = preAtual && preAtual.pecas[prePecaIdx], l = ['cliente', 'tipo', 'medidas'];
+  if (pc && opcoesPeca(pc).length) l.push('detalhes');
+  if (pc && temMateriaisPre(pc)) l.push('materiais');
+  l.push('resumo'); return l;
+}
+function aplicarPassoPre() {
+  const tela = document.getElementById('screen-pre-editor'); if (!tela || !preAtual) return;
+  const passos = passosPre(); if (!passos.includes(prePasso)) prePasso = passos.includes('materiais') && prePasso === 'detalhes' ? 'materiais' : 'medidas';
+  const i = passos.indexOf(prePasso), info = PRE_PASSOS[prePasso], pc = preAtual.pecas[prePecaIdx];
+  tela.querySelectorAll('[data-passo]').forEach(el => el.classList.toggle('pp-esc', el.dataset.passo !== prePasso));
+  const q = document.getElementById('pp-q'); if (q) q.innerHTML = esc(info[1]) + '<small>' + esc(info[2]) + '</small>';
+  const topo = document.getElementById('pp-topo');
+  if (topo) {
+    const medida = (prePasso === 'cliente' || prePasso === 'resumo') ? (preAtual.cliente || '').trim() : nomePeca(pc, prePecaIdx);
+    topo.innerHTML = '<div class="pp-l"><span>Passo <b>' + (i + 1) + '</b> de ' + passos.length + ' · ' + info[0] + '</span><span class="pp-med"></span></div>'
+      + '<div class="pp-bar"><i style="width:' + ((i + 1) / passos.length * 100) + '%"></i></div>'
+      + '<div class="pp-dots">' + passos.map((k, j) => '<button type="button" class="' + (j < i ? 'ok' : j === i ? 'on' : '') + '" data-ir="' + k + '" aria-label="Ir para ' + PRE_PASSOS[k][0] + '">' + (j < i ? '✓' : j + 1) + '</button>').join('') + '</div>';
+    topo.querySelector('.pp-med').textContent = medida || '';
+  }
+  const nav = document.getElementById('pp-nav');
+  if (nav) {
+    const ultimo = i === passos.length - 1;
+    nav.innerHTML = '<button type="button" class="pp-v">' + (i === 0 ? 'Fechar' : '‹ Voltar') + '</button><button type="button" class="pp-p">' + (ultimo ? '💾 Salvar' : 'Próximo ›') + '</button>';
+    nav.querySelector('.pp-v').onclick = () => { if (i === 0) fecharPreEditor(); else irPassoPre(passos[i - 1]); };
+    nav.querySelector('.pp-p').onclick = () => { if (ultimo) salvarPreBotao(); else irPassoPre(passos[i + 1]); };
+  }
+}
+function irPassoPre(k) {
+  prePasso = k; salvarPreAtual(); aplicarPassoPre();
+  try { window.scrollTo(0, 0); const t = document.getElementById('screen-pre-editor'); if (t) t.scrollTop = 0; const c = t && t.querySelector('.content'); if (c) c.scrollTop = 0; } catch (_) {}
+}
+function medirOutraPre() {
+  const pp = PRE_PROFISSOES[profissaoAtual()] ? profissaoAtual() : 'Outro';
+  preAtual.pecas.push(novaPecaPre(null, pp)); prePecaIdx = preAtual.pecas.length - 1; prePasso = 'tipo';
+  salvarPreAtual(); renderPreEditor(); irPassoPre('tipo');
+}
+document.addEventListener('click', function (e) {
+  const b = e.target.closest && e.target.closest('#pp-topo [data-ir]'); if (b) irPassoPre(b.dataset.ir);
+});
 function renderPreTabs() {
   const host = document.getElementById('pre-pecas'); if (!host || !preAtual) return;
   host.innerHTML = '';
@@ -6027,7 +6102,7 @@ function renderPreTabs() {
     const b = document.createElement('button'); b.type = 'button'; b.className = 'pre-tab' + (i === prePecaIdx ? ' on' : '');
     b.innerHTML = '<span></span><small></small>';
     b.querySelector('span').textContent = nomePeca(pc, i); b.querySelector('small').textContent = fmtMedida(pc, medidaPeca(pc).final);
-    b.onclick = () => { prePecaIdx = i; renderPreEditor(); };
+    b.onclick = () => { prePecaIdx = i; prePasso = 'medidas'; renderPreEditor(); irPassoPre('medidas'); };
     const x = document.createElement('span'); x.className = 'pre-tab-x'; x.textContent = '×'; x.setAttribute('role', 'button'); x.tabIndex = 0; x.setAttribute('aria-label', 'Excluir ' + nomePeca(pc, i));
     const excluir = ev => { ev.preventDefault(); ev.stopPropagation(); excluirPecaPre(i); };
     x.addEventListener('click', excluir); x.addEventListener('keydown', ev => { if (ev.key === 'Enter' || ev.key === ' ') excluir(ev); });
@@ -6039,7 +6114,7 @@ function renderPreTabs() {
     // nova medida começa na profissão do perfil (mantém o tipo da medida atual se for dessa profissão)
     const atual = preAtual.pecas[prePecaIdx], pp = PRE_PROFISSOES[profissaoAtual()] ? profissaoAtual() : 'Outro';
     const tipo = atual && (PRE_PROFISSOES[pp] || []).includes(atual.tipo) ? atual.tipo : null;
-    preAtual.pecas.push(novaPecaPre(tipo, pp)); prePecaIdx = preAtual.pecas.length - 1; salvarPreAtual(); renderPreEditor();
+    preAtual.pecas.push(novaPecaPre(tipo, pp)); prePecaIdx = preAtual.pecas.length - 1; prePasso = 'tipo'; salvarPreAtual(); renderPreEditor(); irPassoPre('tipo');
   };
   host.appendChild(mais);
 }
@@ -6063,13 +6138,14 @@ function renderPrePeca() {
   const temOps = opcoesPeca(pc).length > 0, temMat = temMateriaisPre(pc);
   let n = 1;
   // 1. O que vai medir
-  let h = '<div class="form-card pre-sec">' + secTitPre(n++, 'O que vai medir', 'Escolha a profissão e o tipo de medida')
+  const passosM = passosPre(), ultimoM = passosM[passosM.length - 2];
+  let h = '<div class="form-card pre-sec" data-passo="tipo">' + secTitPre(n++, 'O que vai medir', 'Escolha a profissão e o tipo de medida')
     + '<label for="pre-prof">Profissão</label><select id="pre-prof">' + profsOrdem.map(p => '<option' + (p === prof ? ' selected' : '') + '>' + esc(p) + '</option>').join('') + '</select>'
     + '<label>Tipo de medida</label><div class="pre-tipos">'
     + lista.map(k => (k === PRE_GERAIS[0] && propria.length ? '<span class="pre-tipos-sep">Outras medidas:</span>' : '') + '<button type="button" class="pre-tipo' + (k === pc.tipo ? ' on' : '') + (propria.includes(k) ? '' : ' geral') + '" data-tipo="' + k + '">' + PRE_TIPOS[k].nome + '</button>').join('') + '</div></div>';
   // 2. Medidas
   const ajudaMed = d.tipo === 'area' ? 'O desenho e os m² mudam a cada número' : d.tipo === 'linear' ? 'O desenho e os metros mudam a cada número' : d.tipo === 'un' ? 'Quantas peças vai fazer' : 'Comprimento × largura × altura';
-  h += '<div class="form-card pre-sec">' + secTitPre(n++, 'Medidas', ajudaMed)
+  h += '<div class="form-card pre-sec" data-passo="medidas">' + secTitPre(n++, 'Medidas', ajudaMed)
     + '<label for="pre-nome">Nome desta medida <span class="pre-opc">(opcional)</span></label><input type="text" id="pre-nome" autocomplete="off" placeholder="Ex.: Sala, Parede da frente · ' + esc(nomePeca(pc, prePecaIdx)) + '">';
   if (d.tipo === 'area') h += '<div class="pre-med">' + campoPre('pre-a', d.a, pc.a, 'm') + campoPre('pre-b', d.b, pc.b, 'm') + '</div>';
   else if (d.tipo === 'linear') h += '<div class="pre-med">' + campoPre('pre-a', 'Comprimento', pc.a, unPre(pc)) + campoPre('pre-b', d.bRot || 'Quantas vezes', pc.b, '×', true) + '</div>';
@@ -6080,10 +6156,10 @@ function renderPrePeca() {
   if ((d.tipo === 'area' || d.tipo === 'linear') && (d.perda != null || pc.perda)) h += '<div class="pre-med" style="margin-top:8px">' + campoPre('pre-perda', d.tipo === 'linear' ? 'Sobra / perda' : 'Perda e recorte', pc.perda, '%') + '<div></div></div>';
   h += '<div class="pre-area"><span id="pre-area-rot"></span><b id="pre-area-v"></b></div></div>';
   // 3. Especificações e 4. Materiais (cada um mostra o seu título)
-  if (temOps) h += '<div class="form-card pre-sec" id="pre-ops" data-n="' + (n++) + '"></div>'; else h += '<div id="pre-ops" style="display:none"></div>';
-  if (temMat) h += '<div class="form-card pre-sec" id="pre-mats" data-n="' + (n++) + '"></div>'; else h += '<div id="pre-mats" style="display:none"></div>';
+  if (temOps) h += '<div class="form-card pre-sec" id="pre-ops" data-passo="detalhes" data-n="' + (n++) + '"></div>'; else h += '<div id="pre-ops" style="display:none"></div>';
+  if (temMat) h += '<div class="form-card pre-sec" id="pre-mats" data-passo="materiais" data-n="' + (n++) + '"></div>'; else h += '<div id="pre-mats" style="display:none"></div>';
   // 5. No orçamento
-  h += '<div class="form-card pre-sec">' + secTitPre(n++, 'No orçamento', 'Nome do serviço que vai aparecer para o cliente')
+  h += '<div class="form-card pre-sec" data-passo="' + ultimoM + '">' + secTitPre(n++, 'No orçamento', 'Nome do serviço que vai aparecer para o cliente')
     + '<label for="pre-servico">Serviço</label><input type="text" id="pre-servico" list="pre-servicos" autocomplete="off" placeholder="' + esc(servicoPadraoPre(pc)) + '"><datalist id="pre-servicos">' + sugestoesPre(pc).map(x => '<option value="' + esc(x) + '">').join('') + '</datalist>'
     + '<p class="hint-sm" style="margin-top:6px">O valor vem de "Meus preços". Se ainda não tiver, você coloca no orçamento.</p></div>';
   host.innerHTML = h;
