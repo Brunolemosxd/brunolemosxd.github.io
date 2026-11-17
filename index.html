@@ -767,6 +767,14 @@ body {
 .pre-med .calc-campo input{font-size:18px;font-weight:800}
 .pre-desenho{background:#0a1826;border:1px dashed rgba(244,196,48,.45);border-radius:14px;margin:12px 0;display:flex;justify-content:center;padding:4px}
 .pre-desenho svg{width:100%;max-width:360px;height:auto;display:block}
+.pre-mats{margin-top:12px;padding-top:10px;border-top:1px dashed var(--border)}
+.pre-mats h4{margin:0 0 2px;font-size:15px;color:#F4C430}
+.pre-mat{display:grid;grid-template-columns:28px 1fr 72px 46px;gap:6px;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)}
+.pre-mat.fora .pre-mat-nome,.pre-mat.fora input.pre-mat-q{opacity:.4;text-decoration:line-through}
+.pre-mat-ck input{width:20px!important;height:20px;margin:0!important}
+.pre-mat-nome{font-size:13.5px;line-height:1.25}
+.pre-mat input.pre-mat-q{padding:8px 6px!important;text-align:center;font-weight:800;font-size:15px!important;margin:0!important}
+.pre-mat em{font-style:normal;font-size:12px;color:var(--text-secondary)}
 .pre-med3{grid-template-columns:1fr 1fr 1fr}
 .pre-med3 .calc-campo input{font-size:16px;padding-right:30px!important}
 .pre-med3 .calc-campo em{right:8px}
@@ -6033,7 +6041,8 @@ function renderPrePeca() {
   if (d.tipo === 'area' && d.descontos) h += '<label>Descontar portas e janelas</label><div id="pre-descs"></div><div class="pre-desc-bts"><button type="button" class="btn-dark-sm" data-add="Porta">+ Porta</button><button type="button" class="btn-dark-sm" data-add="Janela">+ Janela</button><button type="button" class="btn-dark-sm" data-add="Vão">+ Outro vão</button></div>';
   if ((d.tipo === 'area' || d.tipo === 'linear') && (d.perda != null || pc.perda)) h += '<div class="pre-med" style="margin-top:8px">' + campoPre('pre-perda', d.tipo === 'linear' ? 'Sobra / perda' : 'Perda e recorte', pc.perda, '%') + '<div></div></div>';
   h += '<label for="pre-servico" style="margin-top:10px">Serviço no orçamento</label><input type="text" id="pre-servico" list="pre-servicos" autocomplete="off" placeholder="' + esc(servicoPadraoPre(pc)) + '"><datalist id="pre-servicos">' + sugestoesPre(pc).map(n => '<option value="' + esc(n) + '">').join('') + '</datalist>'
-    + '<div class="pre-area"><span id="pre-area-rot"></span><b id="pre-area-v"></b></div>';
+    + '<div class="pre-area"><span id="pre-area-rot"></span><b id="pre-area-v"></b></div>'
+    + '<div class="pre-mats" id="pre-mats"></div>';
   host.innerHTML = h;
   document.getElementById('pre-nome').value = pc.nome || '';
   document.getElementById('pre-servico').value = pc.servico || '';
@@ -6070,6 +6079,7 @@ function atualizarAreaPre() {
   if (d.tipo === 'volume' && pc.tipo === 'piscina') r += ' · ' + Math.round(m.final * 1000).toLocaleString('pt-BR') + ' litros';
   if (rot) rot.textContent = r;
   if (v) v.textContent = fmtMedida(pc, m.final);
+  renderMateriaisPre();
   renderPreTabs(); renderPreResumo();
 }
 // ---- Desenhos (refeitos a cada número digitado) ----
@@ -6147,6 +6157,369 @@ function desenharPre() {
   }
   host.innerHTML = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Desenho da medida ' + esc(textoMedidas(pc)) + '">' + svg + '</svg>';
 }
+// ---- Materiais de cada medida (quantidades aproximadas; a pessoa confere e muda o número) ----
+// Cada regra recebe m (resultado da medida) e pc (a medida) e devolve [nome, unidade, quantidade].
+const up = (n, casas) => { const f = Math.pow(10, casas || 0); return Math.ceil((Number(n) || 0) * f - 1e-9) / f; };
+const PINTURA_MAT = (A) => [
+  ['Tinta (2 demãos)', 'L', up(A * 2 / 10, 1)],
+  ['Massa corrida (lata 25 kg)', 'lata', up(A / 25)],
+  ['Selador / fundo preparador', 'L', up(A / 12, 1)],
+  ['Lixa', 'folha', up(A / 5)],
+  ['Fita crepe (rolo)', 'rolo', up(A / 30)],
+  ['Lona / plástico de proteção', 'm²', up(A * 0.3)]
+];
+const REBOCO_MAT = (A) => [
+  ['Cimento (saco 50 kg)', 'saco', up(A * 0.2)],
+  ['Cal (saco 20 kg)', 'saco', up(A * 0.3)],
+  ['Areia média', 'm³', up(A * 0.025, 1)],
+  ['Chapisco: cimento (saco 50 kg)', 'saco', up(A * 0.05)],
+  ['Chapisco: areia grossa', 'm³', up(A * 0.005, 2)]
+];
+const PRE_MATERIAIS = {
+  // Pedreiro
+  'Pedreiro:parede': (m) => REBOCO_MAT(m.final),
+  'Pedreiro:teto': (m) => REBOCO_MAT(m.final),
+  'parede': (m) => REBOCO_MAT(m.final),
+  'piso': (m) => [
+    ['Piso (caixa de 2 m²)', 'caixa', up(m.final / 2)],
+    ['Argamassa AC (saco 20 kg)', 'saco', up(m.liquida * 5 / 20)],
+    ['Rejunte (kg)', 'kg', up(m.liquida * 0.4)],
+    ['Espaçador / nivelador (pacote 100)', 'pacote', up(m.liquida * 15 / 100)]
+  ],
+  'contrapiso': (m) => [
+    ['Cimento (saco 50 kg) — 4 cm', 'saco', up(m.final * 0.04 * 7)],
+    ['Areia média', 'm³', up(m.final * 0.04 * 1.2, 1)]
+  ],
+  'muro': (m) => [
+    ['Bloco / tijolo (12,5 por m²)', 'un', up(m.final * 12.5 * 1.05)],
+    ['Cimento (saco 50 kg)', 'saco', up(m.final * 0.5)],
+    ['Cal (saco 20 kg)', 'saco', up(m.final * 0.6)],
+    ['Areia média', 'm³', up(m.final * 0.06, 1)],
+    ['Ferro 3/8 (barra 12 m)', 'barra', up(Number(m.pc.a) / 3 * 2)]
+  ],
+  'calcada': (m) => [
+    ['Cimento (saco 50 kg) — 6 cm', 'saco', up(m.final * 0.06 * 7)],
+    ['Areia média', 'm³', up(m.final * 0.06 * 0.5, 1)],
+    ['Brita', 'm³', up(m.final * 0.06 * 0.8, 1)]
+  ],
+  // Pintor
+  'Pintor:parede': (m) => PINTURA_MAT(m.final),
+  'Pintor:teto': (m) => PINTURA_MAT(m.final),
+  'fachada': (m) => PINTURA_MAT(m.final).concat([['Textura / acrílica fachada (opcional)', 'L', up(m.final / 3, 1)]]),
+  'Pintor:grade': (m) => [
+    ['Esmalte (2 demãos, 2 faces)', 'L', up(m.final * 4 / 12, 1)],
+    ['Fundo / zarcão', 'L', up(m.final * 2 / 12, 1)],
+    ['Lixa de ferro', 'folha', up(m.final)],
+    ['Thinner / solvente', 'L', up(m.final / 8, 1)]
+  ],
+  'Pintor:portas_un': (m) => [
+    ['Esmalte (2 faces, 2 demãos)', 'L', up(m.final * 0.9, 1)],
+    ['Lixa', 'folha', up(m.final * 2)],
+    ['Massa para madeira (kg)', 'kg', up(m.final * 0.3, 1)]
+  ],
+  // Serralheiro
+  'grade': (m) => serralheriaMat(m.pc, false),
+  'portao': (m) => serralheriaMat(m.pc, true),
+  'corrimao': (m) => [
+    ['Tubo (barra 6 m)', 'barra', up(m.final * 1.5 / 6)],
+    ['Suporte / chumbador', 'un', up(m.final) + (Number(m.pc.b) || 1)],
+    ['Eletrodo (kg)', 'kg', up(m.final / 10, 1)],
+    ['Disco de corte / desbaste', 'un', up(m.final / 8) + 1],
+    ['Fundo / zarcão', 'L', up(m.final / 15, 1)]
+  ],
+  'metalon': (m) => [
+    ['Metalon (barra 6 m)', 'barra', up(m.final * 1.05 / 6)],
+    ['Eletrodo (kg)', 'kg', up(m.final / 15, 1)],
+    ['Disco de corte', 'un', up(m.final / 20) + 1],
+    ['Fundo / zarcão', 'L', up(m.final / 20, 1)]
+  ],
+  // Eletricista
+  'fiacao': (m) => [
+    ['Fio / cabo (rolo 100 m)', 'rolo', up(m.final / 100)],
+    ['Fita isolante', 'rolo', up(m.final / 50)],
+    ['Conector de emenda', 'un', up(m.final / 5)]
+  ],
+  'eletroduto': (m) => [
+    ['Eletroduto (barra 3 m)', 'barra', up(m.final / 3)],
+    ['Luva', 'un', up(m.final / 3)],
+    ['Curva', 'un', up(m.final / 5)],
+    ['Abraçadeira', 'un', up(m.final)],
+    ['Bucha e parafuso', 'un', up(m.final)]
+  ],
+  'pontos_eletricos': (m) => [
+    ['Caixa 4×2', 'un', m.final],
+    ['Módulo (tomada / interruptor)', 'un', m.final],
+    ['Placa / espelho', 'un', m.final],
+    ['Fio para os pontos (aprox.)', 'm', m.final * 6],
+    ['Fita isolante', 'rolo', up(m.final / 10)]
+  ],
+  'luminarias': (m) => [
+    ['Lâmpada', 'un', m.final],
+    ['Soquete / luminária', 'un', m.final],
+    ['Fio (aprox.)', 'm', m.final * 4],
+    ['Conector', 'un', m.final * 2]
+  ],
+  'quadro': (m) => [
+    ['Disjuntores (confira os circuitos)', 'un', m.final * 8],
+    ['DR (diferencial)', 'un', m.final],
+    ['Barramento / pente', 'un', m.final],
+    ['Terminais e anilhas (pacote)', 'pacote', m.final]
+  ],
+  // Encanador
+  'tubulacao': (m) => [
+    ['Cano (barra 6 m)', 'barra', up(m.final / 6)],
+    ['Luva', 'un', up(m.final / 6)],
+    ['Joelho / curva', 'un', up(m.final / 3)],
+    ['Tê', 'un', up(m.final / 6)],
+    ['Cola para PVC (frasco)', 'un', up(m.final / 20)],
+    ['Veda-rosca', 'rolo', up(m.final / 30)]
+  ],
+  'pontos_agua': (m) => [
+    ['Conexões (joelho, tê, luva)', 'un', m.final * 3],
+    ['Registro', 'un', m.final],
+    ['Cano (aprox.)', 'm', m.final * 3],
+    ['Cola para PVC (frasco)', 'un', up(m.final / 5)],
+    ['Veda-rosca', 'rolo', up(m.final / 3)]
+  ],
+  'caixa_dagua': (m) => [
+    ['Flange', 'un', m.final * 2],
+    ['Torneira boia', 'un', m.final],
+    ['Registro', 'un', m.final],
+    ['Veda-rosca', 'rolo', m.final]
+  ],
+  // Gesseiro
+  'forro': (m) => [
+    ['Placa de gesso / drywall (1,20 × 2,40)', 'placa', up(m.final * 1.05 / 2.88)],
+    ['Perfil / canaleta (barra 3 m)', 'barra', up(m.final / 0.6 / 3)],
+    ['Tabica / cantoneira de borda (barra 3 m)', 'barra', up(2 * ((Number(m.pc.a) || 0) + (Number(m.pc.b) || 0)) / 3)],
+    ['Tirante / pendural', 'un', up(m.final * 1.5)],
+    ['Parafuso (pacote 100)', 'pacote', up(m.final * 15 / 100)],
+    ['Massa para juntas (kg)', 'kg', up(m.final * 0.5)],
+    ['Fita para juntas (rolo 90 m)', 'rolo', up(m.final * 1.5 / 90)]
+  ],
+  'drywall': (m) => [
+    ['Placa drywall (1,20 × 2,40) — 2 faces', 'placa', up(m.final * 2 * 1.05 / 2.88)],
+    ['Montante (barra 3 m)', 'barra', up((Number(m.pc.a) || 0) / 0.6) + 1],
+    ['Guia (barra 3 m)', 'barra', up(2 * (Number(m.pc.a) || 0) / 3)],
+    ['Parafuso (pacote 100)', 'pacote', up(m.final * 30 / 100)],
+    ['Massa para juntas (kg)', 'kg', up(m.final * 0.8)],
+    ['Fita para juntas (rolo 90 m)', 'rolo', up(m.final * 2 / 90)]
+  ],
+  'sanca': (m) => [
+    ['Moldura / tabica (barra 3 m)', 'barra', up(m.final / 3)],
+    ['Gesso em pó (saco 40 kg)', 'saco', up(m.final / 10)],
+    ['Sisal (kg)', 'kg', up(m.final / 8, 1)],
+    ['Parafuso / arame', 'un', up(m.final * 3)]
+  ],
+  // Marceneiro
+  'movel': (m) => {
+    const portas = Math.max(1, up((Number(m.pc.a) || 0) / 0.45));
+    return [
+      ['Chapa MDF (2,75 × 1,85)', 'chapa', up(m.final * 2.5 / 5.09)],
+      ['Fita de borda', 'm', up(m.final * 6)],
+      ['Dobradiça', 'un', portas * 2],
+      ['Puxador', 'un', portas],
+      ['Corrediça (par)', 'par', up(portas / 2)],
+      ['Parafuso (pacote 100)', 'pacote', up(m.final / 2)]
+    ];
+  },
+  'prateleira': (m) => [
+    ['Tábua / MDF', 'm', up(m.final, 1)],
+    ['Mão francesa / suporte', 'un', (Number(m.pc.b) || 1) * 2],
+    ['Bucha e parafuso', 'un', (Number(m.pc.b) || 1) * 4]
+  ],
+  'Marceneiro:portas_un': (m) => [
+    ['Dobradiça', 'un', m.final * 3],
+    ['Fechadura', 'un', m.final],
+    ['Batente / guarnição (kit)', 'kit', m.final]
+  ],
+  // Vidraceiro
+  'vidro': (m) => [
+    ['Vidro', 'm²', up(m.final * 1.05, 2)],
+    ['Silicone (tubo)', 'tubo', up(2 * ((Number(m.pc.a) || 0) + (Number(m.pc.b) || 0)) / 8)],
+    ['Gaxeta / borracha', 'm', up(2 * ((Number(m.pc.a) || 0) + (Number(m.pc.b) || 0)))]
+  ],
+  'box': (m) => [
+    ['Vidro temperado 8 mm', 'm²', up(m.final, 2)],
+    ['Kit de ferragens do box', 'kit', 1],
+    ['Silicone (tubo)', 'tubo', 1],
+    ['Bucha e parafuso', 'un', 8]
+  ],
+  'espelho': (m) => [
+    ['Espelho', 'm²', up(m.final, 2)],
+    ['Cola para espelho (tubo)', 'tubo', up(m.final * 1.5)],
+    ['Fita dupla face', 'm', up(m.final * 4)]
+  ],
+  // Calheiro
+  'calha': (m) => {
+    const lados = Math.max(1, Math.round(Number(m.pc.b) || 1)), comp = Number(m.pc.a) || 0;
+    const barras = up(m.final / 3), emendas = Math.max(0, barras - lados), cabeceiras = 2 * lados, suportes = (up(comp / 0.5) + 1) * lados, bocais = up(comp / 10) * lados;
+    return [
+      ['Calha (barra 3 m)', 'barra', barras],
+      ['Emenda', 'un', emendas],
+      ['Cabeceira (tampa)', 'un', cabeceiras],
+      ['Suporte (a cada 50 cm)', 'un', suportes],
+      ['Bocal de saída', 'un', bocais],
+      ['Parafuso com bucha', 'un', suportes * 2],
+      ['Rebite', 'un', emendas * 8 + cabeceiras * 4 + bocais * 6],
+      ['Selante PU (tubo)', 'tubo', Math.max(1, up((emendas + cabeceiras + bocais) / 4))]
+    ];
+  },
+  'rufo': (m) => [
+    ['Rufo (barra 3 m)', 'barra', up(m.final / 3)],
+    ['Parafuso com bucha', 'un', up(m.final / 0.5)],
+    ['Rebite', 'un', up(m.final / 3) * 6],
+    ['Selante PU (tubo)', 'tubo', Math.max(1, up(m.final / 6))]
+  ],
+  'condutor': (m) => {
+    const desc = Math.max(1, Math.round(Number(m.pc.b) || 1)), alt = Number(m.pc.a) || 0;
+    return [
+      ['Condutor (tubo 3 m)', 'tubo', up(alt / 3) * desc],
+      ['Curva / joelho', 'un', 2 * desc],
+      ['Braçadeira (a cada 1 m)', 'un', up(alt) * desc],
+      ['Parafuso com bucha', 'un', up(alt) * desc * 2],
+      ['Selante PU (tubo)', 'tubo', Math.max(1, up(desc / 2))]
+    ];
+  },
+  'telhado': (m) => [
+    ['Telha cerâmica (16 por m²)', 'un', up(m.final * 16 * 1.05)],
+    ['Cumeeira', 'un', up((Number(m.pc.a) || 0) * 3)],
+    ['Prego / parafuso para telha (kg)', 'kg', up(m.final * 0.05, 1)],
+    ['Manta / subcobertura (opcional)', 'm²', up(m.final * 1.1)]
+  ],
+  // Climatização e câmeras
+  'aparelhos_ar': (m) => [
+    ['Suporte para condensadora', 'un', m.final],
+    ['Tubo de cobre (par, aprox.)', 'm', m.final * 3],
+    ['Isolamento térmico', 'm', m.final * 6],
+    ['Cabo PP', 'm', m.final * 4],
+    ['Mangueira de dreno', 'm', m.final * 3],
+    ['Fita PVC', 'rolo', m.final],
+    ['Bucha e parafuso', 'un', m.final * 6]
+  ],
+  'tubo_cobre': (m) => [
+    ['Tubo de cobre (2 bitolas)', 'm', up(m.final * 2, 1)],
+    ['Isolamento térmico', 'm', up(m.final * 2, 1)],
+    ['Cabo PP', 'm', up(m.final, 1)],
+    ['Fita PVC', 'rolo', up(m.final / 5)]
+  ],
+  'cameras': (m) => [
+    ['Câmera', 'un', m.final],
+    ['Fonte', 'un', m.final],
+    ['Conector BNC', 'un', m.final * 2],
+    ['Conector P4', 'un', m.final],
+    ['Caixa de passagem', 'un', m.final],
+    ['Cabo (aprox.)', 'm', m.final * 20]
+  ],
+  'cabeamento': (m) => [
+    ['Cabo (caixa 305 m)', 'caixa', up(m.final / 305)],
+    ['Abraçadeira / fixa-fio', 'un', up(m.final)],
+    ['Conector', 'un', (Number(m.pc.b) || 1) * 2]
+  ],
+  // Jardinagem e marmorista
+  'grama': (m) => [
+    ['Grama (placas)', 'm²', up(m.final * 1.05)],
+    ['Terra adubada (saco 25 kg)', 'saco', up(m.final / 2)],
+    ['Adubo (kg)', 'kg', up(m.final * 0.1, 1)]
+  ],
+  'cerca_viva': (m) => [
+    ['Muda', 'un', up(m.final / 0.5)],
+    ['Terra adubada (saco 25 kg)', 'saco', up(m.final / 2)],
+    ['Adubo (kg)', 'kg', up(m.final * 0.2, 1)]
+  ],
+  'arvores': (m) => [['Saco para resíduos', 'un', m.final * 3]],
+  'bancada': (m) => [
+    ['Pedra (granito / mármore)', 'm²', up(m.final * 1.1, 2)],
+    ['Silicone (tubo)', 'tubo', up(2 * ((Number(m.pc.a) || 0) + (Number(m.pc.b) || 0)) / 8)],
+    ['Cola / massa plástica (kg)', 'kg', up(m.final * 0.5, 1)],
+    ['Mão francesa / suporte', 'un', up((Number(m.pc.a) || 0) / 0.8) + 1]
+  ],
+  'soleira': (m) => [
+    ['Pedra', 'm', up(m.final, 1)],
+    ['Argamassa / cola (kg)', 'kg', up(m.final * 0.5)]
+  ],
+  'cuba': (m) => [
+    ['Silicone (tubo)', 'tubo', m.final],
+    ['Válvula', 'un', m.final],
+    ['Sifão', 'un', m.final]
+  ],
+  // Outros ofícios
+  'fechaduras': (m) => [['Fechadura / cilindro', 'un', m.final], ['Cópia de chave', 'un', m.final * 2]],
+  'estofado': (m) => [['Tecido (aprox.)', 'm', m.final * 3], ['Espuma', 'm²', m.final], ['Grampo (caixa)', 'caixa', up(m.final / 2)]],
+  'tecido': (m) => [['Tecido', 'm', up(m.final, 1)], ['Grampo (caixa)', 'caixa', up((Number(m.pc.b) || 1) / 2)]],
+  'frete_km': (m) => [['Combustível (8 km/L, aprox.)', 'L', up(m.final / 8, 1)]],
+  'volumes': (m) => [['Fita adesiva (rolo)', 'rolo', up(m.final / 5)], ['Plástico bolha / filme', 'm', m.final * 2], ['Cobertor de proteção', 'un', up(m.final / 4)]],
+  'comodos': (m) => [['Kit de produtos de limpeza', 'kit', up(m.final / 3)], ['Saco de lixo', 'un', m.final * 2]],
+  'piscina': (m) => [
+    ['Cloro granulado (dose de choque)', 'kg', up(m.final * 0.014, 1)],
+    ['Algicida', 'L', up(m.final * 0.006, 1)],
+    ['Clarificante', 'L', up(m.final * 0.004, 1)],
+    ['Barrilha / ajuste de pH', 'kg', up(m.final * 0.01, 1)]
+  ],
+  'volume': (m) => [
+    ['Cimento (saco 50 kg)', 'saco', up(m.final * 7)],
+    ['Areia média', 'm³', up(m.final * 0.6, 1)],
+    ['Brita', 'm³', up(m.final * 0.8, 1)]
+  ]
+};
+function serralheriaMat(pc, portao) {
+  const L = Number(pc.a) || 0, A = Number(pc.b) || 0, barras = up(L / 0.12) + 1, metros = barras * A + 2 * L + 2 * A;
+  const l = [
+    ['Metalon / barra (barra 6 m)', 'barra', up(metros * 1.05 / 6)],
+    ['Eletrodo (kg)', 'kg', up(metros / 20, 1)],
+    ['Disco de corte', 'un', up(metros / 20) + 1],
+    ['Fundo / zarcão', 'L', up(L * A * 2 / 10, 1)]
+  ];
+  if (portao) l.push(['Roldana / dobradiça', 'un', 2], ['Trilho', 'm', up(L * 2, 1)], ['Fechadura / trinco', 'un', 1]);
+  return l;
+}
+// Lista de materiais da medida: regra da profissão + tipo, ou só do tipo; respeita o que a pessoa mudou ou tirou
+function materiaisPeca(pc) {
+  const regra = PRE_MATERIAIS[profPre(pc) + ':' + pc.tipo] || PRE_MATERIAIS[pc.tipo];
+  const m = Object.assign({ pc }, medidaPeca(pc)); if (!regra || !(m.final > 0)) return [];
+  let l = []; try { l = regra(m) || []; } catch (_) { l = []; }
+  const ed = pc.matQtd || {}, off = pc.matOff || [];
+  return l.filter(x => x[2] > 0 || ed[x[0]] != null).map(([nome, un, q]) => ({ nome, un, calc: q, qtd: ed[nome] != null ? ed[nome] : q, mudou: ed[nome] != null, fora: off.includes(nome) }));
+}
+function fmtQtdMat(q) { return (Number(q) || 0).toLocaleString('pt-BR', { maximumFractionDigits: 2 }); }
+function renderMateriaisPre() {
+  const host = document.getElementById('pre-mats'); if (!host) return;
+  const pc = preAtual.pecas[prePecaIdx], l = materiaisPeca(pc);
+  if (!l.length) { host.innerHTML = ''; host.style.display = 'none'; return; }
+  host.style.display = '';
+  host.innerHTML = '<h4>🧰 Materiais (estimativa)</h4><p class="hint-sm">Quantidades aproximadas, pelas médias de mercado. Mude o número se o seu costume for outro. Desmarque o que não vai entrar no orçamento.</p>';
+  l.forEach(it => {
+    const row = document.createElement('div'); row.className = 'pre-mat' + (it.fora ? ' fora' : '');
+    row.innerHTML = '<label class="pre-mat-ck"><input type="checkbox"' + (it.fora ? '' : ' checked') + ' aria-label="Incluir no orçamento"></label><span class="pre-mat-nome"></span><input type="text" inputmode="decimal" class="pre-mat-q" data-mic="0" aria-label="Quantidade"><em></em>';
+    row.querySelector('.pre-mat-nome').textContent = it.nome + (it.mudou ? ' ✎' : '');
+    row.querySelector('em').textContent = it.un;
+    const q = row.querySelector('.pre-mat-q'); q.value = fmtQtdMat(it.qtd);
+    row.querySelector('input[type=checkbox]').onchange = ev => {
+      const off = (pc.matOff || []).filter(n => n !== it.nome); if (!ev.target.checked) off.push(it.nome);
+      pc.matOff = off; row.classList.toggle('fora', !ev.target.checked); salvarPreAtual(); renderPreResumo();
+    };
+    q.oninput = () => {
+      pc.matQtd = pc.matQtd || {};
+      const t = q.value.trim(); if (t === '') delete pc.matQtd[it.nome]; else pc.matQtd[it.nome] = parseQtd(t) || 0;
+      salvarPreAtual(); renderPreResumo();
+    };
+    host.appendChild(row);
+  });
+  if (Object.keys(pc.matQtd || {}).length) {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'btn-text'; b.textContent = '↺ Voltar às quantidades calculadas';
+    b.onclick = () => { pc.matQtd = {}; salvarPreAtual(); renderMateriaisPre(); renderPreResumo(); };
+    host.appendChild(b);
+  }
+}
+// Soma dos materiais de todas as medidas (mesmo nome e unidade)
+function materiaisTodos() {
+  const t = {};
+  (preAtual ? preAtual.pecas : []).forEach(pc => materiaisPeca(pc).forEach(it => {
+    if (it.fora || !(it.qtd > 0)) return;
+    const k = it.nome + '|' + it.un; t[k] = t[k] || { nome: it.nome, un: it.un, qtd: 0 }; t[k].qtd += Number(it.qtd) || 0;
+  }));
+  return Object.values(t).map(x => Object.assign(x, { qtd: Math.round(x.qtd * 100) / 100 }));
+}
 function renderPreResumo() {
   const host = document.getElementById('pre-resumo'); if (!host || !preAtual) return;
   const porTipo = {};
@@ -6156,6 +6529,8 @@ function renderPreResumo() {
     h += '<div class="pre-res-linha"><span>' + esc(nomePeca(pc, i)) + ' · ' + esc(textoMedidas(pc)) + '</span><b>' + fmtMedida(pc, m.final) + '</b></div>';
   });
   if (preAtual.pecas.length > 1) h += Object.keys(porTipo).map(k => { const t = k.split('|')[0], pc = { tipo: t }; return '<div class="pre-res-linha"><span><b style="color:inherit">Total ' + PRE_TIPOS[t].nome.toLowerCase() + '</b></span><b style="color:#2BD67B">' + fmtMedida(pc, Math.round(porTipo[k] * 100) / 100) + '</b></div>'; }).join('');
+  const mats = materiaisTodos();
+  if (mats.length) h += '<h4 style="margin:14px 0 4px">🧰 Materiais de todas as medidas</h4>' + mats.map(x => '<div class="pre-res-linha"><span>' + esc(x.nome) + '</span><b>' + fmtQtdMat(x.qtd) + ' ' + esc(x.un) + '</b></div>').join('');
   host.innerHTML = h;
 }
 document.addEventListener('input', function (e) {
@@ -6185,10 +6560,12 @@ document.addEventListener('click', function (e) {
   if (!preAtual) return;
   const tp = e.target.closest && e.target.closest('#pre-peca .pre-tipo');
   if (tp) {
-    const pc = preAtual.pecas[prePecaIdx], antes = defPre(pc).tipo, novo = novaPecaPre(tp.dataset.tipo, profPre(pc));
-    pc.tipo = novo.tipo; pc.prof = novo.prof; pc.servico = '';
+    const pc = preAtual.pecas[prePecaIdx], antes = defPre(pc).tipo, velho = novaPecaPre(pc.tipo, profPre(pc)), novo = novaPecaPre(tp.dataset.tipo, profPre(pc));
+    // medida ainda no padrão do tipo anterior (não foi mexida): começa com o padrão do tipo novo
+    const intacta = pc.a === velho.a && pc.b === velho.b && (pc.c || 0) === (velho.c || 0);
+    pc.tipo = novo.tipo; pc.prof = novo.prof; pc.servico = ''; pc.matQtd = {}; pc.matOff = [];
     if (novo.perda != null && !pc.perda) pc.perda = novo.perda;
-    if (defPre(pc).tipo !== antes) Object.assign(pc, { a: novo.a, b: novo.b, c: novo.c, perda: novo.perda, descontos: [] });
+    if (defPre(pc).tipo !== antes || intacta) Object.assign(pc, { a: novo.a, b: novo.b, c: novo.c, perda: novo.perda, descontos: defPre(pc).descontos ? (pc.descontos || []) : [] });
     salvarPreAtual(); renderPreEditor(); return;
   }
   const ad = e.target.closest && e.target.closest('#pre-peca [data-add]');
@@ -6225,11 +6602,18 @@ function transformarPreEmOrcamento() {
       det.value = t;
     }
   });
+  const mats = materiaisTodos(), precosMat = (typeof lerPrecosCalc === 'function') ? lerPrecosCalc() : {};
+  mats.forEach(x => {
+    const p = precoServico(x.nome), un = ['m', 'm²', 'm³'].includes(x.un) ? x.un : 'un';
+    colocarItemNoOrcamento({ desc: x.nome, qtd: x.qtd, un, valor: p ? p.valor : (Number(precosMat[x.nome]) || 0) });
+    const rows = document.querySelectorAll('#itens-container .item-row'), row = rows[rows.length - 1], det = row && row.querySelector('.item-detalhes');
+    if (det) det.value = 'Material · ' + fmtQtdMat(x.qtd) + ' ' + x.un;
+  });
   if (typeof renumerarItens === 'function') renumerarItens();
   if (typeof atualizarTotalOrcamento === 'function') atualizarTotalOrcamento();
   const a = lerPres(), i = a.findIndex(x => x.id === pr.id); if (i >= 0) { a[i].virouOrcamento = Date.now(); gravarPres(a); }
   const sem = pecas.filter(pc => !precoServico((pc.servico || '').trim() || servicoPadraoPre(pc))).length;
-  try { orcaonToast(pecas.length + (pecas.length > 1 ? ' medidas viraram itens.' : ' medida virou item.') + (sem ? ' Coloque o valor dos itens sem preço.' : '')); } catch (_) {}
+  try { orcaonToast(pecas.length + (pecas.length > 1 ? ' medidas' : ' medida') + (mats.length ? ' e ' + mats.length + ' materiais' : '') + ' no orçamento. Coloque o valor do que ficou sem preço.'); } catch (_) {}
 }
 // Coloca um item no orçamento: usa a primeira linha vazia ou cria uma nova
 function colocarItemNoOrcamento(it) {
