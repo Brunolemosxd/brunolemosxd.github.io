@@ -767,13 +767,20 @@ body {
 .pre-med .calc-campo input{font-size:18px;font-weight:800}
 .pre-desenho{background:#0a1826;border:1px dashed rgba(244,196,48,.45);border-radius:14px;margin:12px 0;display:flex;justify-content:center;padding:4px}
 .pre-desenho svg{width:100%;max-width:360px;height:auto;display:block}
+.pre-med3{grid-template-columns:1fr 1fr 1fr}
+.pre-med3 .calc-campo input{font-size:16px;padding-right:30px!important}
+.pre-med3 .calc-campo em{right:8px}
+.pre-tipos-sep{flex-basis:100%;font-size:12px;color:var(--text-secondary);margin-top:4px}
+.pre-tipo.geral{border-style:dashed}
+#pre-prof{margin-bottom:4px}
 .pre-desc-linha{display:grid;grid-template-columns:1fr 70px 70px 32px;gap:6px;align-items:center;margin-top:6px}
 .pre-desc-linha input{padding:9px 8px!important;font-size:14px!important;text-align:center}
 .pre-desc-linha input.pre-dn{text-align:left}
 .pre-desc-linha button{border:0;background:transparent;color:#ef4444;font-size:20px;cursor:pointer}
 .pre-desc-bts{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 .pre-area{display:flex;justify-content:space-between;align-items:center;margin-top:12px;padding:10px 12px;border-radius:12px;background:rgba(43,214,123,.10);border:1px solid rgba(43,214,123,.4);font-weight:800}
-.pre-area b{color:#2BD67B;font-size:18px}
+.pre-area{gap:10px}
+.pre-area b{color:#2BD67B;font-size:18px;white-space:nowrap}
 .pre-res-linha{display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px solid var(--border);font-size:14px}
 .pre-res-linha:last-child{border-bottom:0}
 .pre-res-linha b{color:var(--accent,#F4C430);white-space:nowrap}
@@ -5794,20 +5801,108 @@ document.addEventListener('input', function (e) {
 });
 // ===== Pré-orçamento: medidas na visita, desenho na hora, depois vira orçamento =====
 const PRE_KEY = 'orcaon_pre_orcamentos';
+// Tipos de medida. tipo: area (m²), linear (metros), un (quantidade) ou volume (m³).
+// servico: palavras procuradas nas sugestões da profissão, na ordem de preferência.
 const PRE_TIPOS = {
-  // servico: palavras procuradas nas sugestões da profissão, na ordem de preferência
-  parede: { nome: 'Parede', a: 'Comprimento', b: 'Altura', cor: 'tijolo', servico: [/reboco/i, /pintura de parede/i, /chapisco/i, /emboço/i, /textura/i, /revestimento/i, /alvenaria/i, /parede/i] },
-  piso:   { nome: 'Piso', a: 'Comprimento', b: 'Largura', cor: 'piso', servico: [/assentamento de piso/i, /piso/i, /porcelanato/i, /cerâmica/i, /contrapiso/i] },
-  teto:   { nome: 'Laje / teto', a: 'Comprimento', b: 'Largura', cor: 'teto', servico: [/forro/i, /teto/i, /gesso/i, /drywall/i, /laje/i] },
-  vidro:  { nome: 'Vidro', a: 'Largura', b: 'Altura', cor: 'vidro', servico: [/vidro/i, /janela/i, /box/i, /espelho/i] },
-  outro:  { nome: 'Outro', a: 'Comprimento', b: 'Largura', cor: 'outro', servico: [] }
+  // área
+  parede:     { nome: 'Parede', tipo: 'area', a: 'Comprimento', b: 'Altura', vis: 'tijolo', descontos: true, padrao: [4, 2.8], servico: [/reboco/i, /pintura de parede/i, /chapisco/i, /emboço/i, /textura/i, /revestimento/i, /alvenaria/i, /parede/i] },
+  piso:       { nome: 'Piso', tipo: 'area', a: 'Comprimento', b: 'Largura', vis: 'piso', perda: 10, servico: [/assentamento de piso/i, /piso/i, /porcelanato/i, /cerâmica/i] },
+  contrapiso: { nome: 'Contrapiso', tipo: 'area', a: 'Comprimento', b: 'Largura', vis: 'cimento', servico: [/contrapiso/i, /piso/i] },
+  teto:       { nome: 'Laje / teto', tipo: 'area', a: 'Comprimento', b: 'Largura', vis: 'teto', servico: [/forro/i, /teto/i, /laje/i, /gesso/i, /drywall/i] },
+  muro:       { nome: 'Muro', tipo: 'area', a: 'Comprimento', b: 'Altura', vis: 'tijolo', padrao: [10, 2], servico: [/muro/i, /alvenaria/i, /reboco/i] },
+  calcada:    { nome: 'Calçada', tipo: 'area', a: 'Comprimento', b: 'Largura', vis: 'cimento', padrao: [10, 1.5], servico: [/calçada/i, /contrapiso/i, /piso/i] },
+  fachada:    { nome: 'Fachada', tipo: 'area', a: 'Comprimento', b: 'Altura', vis: 'pintura', descontos: true, padrao: [8, 3], servico: [/fachada/i, /pintura/i, /textura/i] },
+  grade:      { nome: 'Grade', tipo: 'area', a: 'Largura', b: 'Altura', vis: 'metal', padrao: [2, 1.2], servico: [/grade/i, /esmalte/i, /pintura/i, /serralheria/i] },
+  portao:     { nome: 'Portão', tipo: 'area', a: 'Largura', b: 'Altura', vis: 'metal', padrao: [3, 2.2], servico: [/portão/i, /serralheria/i] },
+  forro:      { nome: 'Forro', tipo: 'area', a: 'Comprimento', b: 'Largura', vis: 'gesso', servico: [/forro/i, /gesso/i, /drywall/i] },
+  drywall:    { nome: 'Parede de drywall', tipo: 'area', a: 'Comprimento', b: 'Altura', vis: 'gesso', descontos: true, padrao: [4, 2.7], servico: [/drywall/i, /parede/i, /gesso/i] },
+  movel:      { nome: 'Móvel (frente)', tipo: 'area', a: 'Largura', b: 'Altura', vis: 'madeira', padrao: [2, 2.2], servico: [/armário/i, /móvel/i, /cozinha/i, /marcenaria/i] },
+  vidro:      { nome: 'Vidro', tipo: 'area', a: 'Largura', b: 'Altura', vis: 'vidro', padrao: [1, 1], servico: [/vidro/i, /janela/i, /box/i, /espelho/i] },
+  box:        { nome: 'Box de banheiro', tipo: 'area', a: 'Largura', b: 'Altura', vis: 'vidro', padrao: [1.2, 1.9], servico: [/box/i, /vidro/i] },
+  espelho:    { nome: 'Espelho', tipo: 'area', a: 'Largura', b: 'Altura', vis: 'vidro', padrao: [1, 0.8], servico: [/espelho/i, /vidro/i] },
+  telhado:    { nome: 'Telhado', tipo: 'area', a: 'Comprimento', b: 'Largura', vis: 'telha', padrao: [8, 6], servico: [/telhado/i, /telha/i, /cobertura/i] },
+  grama:      { nome: 'Grama / gramado', tipo: 'area', a: 'Comprimento', b: 'Largura', vis: 'grama', padrao: [10, 5], servico: [/grama/i, /plantio/i, /roçada/i, /roçagem/i, /jardim/i] },
+  bancada:    { nome: 'Bancada / tampo', tipo: 'area', a: 'Comprimento', b: 'Profundidade', vis: 'pedra', padrao: [2, 0.6], servico: [/bancada/i, /pia/i, /tampo/i, /granito/i, /mármore/i] },
+  outro:      { nome: 'Área (m²)', tipo: 'area', a: 'Comprimento', b: 'Largura', vis: 'outro', servico: [] },
+  // metros (linear)
+  fiacao:     { nome: 'Fiação', tipo: 'linear', bRot: 'Quantos fios', cor: '#ef4444', perda: 10, padrao: [20, 2], servico: [/fiação/i, /fio/i, /cabo/i, /passagem/i] },
+  eletroduto: { nome: 'Eletroduto', tipo: 'linear', bRot: 'Quantos trechos iguais', cor: '#9ca3af', padrao: [15, 1], servico: [/eletroduto/i, /tubula/i, /infra/i] },
+  tubulacao:  { nome: 'Tubulação (cano)', tipo: 'linear', bRot: 'Quantos trechos iguais', cor: '#e5e7eb', perda: 5, padrao: [12, 1], servico: [/tubula/i, /cano/i, /encanamento/i, /hidráulica/i] },
+  sanca:      { nome: 'Sanca / moldura', tipo: 'linear', bRot: 'Quantas vezes', cor: '#f1f5f9', padrao: [12, 1], servico: [/sanca/i, /moldura/i, /tabica/i] },
+  prateleira: { nome: 'Prateleira / tampo', tipo: 'linear', bRot: 'Quantas peças', cor: '#a0703e', padrao: [1.2, 3], servico: [/prateleira/i, /tampo/i] },
+  corrimao:   { nome: 'Corrimão / guarda-corpo', tipo: 'linear', bRot: 'Quantos lados', cor: '#94a3b8', padrao: [4, 1], servico: [/corrimão/i, /guarda/i] },
+  metalon:    { nome: 'Estrutura (metalon)', tipo: 'linear', bRot: 'Quantas barras', cor: '#94a3b8', padrao: [6, 4], servico: [/metalon/i, /estrutura/i, /serralheria/i] },
+  calha:      { nome: 'Calha', tipo: 'linear', bRot: 'Quantos lados', cor: '#cbd5e1', perda: 5, padrao: [12, 1], servico: [/calha/i] },
+  rufo:       { nome: 'Rufo', tipo: 'linear', bRot: 'Quantos lados', cor: '#cbd5e1', padrao: [8, 1], servico: [/rufo/i] },
+  condutor:   { nome: 'Condutor vertical', tipo: 'linear', bRot: 'Quantas descidas', cor: '#cbd5e1', padrao: [3, 2], servico: [/condutor/i, /calha/i] },
+  tubo_cobre: { nome: 'Tubulação de cobre', tipo: 'linear', bRot: 'Quantos aparelhos', cor: '#d97706', padrao: [5, 1], servico: [/tubula/i, /cobre/i, /instalação/i] },
+  cabeamento: { nome: 'Cabeamento', tipo: 'linear', bRot: 'Quantos cabos', cor: '#3b82f6', perda: 10, padrao: [30, 1], servico: [/cabo/i, /cabeamento/i, /instalação/i] },
+  cerca_viva: { nome: 'Cerca viva / poda', tipo: 'linear', bRot: 'Quantos lados', cor: '#22c55e', padrao: [10, 1], servico: [/cerca/i, /poda/i, /jardim/i] },
+  soleira:    { nome: 'Soleira / rodapé', tipo: 'linear', bRot: 'Quantas peças', cor: '#d6d3d1', padrao: [3, 1], servico: [/soleira/i, /rodapé/i, /filete/i] },
+  tecido:     { nome: 'Tecido', tipo: 'linear', bRot: 'Quantas peças', cor: '#a855f7', padrao: [3, 1], servico: [/tecido/i, /reforma/i] },
+  frete_km:   { nome: 'Distância', tipo: 'linear', un: 'km', bRot: 'Quantas viagens', cor: '#F4C430', padrao: [20, 1], servico: [/frete/i, /mudança/i, /transporte/i] },
+  metros:     { nome: 'Metros (m)', tipo: 'linear', bRot: 'Quantas vezes', cor: '#F4C430', padrao: [10, 1], servico: [] },
+  // quantidade
+  pontos_eletricos: { nome: 'Tomadas e interruptores', tipo: 'un', icone: '🔌', padrao: [6], servico: [/tomada/i, /interruptor/i, /ponto/i] },
+  luminarias: { nome: 'Luminárias / lâmpadas', tipo: 'un', icone: '💡', padrao: [4], servico: [/luminária/i, /lâmpada/i, /iluminação/i, /spot/i] },
+  quadro:     { nome: 'Quadro / disjuntores', tipo: 'un', icone: '⚡', padrao: [1], servico: [/quadro/i, /disjuntor/i] },
+  pontos_agua: { nome: 'Pontos de água / esgoto', tipo: 'un', icone: '🚿', padrao: [3], servico: [/ponto/i, /torneira/i, /chuveiro/i, /instalação/i] },
+  caixa_dagua: { nome: "Caixa d'água", tipo: 'un', icone: '🛢️', padrao: [1], servico: [/caixa d/i, /limpeza/i] },
+  portas_un:  { nome: 'Portas / janelas', tipo: 'un', icone: '🚪', padrao: [3], servico: [/porta/i, /janela/i] },
+  aparelhos_ar: { nome: 'Aparelhos de ar', tipo: 'un', icone: '❄️', padrao: [1], servico: [/instalação/i, /split/i, /ar-condicionado/i, /limpeza/i, /higienização/i] },
+  cameras:    { nome: 'Câmeras', tipo: 'un', icone: '📹', padrao: [4], servico: [/câmera/i, /instalação/i] },
+  arvores:    { nome: 'Árvores / podas', tipo: 'un', icone: '🌳', padrao: [2], servico: [/poda/i, /árvore/i, /corte/i] },
+  cuba:       { nome: 'Cubas / recortes', tipo: 'un', icone: '🚰', padrao: [1], servico: [/cuba/i, /recorte/i, /furo/i] },
+  fechaduras: { nome: 'Fechaduras / portas', tipo: 'un', icone: '🔑', padrao: [1], servico: [/fechadura/i, /abertura/i, /cópia/i, /chave/i] },
+  estofado:   { nome: 'Peças (sofá, cadeira…)', tipo: 'un', icone: '🛋️', padrao: [1], servico: [/sofá/i, /estofado/i, /reforma/i, /cadeira/i] },
+  volumes:    { nome: 'Volumes / móveis', tipo: 'un', icone: '📦', padrao: [10], servico: [/mudança/i, /frete/i, /transporte/i] },
+  comodos:    { nome: 'Cômodos', tipo: 'un', icone: '🏠', padrao: [4], servico: [/limpeza/i, /faxina/i, /diária/i] },
+  pecas:      { nome: 'Peças / serviços', tipo: 'un', icone: '🔩', padrao: [1], servico: [/peça/i, /troca/i, /revisão/i] },
+  unidades:   { nome: 'Quantidade', tipo: 'un', icone: '▪️', padrao: [1], servico: [] },
+  // volume
+  piscina:    { nome: 'Piscina (água)', tipo: 'volume', a: 'Comprimento', b: 'Largura', c: 'Profundidade média', vis: 'agua', padrao: [6, 3, 1.4], servico: [/tratamento/i, /piscina/i, /limpeza/i] },
+  volume:     { nome: 'Volume (m³)', tipo: 'volume', a: 'Comprimento', b: 'Largura', c: 'Altura', vis: 'cimento', padrao: [2, 2, 0.1], servico: [/concreto/i, /contrapiso/i, /aterro/i] }
 };
+// Medidas de cada profissão (as gerais aparecem para todas, no fim)
+const PRE_PROFISSOES = {
+  'Pedreiro': ['parede', 'piso', 'contrapiso', 'teto', 'muro', 'calcada'],
+  'Pintor': ['parede', 'teto', 'fachada', 'grade', 'portas_un'],
+  'Eletricista': ['fiacao', 'eletroduto', 'pontos_eletricos', 'luminarias', 'quadro'],
+  'Encanador': ['tubulacao', 'pontos_agua', 'caixa_dagua'],
+  'Gesseiro': ['forro', 'drywall', 'sanca'],
+  'Marceneiro': ['movel', 'prateleira', 'portas_un'],
+  'Serralheiro': ['portao', 'grade', 'corrimao', 'metalon'],
+  'Vidraceiro': ['vidro', 'box', 'espelho'],
+  'Calheiro': ['calha', 'rufo', 'condutor', 'telhado'],
+  'Climatização': ['aparelhos_ar', 'tubo_cobre'],
+  'Inst. Câmeras': ['cameras', 'cabeamento'],
+  'Jardinagem': ['grama', 'cerca_viva', 'arvores'],
+  'Marmorista': ['bancada', 'soleira', 'cuba'],
+  'Manutenção de piscinas': ['piscina'],
+  'Chaveiro': ['fechaduras'],
+  'Estofador': ['estofado', 'tecido'],
+  'Freteiro': ['frete_km', 'volumes'],
+  'Diarista': ['comodos'],
+  'Mecânico': ['pecas'],
+  'Outro': []
+};
+const PRE_GERAIS = ['outro', 'metros', 'unidades', 'volume'];
+const PRE_UNIDADE = { area: 'm²', linear: 'm', un: 'un', volume: 'm³' };
+function defPre(pc) { return PRE_TIPOS[pc && pc.tipo] || PRE_TIPOS.outro; }
+function unPre(pc) { const d = defPre(pc); return d.tipo === 'linear' && d.un ? d.un : PRE_UNIDADE[d.tipo]; }
+function profPre(pc) { return (pc && pc.prof && PRE_PROFISSOES[pc.prof]) ? pc.prof : (PRE_PROFISSOES[profissaoAtual()] ? profissaoAtual() : 'Outro'); }
+function tiposDaProf(prof) { const l = PRE_PROFISSOES[prof] || []; return l.concat(PRE_GERAIS.filter(k => !l.includes(k))); }
 let preAtual = null, prePecaIdx = 0;
 // Plano grátis: 10 pré-orçamentos (conta quando ele começa a preencher); no Pro, sem limite
 const PRE_GRATIS = 10, PRE_USOS_KEY = 'orcaon_pre_usos';
 function preUsos() { try { return Math.max(0, parseInt(localStorage.getItem(PRE_USOS_KEY), 10) || 0); } catch (_) { return 0; } }
 function preTemPro() { return typeof usuarioTemPro === 'function' && usuarioTemPro(); }
-function preTemConteudo(pr) { return !!((pr.cliente || '').trim() || (pr.local || '').trim() || (pr.notas || '').trim() || (pr.pecas || []).some(pc => (pc.nome || '').trim() || (pc.descontos || []).length || pc.a !== novaPecaPre(pc.tipo).a || pc.b !== novaPecaPre(pc.tipo).b)); }
+function preTemConteudo(pr) {
+  return !!((pr.cliente || '').trim() || (pr.local || '').trim() || (pr.notas || '').trim() || (pr.pecas || []).some(pc => {
+    const n = novaPecaPre(pc.tipo, pc.prof);
+    return (pc.nome || '').trim() || (pc.descontos || []).length || pc.a !== n.a || pc.b !== n.b || (pc.c || 0) !== (n.c || 0);
+  }));
+}
 function contarPreSePreciso(pr) {
   if (!pr || pr.contado || preTemPro() || !preTemConteudo(pr)) return;
   const u = preUsos() + 1; pr.contado = true;
@@ -5825,27 +5920,36 @@ function salvarPreAtual() {
   if (i >= 0) a[i] = preAtual; else a.unshift(preAtual);
   gravarPres(a);
 }
-function tipoPadraoPre() {
-  const p = profissaoAtual();
-  if (p === 'Vidraceiro') return 'vidro';
-  if (p === 'Gesseiro') return 'teto';
-  if (p === 'Marmorista' || p === 'Marceneiro') return 'outro';
-  return 'parede';
+function novaPecaPre(tipo, prof) {
+  prof = prof && PRE_PROFISSOES[prof] ? prof : (PRE_PROFISSOES[profissaoAtual()] ? profissaoAtual() : 'Outro');
+  if (!tipo || !PRE_TIPOS[tipo]) tipo = tiposDaProf(prof)[0];
+  const d = PRE_TIPOS[tipo], p = d.padrao || [];
+  const base = d.tipo === 'linear' ? [10, 1] : d.tipo === 'un' ? [1] : d.tipo === 'volume' ? [2, 2, 0.1] : [4, 3];
+  return { id: Date.now() + Math.floor(Math.random() * 1000), prof, tipo, nome: '', a: p[0] != null ? p[0] : base[0], b: p[1] != null ? p[1] : (base[1] || 0), c: p[2] != null ? p[2] : (base[2] || 0), perda: d.perda || 0, descontos: [], servico: '' };
 }
-function novaPecaPre(tipo) {
-  tipo = tipo || tipoPadraoPre();
-  return { id: Date.now() + Math.floor(Math.random() * 1000), tipo, nome: '', a: tipo === 'vidro' ? 1 : 4, b: tipo === 'parede' ? 2.8 : (tipo === 'vidro' ? 1 : 3), perda: tipo === 'piso' ? 10 : 0, descontos: [], servico: '' };
-}
-function areaPeca(pc) {
-  const bruta = (Number(pc.a) || 0) * (Number(pc.b) || 0);
-  const desc = pc.tipo === 'parede' ? (pc.descontos || []).reduce((t, d) => t + (Number(d.l) || 0) * (Number(d.a) || 0), 0) : 0;
+// Resultado da medida: m², metros, unidades ou m³
+function medidaPeca(pc) {
+  const d = defPre(pc), A = Number(pc.a) || 0, B = Number(pc.b) || 0, C = Number(pc.c) || 0, perda = Number(pc.perda) || 0;
+  let bruta = 0, desc = 0;
+  if (d.tipo === 'area') { bruta = A * B; if (d.descontos) desc = (pc.descontos || []).reduce((t, x) => t + (Number(x.l) || 0) * (Number(x.a) || 0), 0); }
+  else if (d.tipo === 'linear') bruta = A * (B || 1);
+  else if (d.tipo === 'un') bruta = Math.round(A);
+  else bruta = A * B * C;
   const liquida = Math.max(0, bruta - desc);
-  const final = pc.tipo === 'piso' ? liquida * (1 + (Number(pc.perda) || 0) / 100) : liquida;
+  const final = (d.tipo === 'area' || d.tipo === 'linear') && perda ? liquida * (1 + perda / 100) : liquida;
   return { bruta, desc, liquida, final: Math.round(final * 100) / 100 };
 }
+const areaPeca = medidaPeca;
 const fmtM = n => (Number(n) || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-const m2 = n => fmtM(n) + ' m²';
-function nomePeca(pc, i) { return (pc.nome || '').trim() || (PRE_TIPOS[pc.tipo].nome + ' ' + (i + 1)); }
+function fmtMedida(pc, n) { const un = unPre(pc); return un === 'un' ? Math.round(n) + (Math.round(n) === 1 ? ' unidade' : ' unidades') : fmtM(n) + ' ' + un; }
+function nomePeca(pc, i) { return (pc.nome || '').trim() || (defPre(pc).nome + ' ' + (i + 1)); }
+function textoMedidas(pc) {
+  const d = defPre(pc), un = unPre(pc);
+  if (d.tipo === 'area') return fmtM(pc.a) + ' × ' + fmtM(pc.b) + ' m';
+  if (d.tipo === 'linear') return fmtM(pc.a) + ' ' + un + ((Number(pc.b) || 1) > 1 ? ' × ' + fmtNum(pc.b) : '');
+  if (d.tipo === 'un') return Math.round(pc.a) + ' un';
+  return fmtM(pc.a) + ' × ' + fmtM(pc.b) + ' × ' + fmtM(pc.c) + ' m';
+}
 function abrirPreOrcamentos() { renderListaPre(); atualizarAvisoPre(); pushAndShow('screen-pre-lista'); }
 function salvarPreBotao() {
   salvarPreAtual(); renderListaPre();
@@ -5891,7 +5995,7 @@ function renderPreTabs() {
   preAtual.pecas.forEach((pc, i) => {
     const b = document.createElement('button'); b.type = 'button'; b.className = 'pre-tab' + (i === prePecaIdx ? ' on' : '');
     b.innerHTML = '<span></span><small></small>';
-    b.querySelector('span').textContent = nomePeca(pc, i); b.querySelector('small').textContent = m2(areaPeca(pc).final);
+    b.querySelector('span').textContent = nomePeca(pc, i); b.querySelector('small').textContent = fmtMedida(pc, medidaPeca(pc).final);
     b.onclick = () => { prePecaIdx = i; renderPreEditor(); };
     const x = document.createElement('span'); x.className = 'pre-tab-x'; x.textContent = '×'; x.setAttribute('role', 'button'); x.tabIndex = 0; x.setAttribute('aria-label', 'Excluir ' + nomePeca(pc, i));
     const excluir = ev => { ev.preventDefault(); ev.stopPropagation(); excluirPecaPre(i); };
@@ -5900,7 +6004,7 @@ function renderPreTabs() {
     host.appendChild(b);
   });
   const mais = document.createElement('button'); mais.type = 'button'; mais.className = 'pre-tab mais'; mais.textContent = '+ Nova medida';
-  mais.onclick = () => { const atual = preAtual.pecas[prePecaIdx]; preAtual.pecas.push(novaPecaPre(atual ? atual.tipo : null)); prePecaIdx = preAtual.pecas.length - 1; salvarPreAtual(); renderPreEditor(); };
+  mais.onclick = () => { const atual = preAtual.pecas[prePecaIdx]; preAtual.pecas.push(novaPecaPre(atual ? atual.tipo : null, atual ? profPre(atual) : null)); prePecaIdx = preAtual.pecas.length - 1; salvarPreAtual(); renderPreEditor(); };
   host.appendChild(mais);
 }
 function excluirPecaPre(i) {
@@ -5911,22 +6015,25 @@ function excluirPecaPre(i) {
   if (prePecaIdx >= preAtual.pecas.length) prePecaIdx = preAtual.pecas.length - 1; else if (i < prePecaIdx) prePecaIdx--;
   salvarPreAtual(); renderPreEditor();
 }
-function campoPre(id, rot, valor, un) {
-  return '<div><label for="' + id + '">' + rot + '</label><div class="calc-campo"><input type="text" inputmode="decimal" autocomplete="off" id="' + id + '" value="' + (valor ? fmtQtd(valor) : '') + '" placeholder="0,00"><em>' + un + '</em></div></div>';
+function campoPre(id, rot, valor, un, inteiro) {
+  return '<div><label for="' + id + '">' + rot + '</label><div class="calc-campo"><input type="text" inputmode="' + (inteiro ? 'numeric' : 'decimal') + '" autocomplete="off" id="' + id + '" value="' + (valor ? fmtQtd(valor) : '') + '" placeholder="' + (inteiro ? '0' : '0,00') + '"><em>' + un + '</em></div></div>';
 }
 function renderPrePeca() {
   const host = document.getElementById('pre-peca'); if (!host || !preAtual) return;
-  const pc = preAtual.pecas[prePecaIdx], t = PRE_TIPOS[pc.tipo] || PRE_TIPOS.outro;
-  let h = '<label>O que vai medir?</label><div class="pre-tipos">' + Object.keys(PRE_TIPOS).map(k => '<button type="button" class="pre-tipo' + (k === pc.tipo ? ' on' : '') + '" data-tipo="' + k + '">' + PRE_TIPOS[k].nome + '</button>').join('') + '</div>'
-    + '<label for="pre-nome">Nome (ex.: Sala, Parede da frente)</label><input type="text" id="pre-nome" autocomplete="off" placeholder="' + esc(nomePeca(pc, prePecaIdx)) + '">'
-    + '<div class="pre-med">' + campoPre('pre-a', t.a, pc.a, 'm') + campoPre('pre-b', t.b, pc.b, 'm') + '</div>'
-    + '<div class="pre-desenho" id="pre-desenho"></div>';
-  if (pc.tipo === 'parede') {
-    h += '<label>Descontar portas e janelas</label><div id="pre-descs"></div><div class="pre-desc-bts"><button type="button" class="btn-dark-sm" data-add="Porta">+ Porta</button><button type="button" class="btn-dark-sm" data-add="Janela">+ Janela</button><button type="button" class="btn-dark-sm" data-add="Vão">+ Outro vão</button></div>';
-  }
-  if (pc.tipo === 'piso') h += '<div class="pre-med" style="margin-top:8px">' + campoPre('pre-perda', 'Perda e recorte', pc.perda, '%') + '<div></div></div>';
-  h += '<label for="pre-servico" style="margin-top:10px">Serviço no orçamento</label><input type="text" id="pre-servico" list="pre-servicos" autocomplete="off" placeholder="' + esc(servicoPadraoPre(pc)) + '"><datalist id="pre-servicos">' + listaSugestoes().map(n => '<option value="' + esc(n) + '">').join('') + '</datalist>'
-    + '<div class="pre-area"><span id="pre-area-rot">Área</span><b id="pre-area-v"></b></div>';
+  const pc = preAtual.pecas[prePecaIdx], d = defPre(pc), prof = profPre(pc), lista = tiposDaProf(prof), propria = PRE_PROFISSOES[prof] || [];
+  let h = '<label for="pre-prof">Profissão</label><select id="pre-prof">' + Object.keys(PRE_PROFISSOES).map(p => '<option' + (p === prof ? ' selected' : '') + '>' + esc(p) + '</option>').join('') + '</select>'
+    + '<label style="margin-top:10px">O que vai medir?</label><div class="pre-tipos">'
+    + lista.map(k => (k === PRE_GERAIS[0] && propria.length ? '<span class="pre-tipos-sep">Outras:</span>' : '') + '<button type="button" class="pre-tipo' + (k === pc.tipo ? ' on' : '') + (propria.includes(k) ? '' : ' geral') + '" data-tipo="' + k + '">' + PRE_TIPOS[k].nome + '</button>').join('') + '</div>'
+    + '<label for="pre-nome">Nome (ex.: Sala, Parede da frente)</label><input type="text" id="pre-nome" autocomplete="off" placeholder="' + esc(nomePeca(pc, prePecaIdx)) + '">';
+  if (d.tipo === 'area') h += '<div class="pre-med">' + campoPre('pre-a', d.a, pc.a, 'm') + campoPre('pre-b', d.b, pc.b, 'm') + '</div>';
+  else if (d.tipo === 'linear') h += '<div class="pre-med">' + campoPre('pre-a', 'Comprimento', pc.a, unPre(pc)) + campoPre('pre-b', d.bRot || 'Quantas vezes', pc.b, '×', true) + '</div>';
+  else if (d.tipo === 'un') h += '<div class="pre-med">' + campoPre('pre-a', 'Quantidade', pc.a, 'un', true) + '<div></div></div>';
+  else h += '<div class="pre-med pre-med3">' + campoPre('pre-a', d.a, pc.a, 'm') + campoPre('pre-b', d.b, pc.b, 'm') + campoPre('pre-c', d.c, pc.c, 'm') + '</div>';
+  h += '<div class="pre-desenho" id="pre-desenho"></div>';
+  if (d.tipo === 'area' && d.descontos) h += '<label>Descontar portas e janelas</label><div id="pre-descs"></div><div class="pre-desc-bts"><button type="button" class="btn-dark-sm" data-add="Porta">+ Porta</button><button type="button" class="btn-dark-sm" data-add="Janela">+ Janela</button><button type="button" class="btn-dark-sm" data-add="Vão">+ Outro vão</button></div>';
+  if ((d.tipo === 'area' || d.tipo === 'linear') && (d.perda != null || pc.perda)) h += '<div class="pre-med" style="margin-top:8px">' + campoPre('pre-perda', d.tipo === 'linear' ? 'Sobra / perda' : 'Perda e recorte', pc.perda, '%') + '<div></div></div>';
+  h += '<label for="pre-servico" style="margin-top:10px">Serviço no orçamento</label><input type="text" id="pre-servico" list="pre-servicos" autocomplete="off" placeholder="' + esc(servicoPadraoPre(pc)) + '"><datalist id="pre-servicos">' + sugestoesPre(pc).map(n => '<option value="' + esc(n) + '">').join('') + '</datalist>'
+    + '<div class="pre-area"><span id="pre-area-rot"></span><b id="pre-area-v"></b></div>';
   host.innerHTML = h;
   document.getElementById('pre-nome').value = pc.nome || '';
   document.getElementById('pre-servico').value = pc.servico || '';
@@ -5948,64 +6055,107 @@ function renderPreDescontos() {
     host.appendChild(l);
   });
 }
+function sugestoesPre(pc) { const l = (SUGESTOES[profPre(pc)] || []).concat(listaSugestoes()); return l.filter((n, i) => l.indexOf(n) === i); }
 function servicoPadraoPre(pc) {
-  const t = PRE_TIPOS[pc.tipo] || PRE_TIPOS.outro;
-  const lista = listaSugestoes();
-  for (const re of (t.servico || [])) { const s = lista.find(n => re.test(n)); if (s) return s; }
-  return t.nome;
+  const d = defPre(pc), lista = sugestoesPre(pc);
+  for (const re of (d.servico || [])) { const s = lista.find(n => re.test(n)); if (s) return s; }
+  return d.nome;
 }
 function atualizarAreaPre() {
-  const pc = preAtual.pecas[prePecaIdx], ar = areaPeca(pc);
+  const pc = preAtual.pecas[prePecaIdx], d = defPre(pc), m = medidaPeca(pc);
   const rot = document.getElementById('pre-area-rot'), v = document.getElementById('pre-area-v');
-  if (rot) rot.textContent = pc.tipo === 'parede' && ar.desc > 0 ? 'Área (já sem portas/janelas)' : pc.tipo === 'piso' && pc.perda ? 'Área com ' + fmtNum(pc.perda) + '% de perda' : 'Área';
-  if (v) v.textContent = m2(ar.final);
+  let r = d.tipo === 'area' ? 'Área' : d.tipo === 'linear' ? (unPre(pc) === 'km' ? 'Distância total' : 'Metragem total') : d.tipo === 'un' ? 'Quantidade' : 'Volume';
+  if (d.tipo === 'area' && m.desc > 0) r += ' (já sem portas/janelas)';
+  if ((d.tipo === 'area' || d.tipo === 'linear') && pc.perda) r += ' com ' + fmtNum(pc.perda) + '% de ' + (d.tipo === 'linear' ? 'sobra' : 'perda');
+  if (d.tipo === 'volume' && pc.tipo === 'piscina') r += ' · ' + Math.round(m.final * 1000).toLocaleString('pt-BR') + ' litros';
+  if (rot) rot.textContent = r;
+  if (v) v.textContent = fmtMedida(pc, m.final);
   renderPreTabs(); renderPreResumo();
 }
-// Desenho em escala: o retângulo muda de formato a cada número digitado
+// ---- Desenhos (refeitos a cada número digitado) ----
+const PRE_FUNDOS = { tijolo: 'url(#pre-tij)', piso: 'url(#pre-pis)', metal: 'url(#pre-met)', telha: 'url(#pre-tel)', teto: '#3b4b5c', vidro: 'rgba(120,190,255,.28)', cimento: '#8f989f', pintura: '#d9b98a', gesso: '#e5e7eb', madeira: '#a0703e', grama: '#3f8f3a', pedra: '#d4d4d4', agua: '#38bdf8', outro: '#2a4058' };
+function defsPre(k) {
+  const q = Math.max(8, k * 0.6);
+  return '<defs><marker id="pre-seta" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#F4C430"/></marker>'
+    + '<pattern id="pre-tij" width="24" height="12" patternUnits="userSpaceOnUse"><rect width="24" height="12" fill="#b5653a"/><path d="M0 0H24M0 6H24M12 0V6M0 6V12M24 6V12" stroke="#7a3f22" stroke-width="1"/></pattern>'
+    + '<pattern id="pre-pis" width="' + q + '" height="' + q + '" patternUnits="userSpaceOnUse"><rect width="100" height="100" fill="#e9dcc7"/><rect width="' + q + '" height="' + q + '" fill="none" stroke="#b9a68a" stroke-width="1.5"/></pattern>'
+    + '<pattern id="pre-met" width="12" height="12" patternUnits="userSpaceOnUse"><rect width="12" height="12" fill="#1f2937"/><rect x="4" width="4" height="12" fill="#94a3b8"/></pattern>'
+    + '<pattern id="pre-tel" width="20" height="12" patternUnits="userSpaceOnUse"><rect width="20" height="12" fill="#b45309"/><path d="M0 12 Q5 2 10 12 Q15 2 20 12" fill="none" stroke="#7c2d12" stroke-width="1.5"/></pattern></defs>';
+}
+function cotaPre(x1, y1, x2, y2, txt, vertical) {
+  const mx = (x1 + x2) / 2, my = (y1 + y2) / 2, w = Math.max(40, txt.length * 8 + 10);
+  return '<line x1="' + x1 + '" y1="' + y1 + '" x2="' + x2 + '" y2="' + y2 + '" stroke="#F4C430" stroke-width="1.5" marker-start="url(#pre-seta)" marker-end="url(#pre-seta)"/>'
+    + '<rect x="' + (mx - w / 2) + '" y="' + (my - 10) + '" width="' + w + '" height="20" rx="5" fill="#0a1826"/><text x="' + mx + '" y="' + (my + 5) + '" fill="#F4C430" font-size="13" font-weight="800" text-anchor="middle">' + txt + '</text>';
+}
+function seloPre(x, y, txt) { const w = Math.max(70, txt.length * 9 + 14); return '<rect x="' + (x - w / 2) + '" y="' + (y - 15) + '" width="' + w + '" height="30" rx="8" fill="rgba(11,28,44,.88)"/><text x="' + x + '" y="' + (y + 6) + '" fill="#2BD67B" font-size="15" font-weight="900" text-anchor="middle">' + txt + '</text>'; }
 function desenharPre() {
   const host = document.getElementById('pre-desenho'); if (!host) return;
-  const pc = preAtual.pecas[prePecaIdx], A = Number(pc.a) || 0, B = Number(pc.b) || 0;
-  const W = 340, H = 240, mx = 46, my = 34;
-  if (!(A > 0 && B > 0)) { host.innerHTML = '<p class="hint-sm" style="padding:30px;text-align:center">Coloque as duas medidas para ver o desenho.</p>'; return; }
-  const k = Math.min((W - mx - 30) / A, (H - my - 16) / B), w = A * k, hh = B * k, x0 = mx - 16 + (W - mx - 30 - w) / 2 + 16 - 16, y0 = my + (H - my - 16 - hh) / 2;
-  const x = Math.max(16, x0), y = y0;
-  const fundo = { tijolo: 'url(#pre-tij)', piso: 'url(#pre-pis)', teto: '#3b4b5c', vidro: 'rgba(120,190,255,.28)', outro: '#2a4058' }[(PRE_TIPOS[pc.tipo] || PRE_TIPOS.outro).cor];
-  let svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Desenho ' + fmtQtd(A) + ' por ' + fmtQtd(B) + ' metros">'
-    + '<defs><marker id="pre-seta" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#F4C430"/></marker>'
-    + '<pattern id="pre-tij" width="24" height="12" patternUnits="userSpaceOnUse"><rect width="24" height="12" fill="#b5653a"/><path d="M0 0H24M0 6H24M12 0V6M0 6V12M24 6V12" stroke="#7a3f22" stroke-width="1"/></pattern>'
-    + '<pattern id="pre-pis" width="' + Math.max(8, k * 0.6) + '" height="' + Math.max(8, k * 0.6) + '" patternUnits="userSpaceOnUse"><rect width="100" height="100" fill="#e9dcc7"/><rect width="' + Math.max(8, k * 0.6) + '" height="' + Math.max(8, k * 0.6) + '" fill="none" stroke="#b9a68a" stroke-width="1.5"/></pattern></defs>';
-  svg += '<rect x="' + x + '" y="' + y + '" width="' + w + '" height="' + hh + '" fill="' + fundo + '" stroke="#e5edf5" stroke-width="3"/>';
-  if (pc.tipo === 'parede') {
-    let cx = x + Math.min(w * 0.08, 0.4 * k);
-    (pc.descontos || []).forEach(d => {
-      const dl = (Number(d.l) || 0) * k, da = (Number(d.a) || 0) * k; if (!dl || !da) return;
-      const porta = /porta/i.test(d.nome || '');
-      const dy = porta ? y + hh - da : y + Math.max(0, hh - da - 1.0 * k);
-      const dx = Math.min(cx, x + w - dl);
-      svg += '<rect x="' + dx + '" y="' + Math.max(y, dy) + '" width="' + Math.min(dl, w) + '" height="' + Math.min(da, hh) + '" fill="#0a1826" stroke="' + (porta ? '#cfd8e3' : '#9fd0ff') + '" stroke-width="2"/>'
-        + '<text x="' + (dx + Math.min(dl, w) / 2) + '" y="' + (Math.max(y, dy) + Math.min(da, hh) / 2 + 4) + '" fill="#cfd8e3" font-size="10" text-anchor="middle">' + esc((d.nome || 'vão').toLowerCase()) + '</text>';
-      cx = dx + dl + 0.3 * k;
-    });
+  const pc = preAtual.pecas[prePecaIdx], d = defPre(pc), A = Number(pc.a) || 0, B = Number(pc.b) || 0, C = Number(pc.c) || 0;
+  const W = 340, H = 240, vazio = t => { host.innerHTML = '<p class="hint-sm" style="padding:30px;text-align:center">' + t + '</p>'; };
+  let svg = '';
+  if (d.tipo === 'area') {
+    if (!(A > 0 && B > 0)) return vazio('Coloque as duas medidas para ver o desenho.');
+    const k = Math.min((W - 76) / A, (H - 66) / B), w = A * k, hh = B * k, x = 20 + (W - 76 - w) / 2, y = 40 + (H - 66 - hh) / 2;
+    svg = defsPre(k) + '<rect x="' + x + '" y="' + y + '" width="' + w + '" height="' + hh + '" fill="' + (PRE_FUNDOS[d.vis] || PRE_FUNDOS.outro) + '" stroke="#e5edf5" stroke-width="3"/>';
+    if (d.descontos) {
+      let cx = x + Math.min(w * 0.08, 0.4 * k);
+      (pc.descontos || []).forEach(o => {
+        const dl = (Number(o.l) || 0) * k, da = (Number(o.a) || 0) * k; if (!dl || !da) return;
+        const porta = /porta/i.test(o.nome || ''), dy = porta ? y + hh - da : y + Math.max(0, hh - da - 1.0 * k), dx = Math.min(cx, x + w - dl);
+        svg += '<rect x="' + dx + '" y="' + Math.max(y, dy) + '" width="' + Math.min(dl, w) + '" height="' + Math.min(da, hh) + '" fill="#0a1826" stroke="' + (porta ? '#cfd8e3' : '#9fd0ff') + '" stroke-width="2"/>'
+          + '<text x="' + (dx + Math.min(dl, w) / 2) + '" y="' + (Math.max(y, dy) + Math.min(da, hh) / 2 + 4) + '" fill="#cfd8e3" font-size="10" text-anchor="middle">' + esc((o.nome || 'vão').toLowerCase()) + '</text>';
+        cx = dx + dl + 0.3 * k;
+      });
+    }
+    if (d.vis === 'vidro') svg += '<path d="M' + (x + w * 0.15) + ' ' + (y + hh * 0.75) + ' L' + (x + w * 0.45) + ' ' + (y + hh * 0.25) + ' M' + (x + w * 0.3) + ' ' + (y + hh * 0.8) + ' L' + (x + w * 0.55) + ' ' + (y + hh * 0.4) + '" stroke="rgba(255,255,255,.5)" stroke-width="2"/>';
+    svg += seloPre(x + w / 2, y + hh / 2, fmtM(medidaPeca(pc).liquida) + ' m²') + cotaPre(x, y - 16, x + w, y - 16, fmtM(A) + ' m') + cotaPre(x + w + 18, y, x + w + 18, y + hh, fmtM(B));
+  } else if (d.tipo === 'linear') {
+    if (!(A > 0)) return vazio('Coloque o comprimento para ver o desenho.');
+    const n = Math.max(1, Math.min(8, Math.round(B) || 1)), x1 = 30, x2 = W - 30, gap = Math.min(22, 120 / n), y0 = 120 - (n - 1) * gap / 2;
+    svg = defsPre(10);
+    for (let i = 0; i < n; i++) {
+      const y = y0 + i * gap;
+      svg += '<line x1="' + x1 + '" y1="' + y + '" x2="' + x2 + '" y2="' + y + '" stroke="' + (d.cor || '#F4C430') + '" stroke-width="7" stroke-linecap="round"/>'
+        + '<line x1="' + x1 + '" y1="' + y + '" x2="' + x2 + '" y2="' + y + '" stroke="rgba(255,255,255,.35)" stroke-width="2" stroke-linecap="round" transform="translate(0,-2)"/>';
+    }
+    if ((Math.round(B) || 1) > 8) svg += '<text x="' + (W / 2) + '" y="' + (y0 + 8 * gap + 6) + '" fill="#cfd8e3" font-size="12" text-anchor="middle">… ' + Math.round(B) + ' no total</text>';
+    svg += cotaPre(x1, 34, x2, 34, fmtM(A) + ' ' + unPre(pc));
+    if ((Math.round(B) || 1) > 1) svg += '<text x="' + (W - 30) + '" y="' + (y0 - 14) + '" fill="#cfd8e3" font-size="13" font-weight="800" text-anchor="end">× ' + Math.round(B) + '</text>';
+    svg += seloPre(W / 2, H - 26, 'Total ' + fmtMedida(pc, medidaPeca(pc).final));
+  } else if (d.tipo === 'un') {
+    const n = Math.max(0, Math.round(A)); if (!n) return vazio('Coloque a quantidade.');
+    const mostra = Math.min(n, 40), col = Math.min(mostra, mostra <= 6 ? mostra : mostra <= 16 ? 8 : 10), lin = Math.ceil(mostra / col), cel = Math.min(46, (W - 40) / col, (H - 70) / lin);
+    svg = '';
+    for (let i = 0; i < mostra; i++) {
+      const cxx = (W - col * cel) / 2 + (i % col) * cel + cel / 2, cyy = 24 + (H - 70 - lin * cel) / 2 + Math.floor(i / col) * cel + cel / 2;
+      svg += '<text x="' + cxx + '" y="' + (cyy + cel * 0.3) + '" font-size="' + (cel * 0.75) + '" text-anchor="middle">' + (d.icone || '▪️') + '</text>';
+    }
+    if (n > 40) svg += '<text x="' + (W / 2) + '" y="' + (H - 52) + '" fill="#cfd8e3" font-size="12" text-anchor="middle">+ ' + (n - 40) + '</text>';
+    svg += seloPre(W / 2, H - 26, fmtMedida(pc, n));
+  } else {
+    if (!(A > 0 && B > 0 && C > 0)) return vazio('Coloque as três medidas para ver o desenho.');
+    const prof = Math.min(0.5, B / (A + B)) , k = Math.min((W - 110) / (A + B * 0.6), (H - 80) / (C + B * 0.35));
+    const w = A * k, dx = B * k * 0.6, dy = B * k * 0.35, hh = C * k, x = (W - w - dx) / 2, y = 44 + dy;
+    const cor = PRE_FUNDOS[d.vis] || '#8f989f';
+    svg = defsPre(k)
+      + '<polygon points="' + x + ',' + y + ' ' + (x + dx) + ',' + (y - dy) + ' ' + (x + w + dx) + ',' + (y - dy) + ' ' + (x + w) + ',' + y + '" fill="' + cor + '" opacity=".55" stroke="#e5edf5" stroke-width="2"/>'
+      + '<polygon points="' + (x + w) + ',' + y + ' ' + (x + w + dx) + ',' + (y - dy) + ' ' + (x + w + dx) + ',' + (y - dy + hh) + ' ' + (x + w) + ',' + (y + hh) + '" fill="' + cor + '" opacity=".75" stroke="#e5edf5" stroke-width="2"/>'
+      + '<rect x="' + x + '" y="' + y + '" width="' + w + '" height="' + hh + '" fill="' + cor + '" stroke="#e5edf5" stroke-width="2"/>'
+      + cotaPre(x, y + hh + 16, x + w, y + hh + 16, fmtM(A) + ' m') + cotaPre(x - 16, y, x - 16, y + hh, fmtM(C))
+      + '<text x="' + (x + w + dx / 2 + 10) + '" y="' + (y - dy / 2 - 4) + '" fill="#F4C430" font-size="12" font-weight="800">' + fmtM(B) + '</text>'
+      + seloPre(x + w / 2, y + hh / 2, fmtM(medidaPeca(pc).final) + ' m³');
   }
-  if (pc.tipo === 'vidro') svg += '<path d="M' + (x + w * 0.15) + ' ' + (y + hh * 0.75) + ' L' + (x + w * 0.45) + ' ' + (y + hh * 0.25) + ' M' + (x + w * 0.3) + ' ' + (y + hh * 0.8) + ' L' + (x + w * 0.55) + ' ' + (y + hh * 0.4) + '" stroke="rgba(255,255,255,.5)" stroke-width="2"/>';
-  const ar = areaPeca(pc);
-  svg += '<rect x="' + (x + w / 2 - 44) + '" y="' + (y + hh / 2 - 15) + '" width="88" height="30" rx="8" fill="rgba(11,28,44,.85)"/><text x="' + (x + w / 2) + '" y="' + (y + hh / 2 + 6) + '" fill="#2BD67B" font-size="15" font-weight="900" text-anchor="middle">' + fmtM(ar.liquida) + ' m²</text>';
-  svg += '<line x1="' + x + '" y1="' + (y - 14) + '" x2="' + (x + w) + '" y2="' + (y - 14) + '" stroke="#F4C430" stroke-width="1.5" marker-start="url(#pre-seta)" marker-end="url(#pre-seta)"/>'
-    + '<rect x="' + (x + w / 2 - 30) + '" y="' + (y - 25) + '" width="60" height="20" rx="5" fill="#0a1826"/><text x="' + (x + w / 2) + '" y="' + (y - 10) + '" fill="#F4C430" font-size="14" font-weight="800" text-anchor="middle">' + fmtM(A) + ' m</text>'
-    + '<line x1="' + (x + w + 14) + '" y1="' + y + '" x2="' + (x + w + 14) + '" y2="' + (y + hh) + '" stroke="#F4C430" stroke-width="1.5" marker-start="url(#pre-seta)" marker-end="url(#pre-seta)"/>'
-    + '<rect x="' + (x + w - 2) + '" y="' + (y + hh / 2 - 10) + '" width="34" height="20" rx="5" fill="#0a1826"/><text x="' + (x + w + 15) + '" y="' + (y + hh / 2 + 5) + '" fill="#F4C430" font-size="12" font-weight="800" text-anchor="middle">' + fmtM(B) + '</text>';
-  host.innerHTML = svg + '</svg>';
+  host.innerHTML = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Desenho da medida ' + esc(textoMedidas(pc)) + '">' + svg + '</svg>';
 }
 function renderPreResumo() {
   const host = document.getElementById('pre-resumo'); if (!host || !preAtual) return;
   const porTipo = {};
   let h = '<h3>Resumo das medidas</h3>';
   preAtual.pecas.forEach((pc, i) => {
-    const ar = areaPeca(pc); porTipo[pc.tipo] = (porTipo[pc.tipo] || 0) + ar.final;
-    h += '<div class="pre-res-linha"><span>' + esc(nomePeca(pc, i)) + ' · ' + fmtM(pc.a) + ' × ' + fmtM(pc.b) + '</span><b>' + m2(ar.final) + '</b></div>';
+    const m = medidaPeca(pc), k = pc.tipo + '|' + unPre(pc); porTipo[k] = (porTipo[k] || 0) + m.final;
+    h += '<div class="pre-res-linha"><span>' + esc(nomePeca(pc, i)) + ' · ' + esc(textoMedidas(pc)) + '</span><b>' + fmtMedida(pc, m.final) + '</b></div>';
   });
-  const tipos = Object.keys(porTipo);
-  if (preAtual.pecas.length > 1) h += tipos.map(t => '<div class="pre-res-linha"><span><b style="color:inherit">Total ' + PRE_TIPOS[t].nome.toLowerCase() + '</b></span><b style="color:#2BD67B">' + m2(Math.round(porTipo[t] * 100) / 100) + '</b></div>').join('');
+  if (preAtual.pecas.length > 1) h += Object.keys(porTipo).map(k => { const t = k.split('|')[0], pc = { tipo: t }; return '<div class="pre-res-linha"><span><b style="color:inherit">Total ' + PRE_TIPOS[t].nome.toLowerCase() + '</b></span><b style="color:#2BD67B">' + fmtMedida(pc, Math.round(porTipo[k] * 100) / 100) + '</b></div>'; }).join('');
   host.innerHTML = h;
 }
 document.addEventListener('input', function (e) {
@@ -6016,18 +6166,31 @@ document.addEventListener('input', function (e) {
   else if (id === 'pre-notas') preAtual.notas = e.target.value;
   else if (id === 'pre-nome') { pc.nome = e.target.value; renderPreTabs(); renderPreResumo(); }
   else if (id === 'pre-servico') pc.servico = e.target.value;
-  else if (id === 'pre-a' || id === 'pre-b' || id === 'pre-perda') {
+  else if (id === 'pre-a' || id === 'pre-b' || id === 'pre-c' || id === 'pre-perda') {
     let t = e.target.value.replace(/[^0-9.,]/g, '').replace('.', ','); if (t !== e.target.value) e.target.value = t;
     const n = parseFloat(t.replace(',', '.')) || 0;
-    if (id === 'pre-a') pc.a = n; else if (id === 'pre-b') pc.b = n; else pc.perda = Math.min(100, n);
+    if (id === 'pre-a') pc.a = n; else if (id === 'pre-b') pc.b = n; else if (id === 'pre-c') pc.c = n; else pc.perda = Math.min(100, n);
     desenharPre(); atualizarAreaPre();
   } else return;
   salvarPreAtual();
 });
+document.addEventListener('change', function (e) {
+  if (!preAtual || !e.target || e.target.id !== 'pre-prof') return;
+  const pc = preAtual.pecas[prePecaIdx], prof = e.target.value;
+  const novo = novaPecaPre(tiposDaProf(prof).includes(pc.tipo) && (PRE_PROFISSOES[prof] || []).includes(pc.tipo) ? pc.tipo : null, prof);
+  Object.assign(pc, { prof, tipo: novo.tipo, a: novo.a, b: novo.b, c: novo.c, perda: novo.perda, descontos: [], servico: '' });
+  salvarPreAtual(); renderPreEditor();
+});
 document.addEventListener('click', function (e) {
   if (!preAtual) return;
   const tp = e.target.closest && e.target.closest('#pre-peca .pre-tipo');
-  if (tp) { const pc = preAtual.pecas[prePecaIdx]; pc.tipo = tp.dataset.tipo; if (pc.tipo === 'piso' && !pc.perda) pc.perda = 10; salvarPreAtual(); renderPreEditor(); return; }
+  if (tp) {
+    const pc = preAtual.pecas[prePecaIdx], antes = defPre(pc).tipo, novo = novaPecaPre(tp.dataset.tipo, profPre(pc));
+    pc.tipo = novo.tipo; pc.prof = novo.prof; pc.servico = '';
+    if (novo.perda != null && !pc.perda) pc.perda = novo.perda;
+    if (defPre(pc).tipo !== antes) Object.assign(pc, { a: novo.a, b: novo.b, c: novo.c, perda: novo.perda, descontos: [] });
+    salvarPreAtual(); renderPreEditor(); return;
+  }
   const ad = e.target.closest && e.target.closest('#pre-peca [data-add]');
   if (ad) {
     const pc = preAtual.pecas[prePecaIdx], nome = ad.dataset.add;
@@ -6036,10 +6199,10 @@ document.addEventListener('click', function (e) {
     salvarPreAtual(); renderPreDescontos(); desenharPre(); atualizarAreaPre(); return;
   }
 });
-// Em casa: cada medida vira um item do orçamento (área em m², valor de "Meus preços" se tiver)
+// Em casa: cada medida vira um item do orçamento (m², metros, unidades ou m³; valor de "Meus preços" se tiver)
 function transformarPreEmOrcamento() {
   if (!preAtual) return;
-  const pecas = preAtual.pecas.filter(pc => areaPeca(pc).final > 0);
+  const pecas = preAtual.pecas.filter(pc => medidaPeca(pc).final > 0);
   if (!pecas.length) { alert('Coloque pelo menos uma medida antes.'); return; }
   salvarPreAtual();
   const pr = preAtual;
@@ -6047,14 +6210,18 @@ function transformarPreEmOrcamento() {
   const cl = document.getElementById('orc-cliente'); if (cl) cl.value = pr.cliente || '';
   const ti = document.getElementById('orc-titulo'); if (ti && pr.local) ti.value = pr.local;
   pecas.forEach(pc => {
-    const ar = areaPeca(pc), serv = (pc.servico || '').trim() || servicoPadraoPre(pc), preco = precoServico(serv);
-    colocarItemNoOrcamento({ desc: serv, qtd: ar.final, un: 'm²', valor: preco ? preco.valor : 0 });
+    const d = defPre(pc), m = medidaPeca(pc), serv = (pc.servico || '').trim() || servicoPadraoPre(pc), preco = precoServico(serv);
+    const un = unPre(pc), unOrc = PRECO_UNIDADES.includes(un) ? un : 'un';
+    colocarItemNoOrcamento({ desc: serv, qtd: m.final, un: unOrc, valor: preco ? preco.valor : 0 });
     const rows = document.querySelectorAll('#itens-container .item-row'), row = rows[rows.length - 1];
     const det = row && row.querySelector('.item-detalhes');
     if (det) {
-      let t = (pc.nome ? pc.nome.trim() + ': ' : '') + fmtM(pc.a) + ' × ' + fmtM(pc.b) + ' m';
-      if (pc.tipo === 'parede' && ar.desc > 0) t += ', descontando ' + (pc.descontos || []).map(d => (d.nome || 'vão').toLowerCase()).join(' e ');
-      if (pc.tipo === 'piso' && pc.perda) t += ', com ' + fmtNum(pc.perda) + '% de perda';
+      let t = (pc.nome ? pc.nome.trim() + ': ' : '') + textoMedidas(pc);
+      if (d.tipo === 'linear' && (Number(pc.b) || 1) > 1) t += ' (' + (d.bRot || 'vezes').toLowerCase() + ')';
+      if (d.tipo === 'area' && m.desc > 0) t += ', descontando ' + (pc.descontos || []).map(x => (x.nome || 'vão').toLowerCase()).join(' e ');
+      if ((d.tipo === 'area' || d.tipo === 'linear') && pc.perda) t += ', com ' + fmtNum(pc.perda) + '% de ' + (d.tipo === 'linear' ? 'sobra' : 'perda');
+      if (un === 'km') t += ' · total ' + fmtM(m.final) + ' km';
+      if (pc.tipo === 'piscina') t += ' · ' + Math.round(m.final * 1000).toLocaleString('pt-BR') + ' litros';
       det.value = t;
     }
   });
@@ -6062,7 +6229,7 @@ function transformarPreEmOrcamento() {
   if (typeof atualizarTotalOrcamento === 'function') atualizarTotalOrcamento();
   const a = lerPres(), i = a.findIndex(x => x.id === pr.id); if (i >= 0) { a[i].virouOrcamento = Date.now(); gravarPres(a); }
   const sem = pecas.filter(pc => !precoServico((pc.servico || '').trim() || servicoPadraoPre(pc))).length;
-  try { orcaonToast(pecas.length + (pecas.length > 1 ? ' medidas viraram itens.' : ' medida virou item.') + (sem ? ' Coloque o valor por m² dos itens sem preço.' : '')); } catch (_) {}
+  try { orcaonToast(pecas.length + (pecas.length > 1 ? ' medidas viraram itens.' : ' medida virou item.') + (sem ? ' Coloque o valor dos itens sem preço.' : '')); } catch (_) {}
 }
 // Coloca um item no orçamento: usa a primeira linha vazia ou cria uma nova
 function colocarItemNoOrcamento(it) {
