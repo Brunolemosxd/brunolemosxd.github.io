@@ -745,6 +745,35 @@ body {
   font-size: 14px;
 }
 
+.btn-medir-sm{background:transparent;color:var(--text-primary,#fff);border:1.5px dashed var(--accent,#F4C430);padding:9px 14px;border-radius:20px;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit}
+.pre-item{display:flex;gap:10px;align-items:center;background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:12px;margin-bottom:10px}
+.pre-item .pre-item-txt{flex:1;min-width:0;cursor:pointer}
+.pre-item b{display:block;font-size:15px}
+.pre-item small{display:block;color:var(--text-secondary);font-size:12px;margin-top:2px}
+.pre-item .pre-del{border:0;background:transparent;color:#ef4444;font-size:20px;cursor:pointer;padding:6px}
+.pre-pecas{display:flex;gap:8px;overflow-x:auto;padding:2px 0 10px}
+.pre-tab{flex:0 0 auto;border:1.5px solid var(--border);background:var(--bg-card);color:var(--text-primary,#fff);border-radius:12px;padding:8px 12px;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit;text-align:left}
+.pre-tab small{display:block;font-weight:500;font-size:11px;color:var(--text-secondary)}
+.pre-tab.on{border-color:var(--accent,#F4C430);background:rgba(244,196,48,.14)}
+.pre-tab.mais{border-style:dashed;color:var(--accent,#F4C430)}
+.pre-tipos{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 10px}
+.pre-tipo{border:1.5px solid var(--border);background:transparent;color:inherit;border-radius:999px;padding:7px 12px;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit}
+.pre-tipo.on{background:var(--accent,#F4C430);border-color:var(--accent,#F4C430);color:#0B1C2C}
+.pre-med{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.pre-med .calc-campo input{font-size:18px;font-weight:800}
+.pre-desenho{background:#0a1826;border:1px dashed rgba(244,196,48,.45);border-radius:14px;margin:12px 0;display:flex;justify-content:center;padding:4px}
+.pre-desenho svg{width:100%;max-width:360px;height:auto;display:block}
+.pre-desc-linha{display:grid;grid-template-columns:1fr 70px 70px 32px;gap:6px;align-items:center;margin-top:6px}
+.pre-desc-linha input{padding:9px 8px!important;font-size:14px!important;text-align:center}
+.pre-desc-linha input.pre-dn{text-align:left}
+.pre-desc-linha button{border:0;background:transparent;color:#ef4444;font-size:20px;cursor:pointer}
+.pre-desc-bts{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.pre-area{display:flex;justify-content:space-between;align-items:center;margin-top:12px;padding:10px 12px;border-radius:12px;background:rgba(43,214,123,.10);border:1px solid rgba(43,214,123,.4);font-weight:800}
+.pre-area b{color:#2BD67B;font-size:18px}
+.pre-res-linha{display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px solid var(--border);font-size:14px}
+.pre-res-linha:last-child{border-bottom:0}
+.pre-res-linha b{color:var(--accent,#F4C430);white-space:nowrap}
+body.light .pre-desenho{background:#0B1C2C}
 .greeting-buttons {
   display: flex;
   flex-direction: column;
@@ -3399,6 +3428,7 @@ body.light .btn-remove-item{color:#b91c1c}
             <div class="greeting-buttons">
               <button class="btn-yellow-sm" onclick="novoOrcamentoEscolhendoModelo()">+ Orçamento</button>
               <button class="btn-recibo-sm" onclick="abrirModelosRecibo()">+ Recibo</button>
+              <button class="btn-medir-sm" onclick="abrirPreOrcamentos()">📐 Medir</button>
             </div>
           </div>
 
@@ -4095,6 +4125,40 @@ body.light .btn-remove-item{color:#b91c1c}
     </div>
 
     <!-- PRICE TABLE -->
+    <!-- PRÉ-ORÇAMENTO: lista -->
+    <div id="screen-pre-lista" class="screen">
+      <header class="app-header">
+        <button class="back-btn" onclick="goBack()">Voltar</button>
+        <h1>Pré-orçamentos</h1>
+      </header>
+      <div class="content">
+        <p class="hint-sm">Na visita, anote as medidas e veja o desenho na hora. Em casa, transforme em orçamento com um toque.</p>
+        <button type="button" class="btn-primary-lg" onclick="novoPreOrcamento()">📐 Novo pré-orçamento</button>
+        <div id="pre-lista" style="margin-top:14px"></div>
+      </div>
+    </div>
+
+    <!-- PRÉ-ORÇAMENTO: editor -->
+    <div id="screen-pre-editor" class="screen">
+      <header class="app-header">
+        <button class="back-btn" onclick="fecharPreEditor()">Voltar</button>
+        <h1>Pré-orçamento</h1>
+      </header>
+      <div class="content">
+        <div class="form-card">
+          <label for="pre-cliente">Cliente</label>
+          <input type="text" id="pre-cliente" placeholder="Nome do cliente" autocomplete="off">
+          <label for="pre-local">Local / obra (opcional)</label>
+          <input type="text" id="pre-local" placeholder="Ex.: Casa da praia" autocomplete="off">
+        </div>
+        <div class="pre-pecas" id="pre-pecas"></div>
+        <div class="form-card" id="pre-peca"></div>
+        <div class="form-card" id="pre-resumo"></div>
+        <button type="button" class="btn-primary-lg" onclick="transformarPreEmOrcamento()">➜ Transformar em orçamento</button>
+        <p class="hint-sm" style="text-align:center">Tudo fica salvo sozinho neste celular.</p>
+      </div>
+    </div>
+
     <div id="screen-calculadora" class="screen">
       <header class="app-header">
         <button class="back-btn" onclick="goBack()"><i class="fas fa-arrow-left"></i> Voltar</button>
@@ -5718,6 +5782,249 @@ document.addEventListener('input', function (e) {
   }
   atualizarLinhasCalc();
 });
+// ===== Pré-orçamento: medidas na visita, desenho na hora, depois vira orçamento =====
+const PRE_KEY = 'orcaon_pre_orcamentos';
+const PRE_TIPOS = {
+  // servico: palavras procuradas nas sugestões da profissão, na ordem de preferência
+  parede: { nome: 'Parede', a: 'Comprimento', b: 'Altura', cor: 'tijolo', servico: [/reboco/i, /pintura de parede/i, /chapisco/i, /emboço/i, /textura/i, /revestimento/i, /alvenaria/i, /parede/i] },
+  piso:   { nome: 'Piso', a: 'Comprimento', b: 'Largura', cor: 'piso', servico: [/assentamento de piso/i, /piso/i, /porcelanato/i, /cerâmica/i, /contrapiso/i] },
+  teto:   { nome: 'Laje / teto', a: 'Comprimento', b: 'Largura', cor: 'teto', servico: [/forro/i, /teto/i, /gesso/i, /drywall/i, /laje/i] },
+  vidro:  { nome: 'Vidro', a: 'Largura', b: 'Altura', cor: 'vidro', servico: [/vidro/i, /janela/i, /box/i, /espelho/i] },
+  outro:  { nome: 'Outro', a: 'Comprimento', b: 'Largura', cor: 'outro', servico: [] }
+};
+let preAtual = null, prePecaIdx = 0;
+function lerPres() { try { const a = JSON.parse(localStorage.getItem(PRE_KEY) || '[]'); return Array.isArray(a) ? a : []; } catch (_) { return []; } }
+function gravarPres(a) { try { localStorage.setItem(PRE_KEY, JSON.stringify(a)); return true; } catch (_) { alert('Não foi possível salvar. O celular está sem espaço.'); return false; } }
+function salvarPreAtual() {
+  if (!preAtual) return;
+  preAtual.atualizado = Date.now();
+  const a = lerPres(), i = a.findIndex(x => x.id === preAtual.id);
+  if (i >= 0) a[i] = preAtual; else a.unshift(preAtual);
+  gravarPres(a);
+}
+function tipoPadraoPre() {
+  const p = profissaoAtual();
+  if (p === 'Vidraceiro') return 'vidro';
+  if (p === 'Gesseiro') return 'teto';
+  if (p === 'Marmorista' || p === 'Marceneiro') return 'outro';
+  return 'parede';
+}
+function novaPecaPre(tipo) {
+  tipo = tipo || tipoPadraoPre();
+  return { id: Date.now() + Math.floor(Math.random() * 1000), tipo, nome: '', a: tipo === 'vidro' ? 1 : 4, b: tipo === 'parede' ? 2.8 : (tipo === 'vidro' ? 1 : 3), perda: tipo === 'piso' ? 10 : 0, descontos: [], servico: '' };
+}
+function areaPeca(pc) {
+  const bruta = (Number(pc.a) || 0) * (Number(pc.b) || 0);
+  const desc = pc.tipo === 'parede' ? (pc.descontos || []).reduce((t, d) => t + (Number(d.l) || 0) * (Number(d.a) || 0), 0) : 0;
+  const liquida = Math.max(0, bruta - desc);
+  const final = pc.tipo === 'piso' ? liquida * (1 + (Number(pc.perda) || 0) / 100) : liquida;
+  return { bruta, desc, liquida, final: Math.round(final * 100) / 100 };
+}
+const fmtM = n => (Number(n) || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const m2 = n => fmtM(n) + ' m²';
+function nomePeca(pc, i) { return (pc.nome || '').trim() || (PRE_TIPOS[pc.tipo].nome + ' ' + (i + 1)); }
+function abrirPreOrcamentos() { renderListaPre(); pushAndShow('screen-pre-lista'); }
+function renderListaPre() {
+  const host = document.getElementById('pre-lista'); if (!host) return;
+  const a = lerPres();
+  host.innerHTML = a.length ? '' : '<p class="hint-sm" style="text-align:center;margin-top:20px">Nenhum pré-orçamento ainda.</p>';
+  a.forEach(pr => {
+    const div = document.createElement('div'); div.className = 'pre-item';
+    const tot = (pr.pecas || []).length;
+    div.innerHTML = '<div class="pre-item-txt"><b></b><small></small></div><button type="button" class="pre-del" aria-label="Apagar">🗑</button>';
+    div.querySelector('b').textContent = (pr.cliente || 'Sem nome') + (pr.local ? ' · ' + pr.local : '');
+    div.querySelector('small').textContent = tot + (tot === 1 ? ' medida' : ' medidas') + ' · ' + new Date(pr.atualizado || pr.criado).toLocaleDateString('pt-BR') + (pr.virouOrcamento ? ' · ✓ virou orçamento' : '');
+    div.querySelector('.pre-item-txt').onclick = () => abrirPreEditor(pr.id);
+    div.querySelector('.pre-del').onclick = () => { if (!confirm('Apagar o pré-orçamento de ' + (pr.cliente || 'sem nome') + '?')) return; gravarPres(lerPres().filter(x => x.id !== pr.id)); renderListaPre(); };
+    host.appendChild(div);
+  });
+}
+function novoPreOrcamento() {
+  preAtual = { id: Date.now(), cliente: '', local: '', criado: Date.now(), pecas: [novaPecaPre()] };
+  prePecaIdx = 0; salvarPreAtual(); abrirPreEditor(preAtual.id);
+}
+function abrirPreEditor(id) {
+  const pr = lerPres().find(x => x.id === id); if (!pr) return;
+  preAtual = pr; if (!Array.isArray(preAtual.pecas) || !preAtual.pecas.length) preAtual.pecas = [novaPecaPre()];
+  prePecaIdx = 0;
+  document.getElementById('pre-cliente').value = pr.cliente || '';
+  document.getElementById('pre-local').value = pr.local || '';
+  renderPreEditor();
+  pushAndShow('screen-pre-editor');
+}
+function fecharPreEditor() { salvarPreAtual(); renderListaPre(); goBack(); }
+function renderPreEditor() { renderPreTabs(); renderPrePeca(); renderPreResumo(); }
+function renderPreTabs() {
+  const host = document.getElementById('pre-pecas'); if (!host || !preAtual) return;
+  host.innerHTML = '';
+  preAtual.pecas.forEach((pc, i) => {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'pre-tab' + (i === prePecaIdx ? ' on' : '');
+    b.innerHTML = '<span></span><small></small>';
+    b.querySelector('span').textContent = nomePeca(pc, i); b.querySelector('small').textContent = m2(areaPeca(pc).final);
+    b.onclick = () => { prePecaIdx = i; renderPreEditor(); };
+    host.appendChild(b);
+  });
+  const mais = document.createElement('button'); mais.type = 'button'; mais.className = 'pre-tab mais'; mais.textContent = '+ Nova medida';
+  mais.onclick = () => { const atual = preAtual.pecas[prePecaIdx]; preAtual.pecas.push(novaPecaPre(atual ? atual.tipo : null)); prePecaIdx = preAtual.pecas.length - 1; salvarPreAtual(); renderPreEditor(); };
+  host.appendChild(mais);
+}
+function campoPre(id, rot, valor, un) {
+  return '<div><label for="' + id + '">' + rot + '</label><div class="calc-campo"><input type="text" inputmode="decimal" autocomplete="off" id="' + id + '" value="' + (valor ? fmtQtd(valor) : '') + '" placeholder="0,00"><em>' + un + '</em></div></div>';
+}
+function renderPrePeca() {
+  const host = document.getElementById('pre-peca'); if (!host || !preAtual) return;
+  const pc = preAtual.pecas[prePecaIdx], t = PRE_TIPOS[pc.tipo] || PRE_TIPOS.outro;
+  let h = '<label>O que vai medir?</label><div class="pre-tipos">' + Object.keys(PRE_TIPOS).map(k => '<button type="button" class="pre-tipo' + (k === pc.tipo ? ' on' : '') + '" data-tipo="' + k + '">' + PRE_TIPOS[k].nome + '</button>').join('') + '</div>'
+    + '<label for="pre-nome">Nome (ex.: Sala, Parede da frente)</label><input type="text" id="pre-nome" autocomplete="off" placeholder="' + esc(nomePeca(pc, prePecaIdx)) + '">'
+    + '<div class="pre-med">' + campoPre('pre-a', t.a, pc.a, 'm') + campoPre('pre-b', t.b, pc.b, 'm') + '</div>'
+    + '<div class="pre-desenho" id="pre-desenho"></div>';
+  if (pc.tipo === 'parede') {
+    h += '<label>Descontar portas e janelas</label><div id="pre-descs"></div><div class="pre-desc-bts"><button type="button" class="btn-dark-sm" data-add="Porta">+ Porta</button><button type="button" class="btn-dark-sm" data-add="Janela">+ Janela</button><button type="button" class="btn-dark-sm" data-add="Vão">+ Outro vão</button></div>';
+  }
+  if (pc.tipo === 'piso') h += '<div class="pre-med" style="margin-top:8px">' + campoPre('pre-perda', 'Perda e recorte', pc.perda, '%') + '<div></div></div>';
+  h += '<label for="pre-servico" style="margin-top:10px">Serviço no orçamento</label><input type="text" id="pre-servico" list="pre-servicos" autocomplete="off" placeholder="' + esc(servicoPadraoPre(pc)) + '"><datalist id="pre-servicos">' + listaSugestoes().map(n => '<option value="' + esc(n) + '">').join('') + '</datalist>'
+    + '<div class="pre-area"><span id="pre-area-rot">Área</span><b id="pre-area-v"></b></div>'
+    + (preAtual.pecas.length > 1 ? '<button type="button" class="btn-text" style="color:#ef4444" id="pre-apagar-peca">Apagar esta medida</button>' : '');
+  host.innerHTML = h;
+  document.getElementById('pre-nome').value = pc.nome || '';
+  document.getElementById('pre-servico').value = pc.servico || '';
+  renderPreDescontos(); desenharPre(); atualizarAreaPre();
+}
+function renderPreDescontos() {
+  const host = document.getElementById('pre-descs'); if (!host) return;
+  const pc = preAtual.pecas[prePecaIdx];
+  host.innerHTML = '';
+  (pc.descontos || []).forEach((d, i) => {
+    const l = document.createElement('div'); l.className = 'pre-desc-linha';
+    l.innerHTML = '<input type="text" class="pre-dn" aria-label="Nome do vão" data-mic="0"><input type="text" inputmode="decimal" aria-label="Largura do vão" placeholder="larg."><input type="text" inputmode="decimal" aria-label="Altura do vão" placeholder="alt."><button type="button" aria-label="Tirar">×</button>';
+    const [n, la, al] = l.querySelectorAll('input');
+    n.value = d.nome || ''; la.value = fmtQtd(d.l); al.value = fmtQtd(d.a);
+    n.oninput = () => { d.nome = n.value; salvarPreAtual(); desenharPre(); };
+    la.oninput = () => { d.l = parseQtd(la.value); salvarPreAtual(); desenharPre(); atualizarAreaPre(); };
+    al.oninput = () => { d.a = parseQtd(al.value); salvarPreAtual(); desenharPre(); atualizarAreaPre(); };
+    l.querySelector('button').onclick = () => { pc.descontos.splice(i, 1); salvarPreAtual(); renderPreDescontos(); desenharPre(); atualizarAreaPre(); };
+    host.appendChild(l);
+  });
+}
+function servicoPadraoPre(pc) {
+  const t = PRE_TIPOS[pc.tipo] || PRE_TIPOS.outro;
+  const lista = listaSugestoes();
+  for (const re of (t.servico || [])) { const s = lista.find(n => re.test(n)); if (s) return s; }
+  return t.nome;
+}
+function atualizarAreaPre() {
+  const pc = preAtual.pecas[prePecaIdx], ar = areaPeca(pc);
+  const rot = document.getElementById('pre-area-rot'), v = document.getElementById('pre-area-v');
+  if (rot) rot.textContent = pc.tipo === 'parede' && ar.desc > 0 ? 'Área (já sem portas/janelas)' : pc.tipo === 'piso' && pc.perda ? 'Área com ' + fmtNum(pc.perda) + '% de perda' : 'Área';
+  if (v) v.textContent = m2(ar.final);
+  renderPreTabs(); renderPreResumo();
+}
+// Desenho em escala: o retângulo muda de formato a cada número digitado
+function desenharPre() {
+  const host = document.getElementById('pre-desenho'); if (!host) return;
+  const pc = preAtual.pecas[prePecaIdx], A = Number(pc.a) || 0, B = Number(pc.b) || 0;
+  const W = 340, H = 240, mx = 46, my = 34;
+  if (!(A > 0 && B > 0)) { host.innerHTML = '<p class="hint-sm" style="padding:30px;text-align:center">Coloque as duas medidas para ver o desenho.</p>'; return; }
+  const k = Math.min((W - mx - 30) / A, (H - my - 16) / B), w = A * k, hh = B * k, x0 = mx - 16 + (W - mx - 30 - w) / 2 + 16 - 16, y0 = my + (H - my - 16 - hh) / 2;
+  const x = Math.max(16, x0), y = y0;
+  const fundo = { tijolo: 'url(#pre-tij)', piso: 'url(#pre-pis)', teto: '#3b4b5c', vidro: 'rgba(120,190,255,.28)', outro: '#2a4058' }[(PRE_TIPOS[pc.tipo] || PRE_TIPOS.outro).cor];
+  let svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Desenho ' + fmtQtd(A) + ' por ' + fmtQtd(B) + ' metros">'
+    + '<defs><marker id="pre-seta" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#F4C430"/></marker>'
+    + '<pattern id="pre-tij" width="24" height="12" patternUnits="userSpaceOnUse"><rect width="24" height="12" fill="#b5653a"/><path d="M0 0H24M0 6H24M12 0V6M0 6V12M24 6V12" stroke="#7a3f22" stroke-width="1"/></pattern>'
+    + '<pattern id="pre-pis" width="' + Math.max(8, k * 0.6) + '" height="' + Math.max(8, k * 0.6) + '" patternUnits="userSpaceOnUse"><rect width="100" height="100" fill="#e9dcc7"/><rect width="' + Math.max(8, k * 0.6) + '" height="' + Math.max(8, k * 0.6) + '" fill="none" stroke="#b9a68a" stroke-width="1.5"/></pattern></defs>';
+  svg += '<rect x="' + x + '" y="' + y + '" width="' + w + '" height="' + hh + '" fill="' + fundo + '" stroke="#e5edf5" stroke-width="3"/>';
+  if (pc.tipo === 'parede') {
+    let cx = x + Math.min(w * 0.08, 0.4 * k);
+    (pc.descontos || []).forEach(d => {
+      const dl = (Number(d.l) || 0) * k, da = (Number(d.a) || 0) * k; if (!dl || !da) return;
+      const porta = /porta/i.test(d.nome || '');
+      const dy = porta ? y + hh - da : y + Math.max(0, hh - da - 1.0 * k);
+      const dx = Math.min(cx, x + w - dl);
+      svg += '<rect x="' + dx + '" y="' + Math.max(y, dy) + '" width="' + Math.min(dl, w) + '" height="' + Math.min(da, hh) + '" fill="#0a1826" stroke="' + (porta ? '#cfd8e3' : '#9fd0ff') + '" stroke-width="2"/>'
+        + '<text x="' + (dx + Math.min(dl, w) / 2) + '" y="' + (Math.max(y, dy) + Math.min(da, hh) / 2 + 4) + '" fill="#cfd8e3" font-size="10" text-anchor="middle">' + esc((d.nome || 'vão').toLowerCase()) + '</text>';
+      cx = dx + dl + 0.3 * k;
+    });
+  }
+  if (pc.tipo === 'vidro') svg += '<path d="M' + (x + w * 0.15) + ' ' + (y + hh * 0.75) + ' L' + (x + w * 0.45) + ' ' + (y + hh * 0.25) + ' M' + (x + w * 0.3) + ' ' + (y + hh * 0.8) + ' L' + (x + w * 0.55) + ' ' + (y + hh * 0.4) + '" stroke="rgba(255,255,255,.5)" stroke-width="2"/>';
+  const ar = areaPeca(pc);
+  svg += '<rect x="' + (x + w / 2 - 44) + '" y="' + (y + hh / 2 - 15) + '" width="88" height="30" rx="8" fill="rgba(11,28,44,.85)"/><text x="' + (x + w / 2) + '" y="' + (y + hh / 2 + 6) + '" fill="#2BD67B" font-size="15" font-weight="900" text-anchor="middle">' + fmtM(ar.liquida) + ' m²</text>';
+  svg += '<line x1="' + x + '" y1="' + (y - 14) + '" x2="' + (x + w) + '" y2="' + (y - 14) + '" stroke="#F4C430" stroke-width="1.5" marker-start="url(#pre-seta)" marker-end="url(#pre-seta)"/>'
+    + '<rect x="' + (x + w / 2 - 30) + '" y="' + (y - 25) + '" width="60" height="20" rx="5" fill="#0a1826"/><text x="' + (x + w / 2) + '" y="' + (y - 10) + '" fill="#F4C430" font-size="14" font-weight="800" text-anchor="middle">' + fmtM(A) + ' m</text>'
+    + '<line x1="' + (x + w + 14) + '" y1="' + y + '" x2="' + (x + w + 14) + '" y2="' + (y + hh) + '" stroke="#F4C430" stroke-width="1.5" marker-start="url(#pre-seta)" marker-end="url(#pre-seta)"/>'
+    + '<rect x="' + (x + w - 2) + '" y="' + (y + hh / 2 - 10) + '" width="34" height="20" rx="5" fill="#0a1826"/><text x="' + (x + w + 15) + '" y="' + (y + hh / 2 + 5) + '" fill="#F4C430" font-size="12" font-weight="800" text-anchor="middle">' + fmtM(B) + '</text>';
+  host.innerHTML = svg + '</svg>';
+}
+function renderPreResumo() {
+  const host = document.getElementById('pre-resumo'); if (!host || !preAtual) return;
+  const porTipo = {};
+  let h = '<h3>Resumo das medidas</h3>';
+  preAtual.pecas.forEach((pc, i) => {
+    const ar = areaPeca(pc); porTipo[pc.tipo] = (porTipo[pc.tipo] || 0) + ar.final;
+    h += '<div class="pre-res-linha"><span>' + esc(nomePeca(pc, i)) + ' · ' + fmtM(pc.a) + ' × ' + fmtM(pc.b) + '</span><b>' + m2(ar.final) + '</b></div>';
+  });
+  const tipos = Object.keys(porTipo);
+  if (preAtual.pecas.length > 1) h += tipos.map(t => '<div class="pre-res-linha"><span><b style="color:inherit">Total ' + PRE_TIPOS[t].nome.toLowerCase() + '</b></span><b style="color:#2BD67B">' + m2(Math.round(porTipo[t] * 100) / 100) + '</b></div>').join('');
+  host.innerHTML = h;
+}
+document.addEventListener('input', function (e) {
+  const id = e.target && e.target.id; if (!preAtual || !id || id.indexOf('pre-') !== 0) return;
+  const pc = preAtual.pecas[prePecaIdx];
+  if (id === 'pre-cliente') preAtual.cliente = e.target.value;
+  else if (id === 'pre-local') preAtual.local = e.target.value;
+  else if (id === 'pre-nome') { pc.nome = e.target.value; renderPreTabs(); renderPreResumo(); }
+  else if (id === 'pre-servico') pc.servico = e.target.value;
+  else if (id === 'pre-a' || id === 'pre-b' || id === 'pre-perda') {
+    let t = e.target.value.replace(/[^0-9.,]/g, '').replace('.', ','); if (t !== e.target.value) e.target.value = t;
+    const n = parseFloat(t.replace(',', '.')) || 0;
+    if (id === 'pre-a') pc.a = n; else if (id === 'pre-b') pc.b = n; else pc.perda = Math.min(100, n);
+    desenharPre(); atualizarAreaPre();
+  } else return;
+  salvarPreAtual();
+});
+document.addEventListener('click', function (e) {
+  if (!preAtual) return;
+  const tp = e.target.closest && e.target.closest('#pre-peca .pre-tipo');
+  if (tp) { const pc = preAtual.pecas[prePecaIdx]; pc.tipo = tp.dataset.tipo; if (pc.tipo === 'piso' && !pc.perda) pc.perda = 10; salvarPreAtual(); renderPreEditor(); return; }
+  const ad = e.target.closest && e.target.closest('#pre-peca [data-add]');
+  if (ad) {
+    const pc = preAtual.pecas[prePecaIdx], nome = ad.dataset.add;
+    pc.descontos = pc.descontos || [];
+    pc.descontos.push(nome === 'Porta' ? { nome: 'Porta', l: 0.8, a: 2.1 } : nome === 'Janela' ? { nome: 'Janela', l: 1.2, a: 1 } : { nome: 'Vão', l: 1, a: 1 });
+    salvarPreAtual(); renderPreDescontos(); desenharPre(); atualizarAreaPre(); return;
+  }
+  if (e.target.id === 'pre-apagar-peca') {
+    if (!confirm('Apagar a medida "' + nomePeca(preAtual.pecas[prePecaIdx], prePecaIdx) + '"?')) return;
+    preAtual.pecas.splice(prePecaIdx, 1); prePecaIdx = Math.max(0, prePecaIdx - 1); salvarPreAtual(); renderPreEditor();
+  }
+});
+// Em casa: cada medida vira um item do orçamento (área em m², valor de "Meus preços" se tiver)
+function transformarPreEmOrcamento() {
+  if (!preAtual) return;
+  const pecas = preAtual.pecas.filter(pc => areaPeca(pc).final > 0);
+  if (!pecas.length) { alert('Coloque pelo menos uma medida antes.'); return; }
+  salvarPreAtual();
+  const pr = preAtual;
+  goToNewBudget();
+  const cl = document.getElementById('orc-cliente'); if (cl) cl.value = pr.cliente || '';
+  const ti = document.getElementById('orc-titulo'); if (ti && pr.local) ti.value = pr.local;
+  pecas.forEach(pc => {
+    const ar = areaPeca(pc), serv = (pc.servico || '').trim() || servicoPadraoPre(pc), preco = precoServico(serv);
+    colocarItemNoOrcamento({ desc: serv, qtd: ar.final, un: 'm²', valor: preco ? preco.valor : 0 });
+    const rows = document.querySelectorAll('#itens-container .item-row'), row = rows[rows.length - 1];
+    const det = row && row.querySelector('.item-detalhes');
+    if (det) {
+      let t = (pc.nome ? pc.nome.trim() + ': ' : '') + fmtM(pc.a) + ' × ' + fmtM(pc.b) + ' m';
+      if (pc.tipo === 'parede' && ar.desc > 0) t += ', descontando ' + (pc.descontos || []).map(d => (d.nome || 'vão').toLowerCase()).join(' e ');
+      if (pc.tipo === 'piso' && pc.perda) t += ', com ' + fmtNum(pc.perda) + '% de perda';
+      det.value = t;
+    }
+  });
+  if (typeof renumerarItens === 'function') renumerarItens();
+  if (typeof atualizarTotalOrcamento === 'function') atualizarTotalOrcamento();
+  const a = lerPres(), i = a.findIndex(x => x.id === pr.id); if (i >= 0) { a[i].virouOrcamento = Date.now(); gravarPres(a); }
+  const sem = pecas.filter(pc => !precoServico((pc.servico || '').trim() || servicoPadraoPre(pc))).length;
+  try { orcaonToast(pecas.length + (pecas.length > 1 ? ' medidas viraram itens.' : ' medida virou item.') + (sem ? ' Coloque o valor por m² dos itens sem preço.' : '')); } catch (_) {}
+}
 // Coloca um item no orçamento: usa a primeira linha vazia ou cria uma nova
 function colocarItemNoOrcamento(it) {
   const cont = document.getElementById('itens-container'); if (!cont) return;
