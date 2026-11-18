@@ -6493,18 +6493,18 @@ function cadUn(cad) { return CAD_UN[cad.un] ? cad.un : 'cm'; }
 function cadFmt(cad, cm) { const u = cadUn(cad); return (Math.round(cm / CAD_UN[u] * 1000) / 1000).toLocaleString('pt-BR', { maximumFractionDigits: 3 }) + ' ' + u; }
 function cadGuardar(pc) { const c = cadPre(pc), snap = JSON.stringify({ linhas: c.linhas, cubas: c.cubas, textos: c.textos }); c.hist.push(snap); if (c.hist.length > 40) c.hist.shift(); }
 function cadSvg(pc, raw) {
-  const cad = cadPre(pc);
+  const cad = cadPre(pc), k = 1 / Math.max(1, cadVista.z || 1);   // com zoom, letras e traços ficam do mesmo tamanho na tela
   let h = '<defs><pattern id="cad-gr" width="' + CAD_G + '" height="' + CAD_G + '" patternUnits="userSpaceOnUse"><path d="M' + CAD_G + ' 0H0V' + CAD_G + '" fill="none" stroke="#bcd3ee" stroke-width=".8"/></pattern></defs>'
     + '<rect x="-2000" y="-2000" width="' + (CAD_W + 4000) + '" height="' + (cadAlt(cad) + 4000) + '" fill="#fffdf4"/><rect x="-2000" y="-2000" width="' + (CAD_W + 4000) + '" height="' + (cadAlt(cad) + 4000) + '" fill="url(#cad-gr)"/><line x1="30" y1="0" x2="30" y2="' + cadAlt(cad) + '" stroke="#f3a3a3" stroke-width="1.2"/>';
   cad.cubas.forEach(c => { h += '<rect x="' + (c.x - 22) + '" y="' + (c.y - 15) + '" width="44" height="30" rx="10" fill="#dbeafe" stroke="#1e3a8a" stroke-width="2"/><text x="' + c.x + '" y="' + (c.y + 4) + '" font-size="10" font-weight="800" fill="#1e3a8a" text-anchor="middle">cuba</text>'; });
-  cad.linhas.forEach(l => { h += '<line x1="' + l.x1 + '" y1="' + l.y1 + '" x2="' + l.x2 + '" y2="' + l.y2 + '" stroke="#1e3a8a" stroke-width="3" stroke-linecap="round"/>'; });
-  cadPontas(cad).forEach(q => { h += '<circle cx="' + q[0] + '" cy="' + q[1] + '" r="2.6" fill="#1e3a8a"/>'; });
+  cad.linhas.forEach(l => { h += '<line x1="' + l.x1 + '" y1="' + l.y1 + '" x2="' + l.x2 + '" y2="' + l.y2 + '" stroke="#1e3a8a" stroke-width="' + (3 * k) + '" stroke-linecap="round"/>'; });
+  cadPontas(cad).forEach(q => { h += '<circle cx="' + q[0] + '" cy="' + q[1] + '" r="' + (2.6 * k) + '" fill="#1e3a8a"/>'; });
   cad.linhas.forEach(l => {
-    const mx = (l.x1 + l.x2) / 2, my = (l.y1 + l.y2) / 2, L = Math.hypot(l.x2 - l.x1, l.y2 - l.y1) || 1, nx = -(l.y2 - l.y1) / L * 13, ny = (l.x2 - l.x1) / L * 13;
-    const t = cadLetra(cad.linhas.indexOf(l)) + ' · ' + (l.cm > 0 ? cadFmt(cad, l.cm) : '?'), w = t.length * 6.4 + 12;
-    h += '<g><rect x="' + (mx + nx - w / 2) + '" y="' + (my + ny - 9) + '" width="' + w + '" height="17" rx="5" fill="' + (l.cm > 0 ? '#fff' : '#fde68a') + '" stroke="' + (l.cm > 0 ? '#c2410c' : '#d97706') + '" stroke-width="1"/><text x="' + (mx + nx) + '" y="' + (my + ny + 4) + '" font-size="11" font-weight="800" fill="#c2410c" text-anchor="middle">' + t + '</text></g>';
+    const f = 0.75 * k, mx = (l.x1 + l.x2) / 2, my = (l.y1 + l.y2) / 2, L = Math.hypot(l.x2 - l.x1, l.y2 - l.y1) || 1, nx = -(l.y2 - l.y1) / L * 10 * f, ny = (l.x2 - l.x1) / L * 10 * f;
+    const t = cadLetra(cad.linhas.indexOf(l)) + ' · ' + (l.cm > 0 ? cadFmt(cad, l.cm) : '?'), w = (t.length * 6.4 + 10) * f;
+    h += '<g><rect x="' + (mx + nx - w / 2) + '" y="' + (my + ny - 8 * f) + '" width="' + w + '" height="' + (15 * f) + '" rx="' + (4 * f) + '" fill="' + (l.cm > 0 ? '#fff' : '#fde68a') + '" stroke="' + (l.cm > 0 ? '#c2410c' : '#d97706') + '" stroke-width="' + f + '"/><text x="' + (mx + nx) + '" y="' + (my + ny + 3.5 * f) + '" font-size="' + (11 * f) + '" font-weight="800" fill="#c2410c" text-anchor="middle">' + t + '</text></g>';
   });
-  cad.textos.forEach(t => { h += '<text x="' + t.x + '" y="' + t.y + '" font-size="13" font-style="italic" font-weight="700" fill="#374151" text-anchor="middle"></text>'; });
+  cad.textos.forEach(t => { h += '<text x="' + t.x + '" y="' + t.y + '" font-size="' + (12 * k) + '" font-style="italic" font-weight="700" fill="#374151" text-anchor="middle"></text>'; });
   if (raw && raw.length > 1) h += '<polyline points="' + raw.map(q => q.join(',')).join(' ') + '" fill="none" stroke="#94a3b8" stroke-width="2" stroke-dasharray="4 3"/>';
   return h;
 }
@@ -6516,6 +6516,7 @@ function cadAplicarVista(pc) {
   const H = cadAlt(cadPre(pc)), z = cadVista.z = Math.max(1, Math.min(6, cadVista.z || 1)), w = CAD_W / z, h = H / z;
   cadVista.x = Math.max(0, Math.min(CAD_W - w, cadVista.x || 0)); cadVista.y = Math.max(0, Math.min(H - h, cadVista.y || 0));
   svg.setAttribute('viewBox', cadVista.x + ' ' + cadVista.y + ' ' + w + ' ' + h);
+  if (cadVista.zDesenho !== z && !cadTraco) { cadVista.zDesenho = z; cadDesenhar(pc); }
   const v = document.getElementById('cad-z-v'); if (v) v.textContent = (Math.round(z * 10) / 10).toLocaleString('pt-BR') + '×';
 }
 function cadZoom(pc, fator) {
