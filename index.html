@@ -871,6 +871,14 @@ body.light .pp-topo,body.light .pp-nav{background:#fff}
 .pre-card-sep{display:flex;justify-content:space-between;align-items:center;margin-top:12px;padding-top:8px;border-top:1px dashed var(--border);font-weight:800;color:var(--text-secondary);font-size:13px}
 .pre-card-sep button{background:none;border:0;color:#ff8a65;font-size:22px;line-height:1;cursor:pointer;padding:0 4px}
 .pre-card-mais{margin-top:auto;min-height:46px;border-radius:24px;border:0;background:var(--accent,#F4C430);color:#0B1C2C;font-weight:900;font-size:15px;font-family:inherit;cursor:pointer;margin-top:14px}
+.cad-ferrs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:6px 0 8px}
+.cad-f{display:flex;flex-direction:column;align-items:center;gap:2px;min-height:56px;border-radius:12px;border:2px solid var(--border);background:var(--bg-primary,#0B1C2C);color:var(--text-primary);font-size:13px;font-weight:800;font-family:inherit;cursor:pointer}
+.cad-f b{font-size:20px;line-height:1.1}
+.cad-f.on{border-color:var(--accent,#F4C430);background:rgba(244,196,48,.16);color:var(--accent,#F4C430)}
+.cad-dica{font-size:14px;color:var(--text-secondary);margin:2px 2px 8px;min-height:20px}
+.cad-svg{display:block;width:100%;height:auto;border-radius:12px;border:2px solid #e2d6b5;touch-action:none;-webkit-user-select:none;user-select:none;box-shadow:0 4px 14px rgba(0,0,0,.25)}
+.cad-acoes{display:flex;gap:8px;margin-top:8px}.cad-acoes button{flex:1;min-height:44px}
+#cad-info{margin-top:8px;font-size:14px;font-weight:700}
 .pre-res-sub{padding-left:14px!important;font-size:14px;opacity:.9}
 .pre-ops-chips .pre-tipo{padding:9px 13px;font-size:14.5px}
 .pre-mats{margin-top:12px;padding-top:10px;border-top:1px dashed var(--border)}
@@ -6002,6 +6010,7 @@ const PRE_TIPOS = {
   espelho:    { nome: 'Espelho', tipo: 'area', a: 'Largura', b: 'Altura', vis: 'vidro', padrao: [1, 0.8], servico: [/espelho/i, /vidro/i] },
   telhado:    { nome: 'Telhado', tipo: 'area', a: 'Comprimento', b: 'Largura', vis: 'telha', padrao: [8, 6], servico: [/telhado/i, /telha/i, /cobertura/i] },
   grama:      { nome: 'Grama / gramado', tipo: 'area', a: 'Comprimento', b: 'Largura', vis: 'grama', padrao: [10, 5], servico: [/grama/i, /plantio/i, /roçada/i, /roçagem/i, /jardim/i] },
+  caderno:    { nome: '✏️ Desenho no caderno', tipo: 'caderno', padrao: [0, 0], servico: [/bancada/i, /pia/i, /tampo/i, /granito/i, /mármore/i] },
   bancada:    { nome: 'Bancada / tampo', tipo: 'area', a: 'Comprimento', b: 'Profundidade', vis: 'pedra', padrao: [2, 0.6], servico: [/bancada/i, /pia/i, /tampo/i, /granito/i, /mármore/i] },
   outro:      { nome: 'Área (m²)', tipo: 'area', a: 'Comprimento', b: 'Largura', vis: 'outro', servico: [] },
   // metros (linear)
@@ -6058,7 +6067,7 @@ const PRE_PROFISSOES = {
   'Climatização': ['aparelhos_ar', 'tubo_cobre'],
   'Inst. Câmeras': ['cameras', 'cabeamento'],
   'Jardinagem': ['grama', 'cerca_viva', 'arvores'],
-  'Marmorista': ['bancada', 'soleira', 'cuba'],
+  'Marmorista': ['caderno', 'bancada', 'soleira', 'cuba'],
   'Manutenção de piscinas': ['piscina'],
   'Chaveiro': ['fechaduras'],
   'Estofador': ['estofado', 'tecido'],
@@ -6068,7 +6077,7 @@ const PRE_PROFISSOES = {
   'Outro': []
 };
 const PRE_GERAIS = ['outro', 'metros', 'unidades', 'volume'];
-const PRE_UNIDADE = { area: 'm²', linear: 'm', un: 'un', volume: 'm³', lista: 'm' };
+const PRE_UNIDADE = { area: 'm²', linear: 'm', un: 'un', volume: 'm³', lista: 'm', caderno: 'm²' };
 // ---- Lista por cartões (Calheiro): tipo de chapa + cartões com corte e metragem ----
 const PRE_ICONES = {
   moldura: 'M6 6v11h11l2-3', redonda: 'M4 8a8 8 0 0 0 16 0', coxo: 'M6 6v11h12V6', agua: 'M3 7l9 10 9-10', chale: 'M4 8l5 9h11',
@@ -6138,7 +6147,7 @@ function preTemPro() { return typeof usuarioTemPro === 'function' && usuarioTemP
 function preTemConteudo(pr) {
   return !!((pr.cliente || '').trim() || (pr.local || '').trim() || (pr.notas || '').trim() || (pr.pecas || []).some(pc => {
     const n = novaPecaPre(pc.tipo, pc.prof);
-    return (pc.nome || '').trim() || (pc.descontos || []).length || linhasLista(pc).length || pc.a !== n.a || pc.b !== n.b || (pc.c || 0) !== (n.c || 0);
+    return (pc.nome || '').trim() || (pc.descontos || []).length || linhasLista(pc).length || ((pc.cad && pc.cad.linhas) || []).length || pc.a !== n.a || pc.b !== n.b || (pc.c || 0) !== (n.c || 0);
   }));
 }
 function contarPreSePreciso(pr) {
@@ -6167,6 +6176,7 @@ function novaPecaPre(tipo, prof) {
 }
 // Resultado da medida: m², metros, unidades ou m³
 function medidaPeca(pc) {
+  if (defPre(pc).tipo === 'caderno') { const st = statsCaderno(pc), t = st.area > 0 ? st.area : (Number(pc.a) || 0); return { bruta: t, desc: 0, liquida: t, final: Math.round(t * 100) / 100 }; }
   if (defPre(pc).tipo === 'lista') { const t = linhasLista(pc).reduce((s, x) => s + x.q, 0); return { bruta: t, desc: 0, liquida: t, final: Math.round(t * 100) / 100 }; }
   const d = defPre(pc), A = Number(pc.a) || 0, B = Number(pc.b) || 0, C = Number(pc.c) || 0, perda = Number(pc.perda) || 0;
   let bruta = 0, desc = 0;
@@ -6184,6 +6194,7 @@ function fmtMedida(pc, n) { if (defPre(pc).tipo === 'lista') return pc.lista ? t
 function nomePeca(pc, i) { return (pc.nome || '').trim() || (defPre(pc).nome + ' ' + (i + 1)); }
 function textoMedidas(pc) {
   const d = defPre(pc), un = unPre(pc);
+  if (d.tipo === 'caderno') { const l = (cadPre(pc).linhas || []).filter(x => x.cm > 0).map(x => fmtNum(x.cm) + ' cm'); return l.length ? 'Medidas: ' + l.join(', ') : 'Desenho sem medidas'; }
   if (d.tipo === 'lista') { const n = linhasLista(pc).length; return (listaPre(pc).chapa || 'chapa não escolhida') + ' · ' + n + (n === 1 ? ' peça' : ' peças'); }
   if (d.tipo === 'area') return fmtM(pc.a) + ' × ' + fmtM(pc.b) + ' m';
   if (d.tipo === 'linear') return fmtM(pc.a) + ' ' + un + ((Number(pc.b) || 1) > 1 ? ' × ' + fmtNum(pc.b) : '');
@@ -6251,8 +6262,8 @@ function aplicarPassoPre() {
   const passos = passosPre(); if (!passos.includes(prePasso)) prePasso = passos.includes('materiais') && prePasso === 'detalhes' ? 'materiais' : 'medidas';
   const i = passos.indexOf(prePasso), info = PRE_PASSOS[prePasso], pc = preAtual.pecas[prePecaIdx];
   tela.querySelectorAll('[data-passo]').forEach(el => el.classList.toggle('pp-esc', el.dataset.passo !== prePasso));
-  const lista = prePasso === 'medidas' && pc && defPre(pc).tipo === 'lista';
-  const q = document.getElementById('pp-q'); if (q) q.innerHTML = esc(lista ? 'O que vai fazer?' : info[1]) + '<small>' + esc(lista ? 'Escolha a chapa e coloque o corte e a metragem de cada peça. Deslize os cartões para o lado.' : info[2]) + '</small>';
+  const lista = prePasso === 'medidas' && pc && defPre(pc).tipo === 'lista', cadq = prePasso === 'medidas' && pc && defPre(pc).tipo === 'caderno';
+  const q = document.getElementById('pp-q'); if (q) q.innerHTML = esc(lista ? 'O que vai fazer?' : cadq ? 'Desenhe como no caderno' : info[1]) + '<small>' + esc(lista ? 'Escolha a chapa e coloque o corte e a metragem de cada peça. Deslize os cartões para o lado.' : cadq ? 'Risque com o dedo: vira linha reta sozinho. Depois toque em 📏 e coloque os cm.' : info[2]) + '</small>';
   const cab = tela.querySelector('.app-header');
   const topo = document.getElementById('pp-topo');
   if (topo) {
@@ -6336,11 +6347,12 @@ function renderPrePeca() {
   h += '<div class="form-card pre-sec" data-passo="medidas">' + secTitPre(n++, 'Medidas', ajudaMed)
     + '<label for="pre-nome">Nome desta medida <span class="pre-opc">(opcional)</span></label><input type="text" id="pre-nome" autocomplete="off" placeholder="Ex.: Sala, Parede da frente · ' + esc(nomePeca(pc, prePecaIdx)) + '">';
   if (d.tipo === 'lista') h += '<div id="pre-cat"></div>';
+  else if (d.tipo === 'caderno') h += '<div id="pre-cad"></div><div class="pre-med" style="margin-top:10px">' + campoPre('pre-a', 'Área (se não fechar o desenho)', pc.a, 'm²') + '<div></div></div>';
   else if (d.tipo === 'area') h += '<div class="pre-med">' + campoPre('pre-a', d.a, pc.a, 'm') + campoPre('pre-b', d.b, pc.b, 'm') + '</div>';
   else if (d.tipo === 'linear') h += '<div class="pre-med">' + campoPre('pre-a', 'Comprimento', pc.a, unPre(pc)) + campoPre('pre-b', d.bRot || 'Quantas vezes', pc.b, '×', true) + '</div>';
   else if (d.tipo === 'un') h += '<div class="pre-med">' + campoPre('pre-a', 'Quantidade', pc.a, 'un', true) + '<div></div></div>';
   else h += '<div class="pre-med pre-med3">' + campoPre('pre-a', d.a, pc.a, 'm') + campoPre('pre-b', d.b, pc.b, 'm') + campoPre('pre-c', d.c, pc.c, 'm') + '</div>';
-  if (d.tipo !== 'lista') h += '<div class="pre-desenho" id="pre-desenho"></div>';
+  if (d.tipo !== 'lista' && d.tipo !== 'caderno') h += '<div class="pre-desenho" id="pre-desenho"></div>';
   if (d.tipo === 'area' && d.descontos) h += '<label>Descontar portas e janelas</label><div id="pre-descs"></div><div class="pre-desc-bts"><button type="button" class="btn-dark-sm" data-add="Porta">+ Porta</button><button type="button" class="btn-dark-sm" data-add="Janela">+ Janela</button><button type="button" class="btn-dark-sm" data-add="Vão">+ Outro vão</button></div>';
   if ((d.tipo === 'area' || d.tipo === 'linear') && (d.perda != null || pc.perda)) h += '<div class="pre-med" style="margin-top:8px">' + campoPre('pre-perda', d.tipo === 'linear' ? 'Sobra / perda' : 'Perda e recorte', pc.perda, '%') + '<div></div></div>';
   h += '<div class="pre-area"><span id="pre-area-rot"></span><b id="pre-area-v"></b></div></div>';
@@ -6354,8 +6366,185 @@ function renderPrePeca() {
   host.innerHTML = h;
   document.getElementById('pre-nome').value = pc.nome || '';
   const sv = document.getElementById('pre-servico'); if (sv) sv.value = pc.servico || '';
-  renderCatalogoPre(); renderOpcoesPre(); renderPreDescontos(); desenharPre(); atualizarAreaPre();
+  renderCatalogoPre(); renderCadernoPre(); renderOpcoesPre(); renderPreDescontos(); desenharPre(); atualizarAreaPre();
 }
+// ---- Caderno: desenho à mão que vira linhas retas, com medidas em cm ----
+const CAD_W = 360, CAD_H = 300, CAD_G = 15;
+let cadFerr = 'linha', cadTraco = null;
+function cadPre(pc) { pc.cad = pc.cad && typeof pc.cad === 'object' ? pc.cad : {}; ['linhas', 'cubas', 'textos', 'hist'].forEach(k => { if (!Array.isArray(pc.cad[k])) pc.cad[k] = []; }); return pc.cad; }
+const cadGrade = v => Math.round(v / CAD_G) * CAD_G;
+function cadPontas(cad) { const l = []; cad.linhas.forEach(x => { l.push([x.x1, x.y1], [x.x2, x.y2]); }); return l; }
+function cadGrudar(p, cad, extra) {
+  let mel = null, md = 16;
+  cadPontas(cad).concat(extra || []).forEach(q => { const d = Math.hypot(q[0] - p[0], q[1] - p[1]); if (d < md) { md = d; mel = q; } });
+  return mel ? [mel[0], mel[1]] : [cadGrade(p[0]), cadGrade(p[1])];
+}
+// simplifica o traço (Ramer–Douglas–Peucker)
+function cadRdp(pts, eps) {
+  if (pts.length < 3) return pts;
+  const [a, b] = [pts[0], pts[pts.length - 1]], L = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1;
+  let im = 0, dm = 0;
+  for (let i = 1; i < pts.length - 1; i++) { const d = Math.abs((b[0] - a[0]) * (a[1] - pts[i][1]) - (a[0] - pts[i][0]) * (b[1] - a[1])) / L; if (d > dm) { dm = d; im = i; } }
+  if (dm <= eps) return [a, b];
+  return cadRdp(pts.slice(0, im + 1), eps).slice(0, -1).concat(cadRdp(pts.slice(im), eps));
+}
+// transforma um traço torto em linhas retas (deitada, em pé ou 45°), grudando na grade e nas pontas
+function cadEndireitar(raw, cad) {
+  let v = cadRdp(raw, 14); const novas = [];
+  // cantos tremidos: tira pedacinhos curtos (o canto fica num ponto só)
+  for (let k = 1; k < v.length - 1; k++) { const a = v[k - 1], b = v[k]; if (Math.hypot(b[0] - a[0], b[1] - a[1]) < 22) { v.splice(k, 1); k--; } }
+  if (v.length > 2) { const a = v[v.length - 2], b = v[v.length - 1]; if (Math.hypot(b[0] - a[0], b[1] - a[1]) < 22) v.splice(v.length - 2, 1); }
+  if (v.length < 2) return novas;
+  let cur = cadGrudar(v[0], cad); const ini = cur.slice();
+  for (let i = 1; i < v.length; i++) {
+    const dx = v[i][0] - v[i - 1][0], dy = v[i][1] - v[i - 1][1]; if (Math.hypot(dx, dy) < 8) continue;
+    const ang = Math.atan2(dy, dx) * 180 / Math.PI, alvo = Math.round(ang / 45) * 45;
+    let nx, ny;
+    if (Math.abs(ang - alvo) <= 18) {
+      const r = alvo * Math.PI / 180, cx = Math.round(Math.cos(r)), cy = Math.round(Math.sin(r));
+      if (cy === 0) { nx = cadGrade(v[i][0]); ny = cur[1]; }
+      else if (cx === 0) { nx = cur[0]; ny = cadGrade(v[i][1]); }
+      else { const d = cadGrade((Math.abs(dx) + Math.abs(dy)) / 2); nx = cur[0] + cx * d; ny = cur[1] + cy * d; }
+    } else { nx = cadGrade(v[i][0]); ny = cadGrade(v[i][1]); }
+    let fim = [nx, ny];
+    if (i === v.length - 1) { const g = cadGrudar(fim, cad, [ini]); if (Math.hypot(g[0] - fim[0], g[1] - fim[1]) < 16) fim = g; }
+    fim = [Math.max(0, Math.min(CAD_W, fim[0])), Math.max(0, Math.min(CAD_H, fim[1]))];
+    if (fim[0] !== cur[0] || fim[1] !== cur[1]) novas.push({ x1: cur[0], y1: cur[1], x2: fim[0], y2: fim[1], cm: 0 });
+    cur = fim;
+  }
+  return novas;
+}
+// áreas: acha contornos fechados; se todas as linhas têm medida, monta a forma com as medidas reais
+function cadContornos(cad) {
+  const k = (x, y) => x + ',' + y, usadas = new Set(), out = [];
+  cad.linhas.forEach((l0, i0) => {
+    if (usadas.has(i0)) return;
+    const cam = [i0], vis = new Set([i0]); let ponta = k(l0.x2, l0.y2); const ini = k(l0.x1, l0.y1); let ok = false;
+    for (let passo = 0; passo < 60; passo++) {
+      if (ponta === ini) { ok = true; break; }
+      const j = cad.linhas.findIndex((l, ix) => !vis.has(ix) && (k(l.x1, l.y1) === ponta || k(l.x2, l.y2) === ponta)); if (j < 0) break;
+      const l = cad.linhas[j]; vis.add(j); cam.push(j); ponta = k(l.x1, l.y1) === ponta ? k(l.x2, l.y2) : k(l.x1, l.y1);
+    }
+    if (ok && cam.length >= 3) { cam.forEach(ix => usadas.add(ix)); out.push(cam); }
+  });
+  return out;
+}
+function statsCaderno(pc) {
+  const cad = cadPre(pc); let area = 0, perim = 0, todos = true;
+  cadContornos(cad).forEach(cam => {
+    let x = 0, y = 0, pts = [[0, 0]], ponta = null, completo = true;
+    const l0 = cad.linhas[cam[0]]; ponta = [l0.x1, l0.y1];
+    cam.forEach(ix => {
+      const l = cad.linhas[ix], frente = l.x1 === ponta[0] && l.y1 === ponta[1];
+      const a = frente ? [l.x1, l.y1] : [l.x2, l.y2], b = frente ? [l.x2, l.y2] : [l.x1, l.y1]; ponta = b;
+      const L = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1; if (!(l.cm > 0)) completo = false;
+      x += (b[0] - a[0]) / L * (l.cm || 0); y += (b[1] - a[1]) / L * (l.cm || 0); pts.push([x, y]);
+    });
+    if (!completo) { todos = false; return; }
+    let s2 = 0; for (let i = 0; i < pts.length - 1; i++) s2 += pts[i][0] * pts[i + 1][1] - pts[i + 1][0] * pts[i][1];
+    area += Math.abs(s2) / 2 / 10000; perim += cam.reduce((t, ix) => t + cad.linhas[ix].cm, 0) / 100;
+  });
+  const maior = Math.max(0, ...cad.linhas.map(l => l.cm || 0)) / 100;
+  return { area: Math.round(area * 100) / 100, perim: Math.round(perim * 100) / 100, maior, fechado: cadContornos(cad).length > 0, todos };
+}
+function cadGuardar(pc) { const c = cadPre(pc), snap = JSON.stringify({ linhas: c.linhas, cubas: c.cubas, textos: c.textos }); c.hist.push(snap); if (c.hist.length > 40) c.hist.shift(); }
+function cadSvg(pc, raw) {
+  const cad = cadPre(pc);
+  let h = '<defs><pattern id="cad-gr" width="' + CAD_G + '" height="' + CAD_G + '" patternUnits="userSpaceOnUse"><path d="M' + CAD_G + ' 0H0V' + CAD_G + '" fill="none" stroke="#bcd3ee" stroke-width=".8"/></pattern></defs>'
+    + '<rect width="' + CAD_W + '" height="' + CAD_H + '" fill="#fffdf4"/><rect width="' + CAD_W + '" height="' + CAD_H + '" fill="url(#cad-gr)"/><line x1="30" y1="0" x2="30" y2="' + CAD_H + '" stroke="#f3a3a3" stroke-width="1.2"/>';
+  cad.cubas.forEach(c => { h += '<rect x="' + (c.x - 22) + '" y="' + (c.y - 15) + '" width="44" height="30" rx="10" fill="#dbeafe" stroke="#1e3a8a" stroke-width="2"/><text x="' + c.x + '" y="' + (c.y + 4) + '" font-size="10" font-weight="800" fill="#1e3a8a" text-anchor="middle">cuba</text>'; });
+  cad.linhas.forEach(l => { h += '<line x1="' + l.x1 + '" y1="' + l.y1 + '" x2="' + l.x2 + '" y2="' + l.y2 + '" stroke="#1e3a8a" stroke-width="3" stroke-linecap="round"/>'; });
+  cadPontas(cad).forEach(q => { h += '<circle cx="' + q[0] + '" cy="' + q[1] + '" r="2.6" fill="#1e3a8a"/>'; });
+  cad.linhas.forEach(l => {
+    const mx = (l.x1 + l.x2) / 2, my = (l.y1 + l.y2) / 2, L = Math.hypot(l.x2 - l.x1, l.y2 - l.y1) || 1, nx = -(l.y2 - l.y1) / L * 13, ny = (l.x2 - l.x1) / L * 13;
+    const t = l.cm > 0 ? fmtNum(l.cm) + ' cm' : '?', w = t.length * 6.6 + 10;
+    h += '<g><rect x="' + (mx + nx - w / 2) + '" y="' + (my + ny - 9) + '" width="' + w + '" height="17" rx="5" fill="' + (l.cm > 0 ? '#fff' : '#fde68a') + '" stroke="' + (l.cm > 0 ? '#c2410c' : '#d97706') + '" stroke-width="1"/><text x="' + (mx + nx) + '" y="' + (my + ny + 4) + '" font-size="11" font-weight="800" fill="#c2410c" text-anchor="middle">' + t + '</text></g>';
+  });
+  cad.textos.forEach(t => { h += '<text x="' + t.x + '" y="' + t.y + '" font-size="13" font-style="italic" font-weight="700" fill="#374151" text-anchor="middle"></text>'; });
+  if (raw && raw.length > 1) h += '<polyline points="' + raw.map(q => q.join(',')).join(' ') + '" fill="none" stroke="#94a3b8" stroke-width="2" stroke-dasharray="4 3"/>';
+  return h;
+}
+function cadDesenhar(pc, raw) {
+  const svg = document.getElementById('cad-svg'); if (!svg) return;
+  svg.innerHTML = cadSvg(pc, raw);
+  const tx = svg.querySelectorAll('text[font-style="italic"]'); cadPre(pc).textos.forEach((t, i) => { if (tx[i]) tx[i].textContent = t.t; });
+}
+const CAD_FERRS = [['linha', '✏️', 'Desenhar'], ['ret', '▭', 'Retângulo'], ['cuba', '◯', 'Cuba'], ['medida', '📏', 'Medida'], ['texto', '✍️', 'Texto'], ['apagar', '🧽', 'Apagar']];
+const CAD_DICAS = { linha: 'Risque com o dedo. O traço vira linha reta sozinho.', ret: 'Arraste na diagonal para fazer um retângulo.', cuba: 'Toque onde fica a cuba.', medida: 'Toque numa linha e digite a medida em cm.', texto: 'Toque onde quer escrever (ex.: parede, fogão).', apagar: 'Toque numa linha, cuba ou texto para apagar.' };
+function renderCadernoPre() {
+  const host = document.getElementById('pre-cad'); if (!host) return;
+  const pc = preAtual.pecas[prePecaIdx]; cadPre(pc);
+  host.innerHTML = '<div class="cad-ferrs">' + CAD_FERRS.map(f => '<button type="button" class="cad-f' + (f[0] === cadFerr ? ' on' : '') + '" data-cad-f="' + f[0] + '"><b>' + f[1] + '</b>' + f[2] + '</button>').join('') + '</div>'
+    + '<p class="cad-dica" id="cad-dica"></p>'
+    + '<svg id="cad-svg" class="cad-svg" viewBox="0 0 ' + CAD_W + ' ' + CAD_H + '" xmlns="http://www.w3.org/2000/svg"></svg>'
+    + '<div class="cad-acoes"><button type="button" class="btn-dark-sm" data-cad-a="desfazer">↶ Desfazer</button><button type="button" class="btn-dark-sm" data-cad-a="limpar">🗑 Limpar tudo</button></div>'
+    + '<p class="hint-sm" id="cad-info"></p>';
+  host.querySelector('#cad-dica').textContent = CAD_DICAS[cadFerr];
+  cadDesenhar(pc); cadInfo(pc);
+  const svg = host.querySelector('#cad-svg');
+  const pt = ev => { const r = svg.getBoundingClientRect(); return [(ev.clientX - r.left) / r.width * CAD_W, (ev.clientY - r.top) / r.height * CAD_H]; };
+  svg.addEventListener('pointerdown', ev => { ev.preventDefault(); try { svg.setPointerCapture(ev.pointerId); } catch (_) {} cadTraco = [pt(ev)]; });
+  svg.addEventListener('pointermove', ev => {
+    if (!cadTraco) return; const q = pt(ev), u = cadTraco[cadTraco.length - 1]; if (Math.hypot(q[0] - u[0], q[1] - u[1]) < 2) return; cadTraco.push(q);
+    if (cadFerr === 'linha') cadDesenhar(pc, cadTraco);
+    else if (cadFerr === 'ret') { const a = cadTraco[0]; cadDesenhar(pc, [a, [q[0], a[1]], q, [a[0], q[1]], a]); }
+  });
+  const fim = ev => { if (!cadTraco) return; const tr = cadTraco; cadTraco = null; cadAcao(pc, tr); };
+  svg.addEventListener('pointerup', fim); svg.addEventListener('pointercancel', () => { cadTraco = null; cadDesenhar(pc); });
+}
+function cadInfo(pc) {
+  const el = document.getElementById('cad-info'); if (!el) return;
+  const st = statsCaderno(pc), cad = cadPre(pc), falta = cad.linhas.filter(l => !(l.cm > 0)).length;
+  el.textContent = !cad.linhas.length ? 'Comece desenhando a pedra. Depois toque em 📏 Medida para colocar os cm.'
+    : st.area > 0 ? '✓ Área pelo desenho: ' + fmtM(st.area) + ' m²' + (falta ? ' · ' + falta + ' linha(s) sem medida fora do contorno' : '')
+    : falta ? 'Falta medida em ' + falta + (falta === 1 ? ' linha' : ' linhas') + ' (as amarelas com "?").' : st.fechado ? 'Confira as medidas.' : 'Feche o desenho (a última linha encostando na primeira) para calcular a área sozinho.';
+}
+function cadPerto(pc, p) {
+  const cad = cadPre(pc); let mel = null, md = 14;
+  cad.linhas.forEach((l, i) => {
+    const dx = l.x2 - l.x1, dy = l.y2 - l.y1, L2 = dx * dx + dy * dy || 1, t = Math.max(0, Math.min(1, ((p[0] - l.x1) * dx + (p[1] - l.y1) * dy) / L2));
+    const d = Math.hypot(l.x1 + t * dx - p[0], l.y1 + t * dy - p[1]); if (d < md) { md = d; mel = { tipo: 'linha', i }; }
+  });
+  cad.cubas.forEach((c, i) => { const d = Math.hypot(c.x - p[0], c.y - p[1]); if (d < 24 && d < md + 10) { md = d; mel = { tipo: 'cuba', i }; } });
+  cad.textos.forEach((t, i) => { const d = Math.hypot(t.x - p[0], t.y - 4 - p[1]); if (d < 22 && d < md + 6) { md = d; mel = { tipo: 'texto', i }; } });
+  return mel;
+}
+async function cadAcao(pc, tr) {
+  const cad = cadPre(pc), a = tr[0], b = tr[tr.length - 1];
+  const comp = tr.reduce((t, q, i) => i ? t + Math.hypot(q[0] - tr[i - 1][0], q[1] - tr[i - 1][1]) : 0, 0), toque = comp < 10;
+  if (cadFerr === 'linha') {
+    if (toque) { const m = cadPerto(pc, a); if (m && m.tipo === 'linha') await cadMedir(pc, m.i); else cadDesenhar(pc); return; }
+    const novas = cadEndireitar(tr, cad); if (!novas.length) { cadDesenhar(pc); return; }
+    cadGuardar(pc); cad.linhas.push(...novas);
+  } else if (cadFerr === 'ret') {
+    if (toque) { cadDesenhar(pc); return; }
+    const p = cadGrudar(a, cad), q = [cadGrade(b[0]), cadGrade(b[1])]; if (p[0] === q[0] || p[1] === q[1]) { cadDesenhar(pc); return; }
+    const id = Date.now(); cadGuardar(pc);
+    cad.linhas.push({ x1: p[0], y1: p[1], x2: q[0], y2: p[1], cm: 0, r: id, lado: 'h' }, { x1: q[0], y1: p[1], x2: q[0], y2: q[1], cm: 0, r: id, lado: 'v' }, { x1: q[0], y1: q[1], x2: p[0], y2: q[1], cm: 0, r: id, lado: 'h' }, { x1: p[0], y1: q[1], x2: p[0], y2: p[1], cm: 0, r: id, lado: 'v' });
+  } else if (cadFerr === 'cuba') { cadGuardar(pc); cad.cubas.push({ x: cadGrade(b[0]), y: cadGrade(b[1]) }); }
+  else if (cadFerr === 'medida') { const m = cadPerto(pc, b); if (m && m.tipo === 'linha') await cadMedir(pc, m.i); else cadDesenhar(pc); return; }
+  else if (cadFerr === 'texto') { const t = ((await orcaonPerguntar('O que quer escrever aqui? (ex.: parede, fogão, janela)', '')) || '').trim(); if (!t) return; cadGuardar(pc); cad.textos.push({ x: b[0], y: b[1], t: t.slice(0, 30) }); }
+  else if (cadFerr === 'apagar') { const m = cadPerto(pc, b); if (!m) return; cadGuardar(pc); (m.tipo === 'linha' ? cad.linhas : m.tipo === 'cuba' ? cad.cubas : cad.textos).splice(m.i, 1); }
+  cadSalvo(pc);
+}
+async function cadMedir(pc, i) {
+  const cad = cadPre(pc), l = cad.linhas[i]; if (!l) return;
+  const v = await orcaonPerguntar('Medida desta linha em cm (ex.: 120):', l.cm ? fmtNum(l.cm) : ''); if (v == null) return;
+  const n = parseQtd(String(v).replace(/cm/i, '').trim()) || 0; cadGuardar(pc); l.cm = n;
+  // retângulo: o lado de frente recebe a mesma medida se estiver vazio
+  if (l.r) cad.linhas.forEach(o => { if (o !== l && o.r === l.r && o.lado === l.lado && !(o.cm > 0)) o.cm = n; });
+  cadSalvo(pc);
+}
+function cadSalvo(pc) { salvarPreAtual(); cadDesenhar(pc); cadInfo(pc); atualizarAreaPre(); }
+document.addEventListener('click', function (e) {
+  if (!preAtual) return;
+  const f = e.target.closest && e.target.closest('#pre-cad [data-cad-f]');
+  if (f) { cadFerr = f.dataset.cadF; document.querySelectorAll('#pre-cad .cad-f').forEach(b => b.classList.toggle('on', b === f)); const d = document.getElementById('cad-dica'); if (d) d.textContent = CAD_DICAS[cadFerr]; return; }
+  const a = e.target.closest && e.target.closest('#pre-cad [data-cad-a]'); if (!a) return;
+  const pc = preAtual.pecas[prePecaIdx], cad = cadPre(pc);
+  if (a.dataset.cadA === 'desfazer') { const u = cad.hist.pop(); if (!u) return; Object.assign(cad, JSON.parse(u)); cadSalvo(pc); }
+  else orcaonConfirmar('Apagar todo o desenho?', 'Apagar').then(ok => { if (!ok) return; cadGuardar(pc); cad.linhas = []; cad.cubas = []; cad.textos = []; cadSalvo(pc); });
+});
 function svgIconePre(k) { return '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="' + (PRE_ICONES[k] || PRE_ICONES.peca) + '"/></svg>'; }
 function renderCatalogoPre() {
   const host = document.getElementById('pre-cat'); if (!host) return;
@@ -6418,7 +6607,7 @@ function servicoPadraoPre(pc) {
 function atualizarAreaPre() {
   const pc = preAtual.pecas[prePecaIdx], d = defPre(pc), m = medidaPeca(pc);
   const rot = document.getElementById('pre-area-rot'), v = document.getElementById('pre-area-v');
-  let r = d.tipo === 'lista' ? 'Total' : d.tipo === 'area' ? 'Área' : d.tipo === 'linear' ? (unPre(pc) === 'km' ? 'Distância total' : 'Metragem total') : d.tipo === 'un' ? 'Quantidade' : 'Volume';
+  let r = d.tipo === 'caderno' ? (statsCaderno(pc).area > 0 ? 'Área calculada pelo desenho' : 'Área') : d.tipo === 'lista' ? 'Total' : d.tipo === 'area' ? 'Área' : d.tipo === 'linear' ? (unPre(pc) === 'km' ? 'Distância total' : 'Metragem total') : d.tipo === 'un' ? 'Quantidade' : 'Volume';
   if (d.tipo === 'area' && m.desc > 0) r += ' (já sem portas/janelas)';
   if ((d.tipo === 'area' || d.tipo === 'linear') && pc.perda) r += ' com ' + fmtNum(pc.perda) + '% de ' + (d.tipo === 'linear' ? 'sobra' : 'perda');
   if (d.tipo === 'volume' && pc.tipo === 'piscina') r += ' · ' + Math.round(m.final * 1000).toLocaleString('pt-BR') + ' litros';
@@ -6508,6 +6697,7 @@ const up = (n, casas) => { const f = Math.pow(10, casas || 0); return Math.ceil(
 const numOp = (t, padrao) => { const n = parseFloat(String(t == null ? '' : t).replace(/\./g, '').replace(',', '.').replace(/[^0-9.]/g, '')); return n > 0 ? n : padrao; };
 // Especificações que a pessoa pode trocar (bitola, diâmetro, espessura, tipo…). "✎ Outro" deixa digitar.
 const PRE_OPCOES = {
+  'caderno': [{ id: 'pedra', rot: 'Pedra', valores: ['Granito', 'Mármore', 'Quartzo', 'Porcelanato'], padrao: 'Granito' }, { id: 'esp', rot: 'Espessura', valores: ['2 cm', '3 cm'], padrao: '2 cm' }],
   'Pedreiro:parede': [{ id: 'esp', rot: 'Espessura do reboco', valores: ['1,5 cm', '2 cm', '2,5 cm', '3 cm'], padrao: '2 cm' }],
   'Pedreiro:teto': [{ id: 'esp', rot: 'Espessura do reboco', valores: ['1,5 cm', '2 cm', '2,5 cm'], padrao: '1,5 cm' }],
   'Pintor:parede': [{ id: 'tinta', rot: 'Tinta', valores: ['Acrílica', 'Látex PVA', 'Esmalte', 'Textura'], padrao: 'Acrílica' }, { id: 'demaos', rot: 'Demãos', valores: ['1', '2', '3'], padrao: '2' }, { id: 'rend', rot: 'Rendimento da tinta', valores: ['8 m²/L', '10 m²/L', '12 m²/L'], padrao: '10 m²/L' }],
@@ -6577,6 +6767,15 @@ const REBOCO_MAT = (A, op) => {
   ];
 };
 const PRE_MATERIAIS = {
+  'caderno': (m) => {
+    const st = statsCaderno(m.pc);
+    return [
+      [m.op.pedra + ' ' + m.op.esp, 'm²', up(m.final * 1.1, 2)],
+      ['Silicone (tubo)', 'tubo', up(st.perim / 8)],
+      ['Cola / massa plástica (kg)', 'kg', up(m.final * 0.5, 1)],
+      ['Mão francesa / suporte', 'un', st.maior ? up(st.maior / 0.8) + 1 : 0]
+    ];
+  },
   // Pedreiro
   'Pedreiro:parede': (m) => REBOCO_MAT(m.final, m.op),
   'Pedreiro:teto': (m) => REBOCO_MAT(m.final, m.op),
