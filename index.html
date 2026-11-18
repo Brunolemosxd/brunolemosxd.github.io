@@ -14,6 +14,46 @@
   <meta name="description" content="Crie orçamentos e recibos profissionais pelo celular e envie em PDF ou imagem pelo WhatsApp.">
   <title>OrçaOn — Recibos e Plano Pro</title>
   <script>
+  // Caixas de aviso do OrçaOn (no lugar das do navegador, que mostram "brunolemosxd.github.io diz")
+  (function () {
+    var fila = [], aberta = false;
+    function estilo() {
+      if (document.getElementById('od-estilo')) return;
+      var st = document.createElement('style'); st.id = 'od-estilo';
+      st.textContent = '.od-fundo{position:fixed;inset:0;z-index:100000;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:20px}'
+        + '.od-caixa{width:100%;max-width:400px;background:#132A40;color:#fff;border-radius:20px;padding:22px 20px 16px;box-shadow:0 20px 60px rgba(0,0,0,.5);font-family:inherit;border:1px solid #1E3A50}'
+        + '.od-tit{font-size:20px;font-weight:900;margin:0 0 10px;letter-spacing:-.2px}.od-tit .on{color:#2BD67B}'
+        + '.od-msg{font-size:16px;line-height:1.45;white-space:pre-wrap;color:#dbe4ee;max-height:55vh;overflow:auto}'
+        + '.od-inp{width:100%;box-sizing:border-box;margin-top:12px;min-height:50px;border-radius:12px;border:2px solid #1E3A50;background:#0B1C2C;color:#fff;font-size:17px;padding:0 14px;font-family:inherit}'
+        + '.od-inp:focus{outline:none;border-color:#F4C430}'
+        + '.od-bts{display:flex;gap:10px;margin-top:18px}.od-bts button{flex:1;min-height:50px;border-radius:14px;font-size:16px;font-weight:900;font-family:inherit;cursor:pointer;border:2px solid #F4C430}'
+        + '.od-nao{background:transparent;color:#F4C430}.od-sim{background:#F4C430;color:#0B1C2C}';
+      (document.head || document.documentElement).appendChild(st);
+    }
+    function proxima() {
+      if (aberta || !fila.length || !document.body) return;
+      aberta = true; estilo();
+      var o = fila.shift(), f = document.createElement('div'); f.className = 'od-fundo'; f.setAttribute('role', 'dialog'); f.setAttribute('aria-modal', 'true');
+      f.innerHTML = '<div class="od-caixa"><p class="od-tit">Orça<span class="on">On</span></p><div class="od-msg"></div>'
+        + (o.tipo === 'prompt' ? '<input class="od-inp" type="text" data-mic="0" autocomplete="off">' : '')
+        + '<div class="od-bts">' + (o.tipo !== 'alert' ? '<button type="button" class="od-nao"></button>' : '') + '<button type="button" class="od-sim"></button></div></div>';
+      f.querySelector('.od-msg').textContent = String(o.msg == null ? '' : o.msg);
+      f.querySelector('.od-sim').textContent = o.sim || 'OK';
+      var nao = f.querySelector('.od-nao'); if (nao) nao.textContent = o.nao || 'Cancelar';
+      var inp = f.querySelector('.od-inp'); if (inp) inp.value = o.valor == null ? '' : String(o.valor);
+      function fim(r) { try { f.remove(); } catch (_) {} aberta = false; o.res(r); setTimeout(proxima, 0); }
+      f.querySelector('.od-sim').onclick = function () { fim(o.tipo === 'prompt' ? inp.value : true); };
+      if (nao) nao.onclick = function () { fim(o.tipo === 'prompt' ? null : false); };
+      if (inp) inp.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); fim(inp.value); } });
+      document.body.appendChild(f);
+      setTimeout(function () { try { (inp || f.querySelector('.od-sim')).focus(); if (inp) inp.select(); } catch (_) {} }, 50);
+    }
+    function abrir(o) { return new Promise(function (res) { o.res = res; fila.push(o); if (document.body) proxima(); else document.addEventListener('DOMContentLoaded', proxima); }); }
+    window.orcaonAvisar = function (msg) { return abrir({ tipo: 'alert', msg: msg }); };
+    window.orcaonConfirmar = function (msg, sim, nao) { return abrir({ tipo: 'confirm', msg: msg, sim: sim, nao: nao }); };
+    window.orcaonPerguntar = function (msg, valor) { return abrir({ tipo: 'prompt', msg: msg, valor: valor }); };
+    window.alert = function (msg) { window.orcaonAvisar(msg); };
+  })();
   // Black Friday: os destaques (classe bf-promo) aparecem até 30/11/2026, 23h59 de Brasília. Os preços continuam depois.
   try { if (Date.now() < Date.UTC(2026, 11, 1, 3, 0, 0)) document.documentElement.classList.add('bf-ativa'); } catch (e) {}
   // Dados salvos com o nome antigo (orcapro_) passam para o nome novo (orcaon_) sem perder nada.
@@ -4717,7 +4757,7 @@ function fecharPagamentoPro() { const m = document.getElementById('pagamento-pro
 async function copiarPixPro() {
   const cod = PIX_PRO[planoPixAtual].codigo;
   try { await navigator.clipboard.writeText(cod); alert('Código Pix copiado! Abra o app do seu banco, escolha Pix copia e cola e cole.'); }
-  catch (_) { prompt('Copie o código Pix abaixo:', cod); }
+  catch (_) { orcaonPerguntar('Copie o código Pix abaixo:', cod); }
 }
 function enviarComprovantePro() {
   const p = PIX_PRO[planoPixAtual];
@@ -6106,7 +6146,7 @@ function renderListaPre() {
     div.querySelector('b').textContent = (pr.cliente || 'Sem nome') + (pr.local ? ' · ' + pr.local : '');
     div.querySelector('small').textContent = tot + (tot === 1 ? ' medida' : ' medidas') + ' · ' + new Date(pr.atualizado || pr.criado).toLocaleDateString('pt-BR') + (pr.virouOrcamento ? ' · ✓ virou orçamento' : '') + ((pr.notas || '').trim() ? ' · 📝 anotações' : '');
     div.querySelector('.pre-item-txt').onclick = () => abrirPreEditor(pr.id);
-    div.querySelector('.pre-del').onclick = () => { if (!confirm('Apagar o pré-orçamento de ' + (pr.cliente || 'sem nome') + '?')) return; gravarPres(lerPres().filter(x => x.id !== pr.id)); renderListaPre(); };
+    div.querySelector('.pre-del').onclick = async () => { if (!await orcaonConfirmar('Apagar o pré-orçamento de ' + (pr.cliente || 'sem nome') + '?', 'Apagar')) return; gravarPres(lerPres().filter(x => x.id !== pr.id)); renderListaPre(); };
     host.appendChild(div);
   });
 }
@@ -6205,9 +6245,9 @@ function renderPreTabs() {
   };
   host.appendChild(mais);
 }
-function excluirPecaPre(i) {
+async function excluirPecaPre(i) {
   const pc = preAtual.pecas[i]; if (!pc) return;
-  if (!confirm('Excluir a medida "' + nomePeca(pc, i) + '"?')) return;
+  if (!await orcaonConfirmar('Excluir a medida "' + nomePeca(pc, i) + '"?', 'Excluir')) return;
   preAtual.pecas.splice(i, 1);
   if (!preAtual.pecas.length) preAtual.pecas.push(novaPecaPre());
   if (prePecaIdx >= preAtual.pecas.length) prePecaIdx = preAtual.pecas.length - 1; else if (i < prePecaIdx) prePecaIdx--;
@@ -6286,9 +6326,9 @@ function renderCatalogoPre() {
     const card = inp.closest('.pre-card'); card.classList.toggle('cheio', arr.some(l => Number(l.q) > 0));
     salvarPreAtual(); atualizarAreaPre();
   });
-  host.querySelectorAll('.pre-card-corte').forEach(sel => sel.onchange = () => {
+  host.querySelectorAll('.pre-card-corte').forEach(sel => sel.onchange = async () => {
     const arr = li.it[sel.dataset.it] = li.it[sel.dataset.it] || [{ corte: '', q: 0 }], j = +sel.dataset.j; arr[j] = arr[j] || { corte: '', q: 0 };
-    if (sel.value === '__outro') { const v = (prompt('Digite a medida (ex.: 35 cm):', arr[j].corte || '') || '').trim(); if (v) arr[j].corte = v; salvarPreAtual(); renderCatalogoPre(); atualizarAreaPre(); return; }
+    if (sel.value === '__outro') { const v = ((await orcaonPerguntar('Digite a medida (ex.: 35 cm):', arr[j].corte || '')) || '').trim(); if (v) arr[j].corte = v; salvarPreAtual(); renderCatalogoPre(); atualizarAreaPre(); return; }
     arr[j].corte = sel.value; salvarPreAtual(); atualizarAreaPre();
   });
 }
@@ -6887,7 +6927,7 @@ document.addEventListener('change', function (e) {
   Object.assign(pc, { prof, tipo: novo.tipo, a: novo.a, b: novo.b, c: novo.c, perda: novo.perda, descontos: [], servico: '', op: {}, matQtd: {}, matOff: [] });
   salvarPreAtual(); renderPreEditor();
 });
-document.addEventListener('click', function (e) {
+document.addEventListener('click', async function (e) {
   if (!preAtual) return;
   const tp = e.target.closest && e.target.closest('#pre-peca .pre-tipo:not(.pre-op)');
   if (tp) {
@@ -6903,7 +6943,7 @@ document.addEventListener('click', function (e) {
   if (opb) {
     const pc = preAtual.pecas[prePecaIdx], id = opb.dataset.op, o = opcoesPeca(pc).find(x => x.id === id); if (!o) return;
     let v = opb.dataset.val;
-    if (opb.dataset.outro) { v = prompt(o.rot + ' (digite como quiser):', opPeca(pc)[id] || ''); if (v == null) return; v = v.trim(); if (!v) return; }
+    if (opb.dataset.outro) { v = await orcaonPerguntar(o.rot + ' (digite como quiser):', opPeca(pc)[id] || ''); if (v == null) return; v = v.trim(); if (!v) return; }
     pc.op = pc.op || {}; pc.op[id] = v;
     salvarPreAtual(); renderOpcoesPre(); renderMateriaisPre(); renderPreResumo(); return;
   }
@@ -6911,7 +6951,7 @@ document.addEventListener('click', function (e) {
   if (cb) {
     const pc = preAtual.pecas[prePecaIdx], li = listaPre(pc), ds = cb.dataset;
     if (ds.chapa != null) li.chapa = li.chapa === ds.chapa ? '' : ds.chapa;
-    else if (ds.chapaOutra) { const v = (prompt('Qual chapa? (ex.: Cobre, Galvanizado 24)', li.chapa || '') || '').trim(); if (!v) return; li.chapa = v; }
+    else if (ds.chapaOutra) { const v = ((await orcaonPerguntar('Qual chapa? (ex.: Cobre, Galvanizado 24)', li.chapa || '')) || '').trim(); if (!v) return; li.chapa = v; }
     else if (ds.zerar) delete li.it[ds.zerar];
     else if (ds.mais) { const a = li.it[ds.mais] = li.it[ds.mais] && li.it[ds.mais].length ? li.it[ds.mais] : [{ corte: '', q: 0 }]; a.push({ corte: '', q: 0 }); }
     else if (ds.tira) { const a = li.it[ds.tira] || []; a.splice(+ds.j, 1); }
@@ -10125,7 +10165,7 @@ async function fazerLogout() {
 
 /** Exclui a conta e apaga TODOS os registros locais (e a conta Firebase, se existir). */
 async function excluirMinhaConta() {
-  const ok = confirm(
+  const ok = await orcaonConfirmar(
     'Excluir minha conta?\n\n' +
     'Isso apaga permanentemente todos os dados deste aparelho e o backup na nuvem (se você tiver):\n' +
     '• Perfil e dados da empresa\n' +
@@ -10138,7 +10178,7 @@ async function excluirMinhaConta() {
   );
   if (!ok) return;
 
-  const ok2 = confirm('Confirma a exclusão definitiva de todos os registros da conta?');
+  const ok2 = await orcaonConfirmar('Confirma a exclusão definitiva de todos os registros da conta?', 'Excluir tudo');
   if (!ok2) return;
 
   // 1) Tenta excluir a conta no Firebase (se autenticado e configurado)
@@ -10274,9 +10314,9 @@ function listaSugestoes() {
   const base = SUGESTOES[profissaoAtual()] || SUGESTOES['Outro'], ocultas = sugestoesOcultas();
   return base.filter(n => !ocultas.includes(n)).concat(padroesProprios().filter(n => !base.includes(n)));
 }
-function removerSugestao(nome) {
+async function removerSugestao(nome) {
+  if (!await orcaonConfirmar('Tirar "' + nome + '" das sugestões?', 'Tirar')) return;
   const precos = lerPrecos();
-  if (!confirm('Tirar "' + nome + '" das sugestões?')) return;
   if (precos[nome] && precos[nome].proprio) { delete precos[nome]; gravarPrecos(precos); }
   else { const o = sugestoesOcultas(); if (!o.includes(nome)) o.push(nome); gravarSugestoesOcultas(o); }
   atualizarTodasSugestoes();
@@ -10321,8 +10361,8 @@ function criarPadraoPreco() {
   renderMeusPrecos();
   if (typeof carregarSugestoes === 'function') carregarSugestoes();
 }
-function excluirPadraoPreco(nome) {
-  if (!confirm('Excluir o padrão "' + nome + '"?')) return;
+async function excluirPadraoPreco(nome) {
+  if (!await orcaonConfirmar('Excluir o padrão "' + nome + '"?', 'Excluir')) return;
   const precos = lerPrecos(); delete precos[nome];
   if (gravarPrecos(precos)) { renderMeusPrecos(); if (typeof carregarSugestoes === 'function') carregarSugestoes(); }
 }
@@ -10494,13 +10534,13 @@ document.addEventListener('error', function(ev){
 @media(max-width:420px){.whatsapp-support-banner{align-items:flex-start;gap:10px;padding:17px 13px}.wa-orbit{width:40px;height:40px;flex-basis:40px}.wa-copy strong{font-size:16px}.wa-cta{position:absolute;right:12px;top:12px;font-size:10px}.wa-kicker{padding-right:95px}}
 </style>
 <script>
-function editarClienteCard(card){
+async function editarClienteCard(card){
   if(!card || card.classList.contains('empty')) return;
   const strong=card.querySelector('.info strong'); if(!strong) return;
   const p=card.querySelector('.info p'); const nomeAtual=strong.textContent.trim(); const contatoAtual=p?p.textContent.trim():'';
-  const nome=prompt('Editar nome do cliente:',nomeAtual); if(nome===null) return;
+  const nome=await orcaonPerguntar('Editar nome do cliente:',nomeAtual); if(nome===null) return;
   if(!nome.trim()){alert('Informe um nome para o cliente.');return;}
-  const contato=prompt('Editar telefone ou contato:',contatoAtual); if(contato===null) return;
+  const contato=await orcaonPerguntar('Editar telefone ou contato:',contatoAtual); if(contato===null) return;
   strong.textContent=nome.trim();
   if(!p && contato.trim()){const novo=document.createElement('p');novo.textContent=contato.trim();card.querySelector('.info').appendChild(novo);} else if(p){p.textContent=contato.trim();if(!contato.trim())p.remove();}
   const avatar=card.querySelector('.avatar');if(avatar)avatar.textContent=nome.trim().split(/\s+/).slice(0,2).map(x=>x[0]).join('').toUpperCase();
@@ -10597,7 +10637,7 @@ function editarClienteCard(card){
     });
     inNome.focus();
   };
-  window.excluirClienteOrcaOn=function(id){const c=clientes.find(x=>String(x.id)===String(id));if(!c)return;if(!confirm('Excluir o cliente “'+c.nome+'”?'))return;clientes=clientes.filter(x=>String(x.id)!==String(id));gravarClientes();renderClientes();};
+  window.excluirClienteOrcaOn=async function(id){const c=clientes.find(x=>String(x.id)===String(id));if(!c)return;if(!await orcaonConfirmar('Excluir o cliente “'+c.nome+'”?','Excluir'))return;clientes=clientes.filter(x=>String(x.id)!==String(id));gravarClientes();renderClientes();};
   // Keep legacy inline entry points compatible with the new stored client list.
   window.editarClienteCard=function(card){const id=card&&card.dataset&&card.dataset.clienteId;if(id)window.editarClienteOrcaOn(id);};
   window.orcaUpsertCliente=function(nome,contato,documento){
@@ -10627,7 +10667,7 @@ function editarClienteCard(card){
     const enviado=st==='A receber';
     return '<div class="budget-card" style="cursor:default;position:relative" data-orcamento-id="'+Number(o.id)+'"><div class="bc-left" role="button" tabindex="0" onclick="editarOrcamento('+Number(o.id)+')"><span class="bc-id">#'+esc(o.numero)+'</span><strong>'+esc(o.titulo)+'</strong><p>'+esc(o.cliente)+'</p></div><div class="bc-right"><span class="status '+(st==='Total recebido'?'green':enviado?'yellow':'gray')+'">'+esc(st)+'</span><strong>'+fmtBRL(o.total)+'</strong><p>'+fmtData(o.data)+'</p></div><div class="budget-actions"><button type="button" class="btn-budget-act edit" onclick="event.stopPropagation();editarOrcamento('+Number(o.id)+')">Editar</button><button type="button" class="btn-budget-act pdf" onclick="event.stopPropagation();emitirOrcamentoCard('+Number(o.id)+',\'pdf\')">Emitir PDF</button><button type="button" class="btn-budget-act img" onclick="event.stopPropagation();emitirOrcamentoCard('+Number(o.id)+',\'png\')">Emitir imagem</button><button type="button" class="btn-budget-act layout" onclick="event.stopPropagation();escolherLayoutOrcamento('+Number(o.id)+')">Emitir com outro modelo</button><button type="button" class="btn-delete-budget" onclick="event.stopPropagation();excluirOrcamentoOrcaOn('+Number(o.id)+')">Excluir</button></div></div>';
   };
-  window.excluirOrcamentoOrcaOn=function(id){const o=orcamentos.find(x=>Number(x.id)===Number(id));if(!o)return;if(!confirm('Excluir o orçamento #'+(o.numero||'')+' de '+(o.cliente||'cliente')+'? Esta ação não pode ser desfeita.'))return;orcamentos=orcamentos.filter(x=>Number(x.id)!==Number(id));gravarOrcamentos();if(Number(ultimoOrcamentoId)===Number(id))ultimoOrcamentoId=null;renderOrcamentos();};
+  window.excluirOrcamentoOrcaOn=async function(id){const o=orcamentos.find(x=>Number(x.id)===Number(id));if(!o)return;if(!await orcaonConfirmar('Excluir o orçamento #'+(o.numero||'')+' de '+(o.cliente||'cliente')+'? Esta ação não pode ser desfeita.'))return;orcamentos=orcamentos.filter(x=>Number(x.id)!==Number(id));gravarOrcamentos();if(Number(ultimoOrcamentoId)===Number(id))ultimoOrcamentoId=null;renderOrcamentos();};
   function injectStyle(){if(document.getElementById('orcaon-crud-style'))return;const st=document.createElement('style');st.id='orcaon-crud-style';st.textContent='.client-management-actions{display:flex;flex-wrap:wrap;gap:6px;align-items:center}.client-management-actions .btn-dark-sm,.client-management-actions .btn-delete-small{font-size:11px;padding:8px 9px;white-space:nowrap}.btn-delete-small,.btn-delete-budget{background:#b91c1c;color:#fff;border:0;border-radius:9px;font-weight:700;cursor:pointer}.btn-delete-small{padding:8px 10px}.btn-delete-budget{position:absolute;bottom:10px;right:12px;padding:8px 11px;font-size:12px}.budget-card{margin-bottom:12px}@media(max-width:420px){.client-card{align-items:flex-start!important;flex-wrap:wrap}.client-management-actions{width:100%;padding-left:58px}.client-management-actions button{flex:1}.budget-card{padding-bottom:58px!important}}';document.head.appendChild(st);}
   document.addEventListener('DOMContentLoaded',()=>{carregarDadosPerfilOrca();injectStyle();renderClientes();const search=perfilEl('clientes-busca');if(search)search.addEventListener('input',renderClientes);if(typeof renderOrcamentos==='function')renderOrcamentos();});
   // Handles the case where this script is evaluated after DOMContentLoaded.
@@ -10837,7 +10877,7 @@ async function restaurarBackupOrca(pedirConfirmacao){
     const m = await R.meta.get();
     if (!m.exists) { bkMsg('Você ainda não tem backup na nuvem.', true); return false; }
     const quando = bkDataTexto(m.data().atualizado);
-    if (pedirConfirmacao !== false && !confirm('Restaurar o backup de ' + quando + '?\n\nOs dados deste celular serão substituídos pelos do backup.')) return false;
+    if (pedirConfirmacao !== false && !await orcaonConfirmar('Restaurar o backup de ' + quando + '?\n\nOs dados deste celular serão substituídos pelos do backup.', 'Restaurar')) return false;
     bkMsg('Restaurando…');
     const partes = m.data().partes || {}, dados = {}, validas = bkChavesValidas();
     for (const k of Object.keys(partes)) {
@@ -10851,7 +10891,7 @@ async function restaurarBackupOrca(pedirConfirmacao){
     bkChaves().forEach(k => { try { localStorage.removeItem(k); } catch (_) {} });
     Object.keys(dados).forEach(k => { try { localStorage.setItem(k, dados[k]); } catch (_) {} });
     try { localStorage.setItem('orcaon_backup_ok_' + R.gid, String(Date.now())); } catch (_) {}
-    alert('Backup restaurado! O app vai recarregar.');
+    await orcaonAvisar('Backup restaurado! O app vai recarregar.');
     location.reload(); return true;
   } catch (e) { console.warn('Restaurar:', e); bkMsg('Não consegui restaurar. Tente de novo com internet boa.', true); return false; }
 }
@@ -10893,7 +10933,7 @@ async function verificarBackupAposCota(){
       const outro = m.data().aparelho && m.data().aparelho !== idAparelhoOrca();
       if ((!flag || outro) && !bkAvisouRestaurar) {
         bkAvisouRestaurar = true;
-        if (confirm('Encontramos um backup seu de ' + bkDataTexto(m.data().atualizado) + '.\n\nQuer restaurar os dados neste celular?\n\nOK = restaurar. Cancelar = manter como está.')) { await restaurarBackupOrca(false); return; }
+        if (await orcaonConfirmar('Encontramos um backup seu de ' + bkDataTexto(m.data().atualizado) + '.\n\nQuer restaurar os dados neste celular?', 'Restaurar', 'Manter como está')) { await restaurarBackupOrca(false); return; }
         if (!flag) return;
       }
       if (flag && !outro) agendarBackupAuto();
@@ -11183,7 +11223,7 @@ function editarReciboSalvo(id){
     if(typeof atualizarRecibo==='function')atualizarRecibo();
   },100);
 }
-function excluirReciboSalvo(id){if(!confirm('Excluir este recibo salvo? Esta ação não pode ser desfeita.'))return;recibosSalvos=lerRecibosSalvos().filter(r=>String(r.id)!==String(id));gravarRecibosSalvos();if(String(reciboEmEdicaoId)===String(id))reciboEmEdicaoId=null;renderRecibosSalvos()}
+async function excluirReciboSalvo(id){if(!await orcaonConfirmar('Excluir este recibo salvo? Esta ação não pode ser desfeita.'))return;recibosSalvos=lerRecibosSalvos().filter(r=>String(r.id)!==String(id));gravarRecibosSalvos();if(String(reciboEmEdicaoId)===String(id))reciboEmEdicaoId=null;renderRecibosSalvos()}
 function exportarReciboSalvo(id){editarReciboSalvo(id);setTimeout(()=>{const s=document.getElementById('screen-novo-recibo');if(s)s.scrollTop=0;},120)}
 // Compatível com a prévia/compartilhamento atual: registra o recibo antes de gerar o arquivo.
 const compartilharReciboPDFOriginal = compartilharReciboPDF;
@@ -11389,8 +11429,8 @@ document.addEventListener('DOMContentLoaded',()=>{renderRecibosSalvos();atualiza
     var b = document.getElementById('btn-limpar-dados');
     if (b) b.style.display = liberado() ? '' : 'none';
   }
-  window.limparDadosApp = function(){
-    if (!confirm('Limpar dados do app?\n\nIsso apaga neste aparelho:\n• Orçamentos e recibos salvos\n• Clientes\n\nSeu login, seu perfil e o plano continuam.')) return;
+  window.limparDadosApp = async function(){
+    if (!await orcaonConfirmar('Limpar dados do app?\n\nIsso apaga neste aparelho:\n• Orçamentos e recibos salvos\n• Clientes\n\nSeu login, seu perfil e o plano continuam.')) return;
     var apagar = [];
     try {
       for (var i = 0; i < localStorage.length; i++) {
@@ -11401,8 +11441,7 @@ document.addEventListener('DOMContentLoaded',()=>{renderRecibosSalvos();atualiza
     ['orcaon_orcamentos', 'orcaon_recibos_salvos', 'orcaon_clientes_v2', 'orcaon_clientes_editados',
      'orcaon_orcamentos_compartilhados_total', 'orcaon_recibos_compartilhados_total'].forEach(function(k){ if (apagar.indexOf(k) < 0) apagar.push(k); });
     apagar.forEach(function(k){ try { localStorage.removeItem(k); } catch (e) {} });
-    alert('Dados limpos! O app vai recarregar.');
-    location.reload();
+    orcaonAvisar('Dados limpos! O app vai recarregar.').then(function(){ location.reload(); });
   };
   var sp = window.switchPage;
   if (typeof sp === 'function') window.switchPage = function(){ var r = sp.apply(this, arguments); atualizarBotao(); return r; };
@@ -11520,8 +11559,8 @@ body.light .mic-btn.mic-on{background:#EF4444;color:#fff}
     parar();
     try {
       if (!localStorage.getItem('orcaon_mic_aviso')) {
-        if (!confirm('Ditado por voz\n\nQuando você toca no microfone, o áudio é enviado ao serviço de reconhecimento de voz do seu navegador (no Chrome, o Google) só para virar texto. Nada é gravado pelo OrçaOn.\n\nContinuar?')) return;
-        localStorage.setItem('orcaon_mic_aviso', '1');
+        orcaonConfirmar('Ditado por voz\n\nQuando você toca no microfone, o áudio é enviado ao serviço de reconhecimento de voz do seu navegador (no Chrome, o Google) só para virar texto. Nada é gravado pelo OrçaOn.\n\nContinuar?', 'Continuar').then(function(ok){ if (!ok) return; try { localStorage.setItem('orcaon_mic_aviso', '1'); } catch (e) {} iniciar(campo, btn); });
+        return;
       }
     } catch (e) {}
     var rec = new SR(); rec.lang = 'pt-BR'; rec.interimResults = true; rec.continuous = false; rec.maxAlternatives = 1;
