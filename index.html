@@ -883,7 +883,11 @@ body.light .pp-topo,body.light .pp-nav{background:#fff}
 .cad-lin{display:flex;align-items:center;gap:10px;margin-top:8px}
 .cad-lin b{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;background:#1e3a8a;color:#fff;font-size:17px;flex:0 0 auto}
 .cad-lin.falta b{background:#d97706}
-.cad-lin .calc-campo{flex:1}
+.cad-lin{align-items:flex-end}
+.cad-lin b{margin-bottom:4px}
+.cad-lin-c{flex:1;min-width:0}.cad-lin-c small{display:block;font-size:12px;font-weight:700;color:var(--text-secondary);margin:0 0 3px 2px}
+.cad-lin-c .calc-campo input{min-width:0}
+.cad-mesma{width:100%;margin-top:12px;min-height:46px}
 .cad-acoes{display:flex;gap:8px;margin-top:8px}.cad-acoes button{flex:1;min-height:44px}
 #cad-info{margin-top:8px;font-size:14px;font-weight:700}
 .pre-res-sub{padding-left:14px!important;font-size:14px;opacity:.9}
@@ -6202,7 +6206,7 @@ function fmtMedida(pc, n) { if (defPre(pc).tipo === 'lista') return pc.lista ? t
 function nomePeca(pc, i) { return (pc.nome || '').trim() || (defPre(pc).nome + ' ' + (i + 1)); }
 function textoMedidas(pc) {
   const d = defPre(pc), un = unPre(pc);
-  if (d.tipo === 'caderno') { const c = cadPre(pc), l = c.linhas.map((x, i) => x.cm > 0 ? cadLetra(i) + ' ' + cadFmt(c, x.cm) : '').filter(Boolean); return (l.length ? 'Medidas: ' + l.join(', ') : 'Desenho sem medidas') + (c.larg > 0 ? ' · largura ' + cadFmt(c, c.larg) : ''); }
+  if (d.tipo === 'caderno') { const c = cadPre(pc), l = c.linhas.map((x, i) => x.cm > 0 ? cadLetra(i) + ' ' + cadFmt(c, x.cm) + (cadLarg(c, x) > 0 ? ' × ' + cadFmt(c, cadLarg(c, x)) : '') : '').filter(Boolean); return l.length ? 'Medidas: ' + l.join(', ') : 'Desenho sem medidas'; }
   if (d.tipo === 'lista') { const n = linhasLista(pc).length; return (listaPre(pc).chapa || 'chapa não escolhida') + ' · ' + n + (n === 1 ? ' peça' : ' peças'); }
   if (d.tipo === 'area') return fmtM(pc.a) + ' × ' + fmtM(pc.b) + ' m';
   if (d.tipo === 'linear') return fmtM(pc.a) + ' ' + un + ((Number(pc.b) || 1) > 1 ? ' × ' + fmtNum(pc.b) : '');
@@ -6454,13 +6458,16 @@ function statsCaderno(pc) {
   });
   // linhas soltas (fora de contorno fechado): metro linear × largura da peça
   const noContorno = new Set(); cadContornos(cad).forEach(cam => cam.forEach(ix => noContorno.add(ix)));
-  const linear = cad.linhas.reduce((t, l, ix) => noContorno.has(ix) ? t : t + (l.cm || 0), 0) / 100, larg = (Number(cad.larg) || 0) / 100;
-  area += linear * larg; perim += linear;
+  // cada risco solto tem a sua largura (os antigos usam a largura geral)
+  let linear = 0, semLarg = 0;
+  cad.linhas.forEach((l, ix) => { if (noContorno.has(ix) || !(l.cm > 0)) return; const lg = cadLarg(cad, l); linear += l.cm / 100; if (lg > 0) area += l.cm / 100 * lg / 100; else semLarg++; });
+  const larg = 0; perim += linear;
   const maior = Math.max(0, ...cad.linhas.map(l => l.cm || 0)) / 100;
-  return { area: Math.round(area * 100) / 100, perim: Math.round(perim * 100) / 100, maior, linear: Math.round(linear * 100) / 100, larg, fechado: cadContornos(cad).length > 0, todos };
+  return { area: Math.round(area * 100) / 100, perim: Math.round(perim * 100) / 100, maior, linear: Math.round(linear * 100) / 100, larg, semLarg, fechado: cadContornos(cad).length > 0, todos };
 }
 const CAD_UN = { cm: 1, m: 100, mm: 0.1 };
 function cadLetra(i) { const A = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'; return i < 26 ? A[i] : A[Math.floor(i / 26) - 1] + A[i % 26]; }
+function cadLarg(cad, l) { return Number(l.larg) > 0 ? Number(l.larg) : (Number(cad.larg) || 0); }
 function cadUn(cad) { return CAD_UN[cad.un] ? cad.un : 'cm'; }
 function cadFmt(cad, cm) { const u = cadUn(cad); return (Math.round(cm / CAD_UN[u] * 1000) / 1000).toLocaleString('pt-BR', { maximumFractionDigits: 3 }) + ' ' + u; }
 function cadGuardar(pc) { const c = cadPre(pc), snap = JSON.stringify({ linhas: c.linhas, cubas: c.cubas, textos: c.textos }); c.hist.push(snap); if (c.hist.length > 40) c.hist.shift(); }
@@ -6512,13 +6519,26 @@ function renderCadernoPre() {
 function cadListaMedidas(pc) {
   const host = document.getElementById('cad-medidas'); if (!host) return;
   const cad = cadPre(pc), u = cadUn(cad), num = cm => cm > 0 ? (Math.round(cm / CAD_UN[u] * 1000) / 1000).toLocaleString('pt-BR', { maximumFractionDigits: 3 }) : '';
-  let h = '<label>Unidade das medidas</label><div class="cad-uns">' + Object.keys(CAD_UN).map(k => '<button type="button" class="cad-un' + (k === u ? ' on' : '') + '" data-cad-un="' + k + '">' + k + '</button>').join('') + '</div>'
-    + '<label for="cad-larg">Largura da peça <span class="pre-opc">(profundidade da pedra)</span></label><div class="calc-campo"><input type="text" inputmode="decimal" id="cad-larg" data-mic="0" placeholder="Ex.: ' + (u === 'm' ? '0,6' : u === 'mm' ? '600' : '60') + '" value="' + num(cad.larg) + '"><em>' + u + '</em></div>'
-    + '<p class="hint-sm" style="margin-top:4px">Usada nos riscos soltos: metro linear × largura = m².</p>';
-  if (cad.linhas.length) h += '<label style="margin-top:12px">Medida de cada risco</label>' + cad.linhas.map((l, i) => '<div class="cad-lin' + (l.cm > 0 ? '' : ' falta') + '"><b>' + cadLetra(i) + '</b><div class="calc-campo"><input type="text" inputmode="decimal" class="cad-lin-v" data-i="' + i + '" data-mic="0" placeholder="0" value="' + num(l.cm) + '" aria-label="Medida do risco ' + cadLetra(i) + '"><em>' + u + '</em></div></div>').join('');
+  let h = '<label>Unidade das medidas</label><div class="cad-uns">' + Object.keys(CAD_UN).map(k => '<button type="button" class="cad-un' + (k === u ? ' on' : '') + '" data-cad-un="' + k + '">' + k + '</button>').join('') + '</div>';
+  if (cad.linhas.length) {
+    h += '<label style="margin-top:12px">Medida e largura de cada risco</label><p class="hint-sm" style="margin:2px 0 6px">Largura = profundidade da pedra. Comprimento × largura = m².</p>'
+      + cad.linhas.map((l, i) => '<div class="cad-lin' + (l.cm > 0 ? '' : ' falta') + '"><b>' + cadLetra(i) + '</b>'
+        + '<div class="cad-lin-c"><small>Comprimento</small><div class="calc-campo"><input type="text" inputmode="decimal" class="cad-lin-v" data-i="' + i + '" data-mic="0" placeholder="0" value="' + num(l.cm) + '" aria-label="Comprimento do risco ' + cadLetra(i) + '"><em>' + u + '</em></div></div>'
+        + '<div class="cad-lin-c"><small>Largura</small><div class="calc-campo"><input type="text" inputmode="decimal" class="cad-lin-l" data-i="' + i + '" data-mic="0" placeholder="0" value="' + num(cadLarg(cad, l)) + '" aria-label="Largura do risco ' + cadLetra(i) + '"><em>' + u + '</em></div></div></div>').join('');
+    const prim = cad.linhas.findIndex(l => cadLarg(cad, l) > 0);
+    if (cad.linhas.length > 1 && prim >= 0) h += '<button type="button" class="btn-dark-sm cad-mesma" data-cad-mesma="' + prim + '">↧ Usar a largura de ' + cadLetra(prim) + ' (' + cadFmt(cad, cadLarg(cad, cad.linhas[prim])) + ') em todos</button>';
+  }
   host.innerHTML = h;
   const conv = t => (parseFloat(String(t).replace(/[^0-9.,]/g, '').replace(',', '.')) || 0) * CAD_UN[u];
-  const larg = host.querySelector('#cad-larg'); larg.oninput = () => { cad.larg = conv(larg.value); salvarPreAtual(); cadInfo(pc); atualizarAreaPre(); };
+  host.querySelectorAll('.cad-lin-l').forEach(inp => inp.oninput = () => {
+    const l = cad.linhas[+inp.dataset.i]; if (!l) return; l.larg = conv(inp.value);
+    salvarPreAtual(); cadDesenhar(pc); cadInfo(pc); atualizarAreaPre();
+    const mb = host.querySelector('.cad-mesma'), prim = cad.linhas.findIndex(x => cadLarg(cad, x) > 0);
+    if (!mb && prim >= 0 && cad.linhas.length > 1) cadListaMedidasDepois(pc, inp);
+    else if (mb && prim >= 0) { mb.dataset.cadMesma = prim; mb.textContent = '↧ Usar a largura de ' + cadLetra(prim) + ' (' + cadFmt(cad, cadLarg(cad, cad.linhas[prim])) + ') em todos'; }
+  });
+  const mesma = host.querySelector('.cad-mesma');
+  if (mesma) mesma.onclick = () => { const v = cadLarg(cad, cad.linhas[+mesma.dataset.cadMesma]); if (!(v > 0)) return; cadGuardar(pc); cad.linhas.forEach(l => { l.larg = v; }); salvarPreAtual(); cadDesenhar(pc); cadInfo(pc); cadListaMedidas(pc); atualizarAreaPre(); try { orcaonToast('Mesma largura em todos os riscos.'); } catch (_) {} };
   host.querySelectorAll('.cad-lin-v').forEach(inp => inp.oninput = () => {
     const l = cad.linhas[+inp.dataset.i]; if (!l) return; l.cm = conv(inp.value);
     if (l.r) cad.linhas.forEach((o, j) => { if (o !== l && o.r === l.r && o.lado === l.lado && !(o.cm > 0)) { o.cm = l.cm; const x = host.querySelector('.cad-lin-v[data-i="' + j + '"]'); if (x) { x.value = inp.value; x.closest('.cad-lin').classList.remove('falta'); } } });
@@ -6526,12 +6546,14 @@ function cadListaMedidas(pc) {
     salvarPreAtual(); cadDesenhar(pc); cadInfo(pc); atualizarAreaPre();
   });
 }
+// mostra o botão "usar a mesma largura" sem tirar o foco do campo
+function cadListaMedidasDepois(pc, inp) { inp.onblur = () => { inp.onblur = null; setTimeout(() => cadListaMedidas(pc), 0); }; }
 function cadInfo(pc) {
   const el = document.getElementById('cad-info'); if (!el) return;
   const st = statsCaderno(pc), cad = cadPre(pc), falta = cad.linhas.filter(l => !(l.cm > 0)).length;
   el.textContent = !cad.linhas.length ? 'Comece desenhando a pedra. Depois toque em 📏 Medida para colocar os cm.'
-    : st.area > 0 ? '✓ Área: ' + fmtM(st.area) + ' m²' + (st.linear > 0 ? ' (inclui ' + fmtM(st.linear) + ' m linear × largura ' + fmtM(st.larg) + ' m)' : '') + (falta ? ' · ' + falta + ' risco(s) sem medida' : '')
-    : st.linear > 0 && !(st.larg > 0) ? 'Metro linear: ' + fmtM(st.linear) + ' m. Coloque a largura da peça para calcular os m².'
+    : st.area > 0 ? '✓ Área: ' + fmtM(st.area) + ' m²' + (st.linear > 0 ? ' · metro linear ' + fmtM(st.linear) + ' m' : '') + (falta ? ' · ' + falta + ' risco(s) sem medida' : '') + (st.semLarg ? ' · ' + st.semLarg + ' sem largura' : '')
+    : st.linear > 0 ? 'Metro linear: ' + fmtM(st.linear) + ' m. Coloque a largura de cada risco para calcular os m².'
     : falta ? 'Falta medida em ' + falta + (falta === 1 ? ' risco' : ' riscos') + ' (os amarelos com "?"). Preencha embaixo.' : st.fechado ? 'Confira as medidas.' : 'Feche o desenho (a última linha encostando na primeira) para calcular a área sozinho.';
 }
 function cadPerto(pc, p) {
