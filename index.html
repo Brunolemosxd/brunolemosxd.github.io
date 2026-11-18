@@ -877,6 +877,13 @@ body.light .pp-topo,body.light .pp-nav{background:#fff}
 .cad-f.on{border-color:var(--accent,#F4C430);background:rgba(244,196,48,.16);color:var(--accent,#F4C430)}
 .cad-dica{font-size:14px;color:var(--text-secondary);margin:2px 2px 8px;min-height:20px}
 .cad-svg{display:block;width:100%;height:auto;border-radius:12px;border:2px solid #e2d6b5;touch-action:none;-webkit-user-select:none;user-select:none;box-shadow:0 4px 14px rgba(0,0,0,.25)}
+.cad-uns{display:flex;gap:8px;margin:6px 0 10px}
+.cad-un{flex:1;min-height:46px;border-radius:12px;border:2px solid var(--border);background:var(--bg-primary,#0B1C2C);color:var(--text-primary);font-size:16px;font-weight:900;font-family:inherit;cursor:pointer}
+.cad-un.on{border-color:var(--accent,#F4C430);background:var(--accent,#F4C430);color:#0B1C2C}
+.cad-lin{display:flex;align-items:center;gap:10px;margin-top:8px}
+.cad-lin b{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;background:#1e3a8a;color:#fff;font-size:17px;flex:0 0 auto}
+.cad-lin.falta b{background:#d97706}
+.cad-lin .calc-campo{flex:1}
 .cad-acoes{display:flex;gap:8px;margin-top:8px}.cad-acoes button{flex:1;min-height:44px}
 #cad-info{margin-top:8px;font-size:14px;font-weight:700}
 .pre-res-sub{padding-left:14px!important;font-size:14px;opacity:.9}
@@ -6067,7 +6074,7 @@ const PRE_PROFISSOES = {
   'Climatização': ['aparelhos_ar', 'tubo_cobre'],
   'Inst. Câmeras': ['cameras', 'cabeamento'],
   'Jardinagem': ['grama', 'cerca_viva', 'arvores'],
-  'Marmorista': ['caderno', 'bancada', 'soleira', 'cuba'],
+  'Marmorista': ['caderno'],
   'Manutenção de piscinas': ['piscina'],
   'Chaveiro': ['fechaduras'],
   'Estofador': ['estofado', 'tecido'],
@@ -6138,7 +6145,8 @@ function descLinhaLista(x) { return x.item.nome + (x.corte ? (x.item.corteRot ? 
 function defPre(pc) { return PRE_TIPOS[pc && pc.tipo] || PRE_TIPOS.outro; }
 function unPre(pc) { const d = defPre(pc); return d.tipo === 'linear' && d.un ? d.un : PRE_UNIDADE[d.tipo]; }
 function profPre(pc) { return (pc && pc.prof && PRE_PROFISSOES[pc.prof]) ? pc.prof : (PRE_PROFISSOES[profissaoAtual()] ? profissaoAtual() : 'Outro'); }
-function tiposDaProf(prof) { const l = PRE_PROFISSOES[prof] || []; return l.concat(PRE_GERAIS.filter(k => !l.includes(k))); }
+const PRE_SO_PROPRIAS = ['Marmorista'];   // profissões que mostram só os tipos delas (sem "Outras medidas")
+function tiposDaProf(prof) { const l = PRE_PROFISSOES[prof] || []; return PRE_SO_PROPRIAS.includes(prof) ? l.slice() : l.concat(PRE_GERAIS.filter(k => !l.includes(k))); }
 let preAtual = null, prePecaIdx = 0;
 // Plano grátis: 10 pré-orçamentos (conta quando ele começa a preencher); no Pro, sem limite
 const PRE_GRATIS = 10, PRE_USOS_KEY = 'orcaon_pre_usos';
@@ -6176,7 +6184,7 @@ function novaPecaPre(tipo, prof) {
 }
 // Resultado da medida: m², metros, unidades ou m³
 function medidaPeca(pc) {
-  if (defPre(pc).tipo === 'caderno') { const st = statsCaderno(pc), t = st.area > 0 ? st.area : (Number(pc.a) || 0); return { bruta: t, desc: 0, liquida: t, final: Math.round(t * 100) / 100 }; }
+  if (defPre(pc).tipo === 'caderno') { const t = statsCaderno(pc).area; return { bruta: t, desc: 0, liquida: t, final: Math.round(t * 100) / 100 }; }
   if (defPre(pc).tipo === 'lista') { const t = linhasLista(pc).reduce((s, x) => s + x.q, 0); return { bruta: t, desc: 0, liquida: t, final: Math.round(t * 100) / 100 }; }
   const d = defPre(pc), A = Number(pc.a) || 0, B = Number(pc.b) || 0, C = Number(pc.c) || 0, perda = Number(pc.perda) || 0;
   let bruta = 0, desc = 0;
@@ -6194,7 +6202,7 @@ function fmtMedida(pc, n) { if (defPre(pc).tipo === 'lista') return pc.lista ? t
 function nomePeca(pc, i) { return (pc.nome || '').trim() || (defPre(pc).nome + ' ' + (i + 1)); }
 function textoMedidas(pc) {
   const d = defPre(pc), un = unPre(pc);
-  if (d.tipo === 'caderno') { const l = (cadPre(pc).linhas || []).filter(x => x.cm > 0).map(x => fmtNum(x.cm) + ' cm'); return l.length ? 'Medidas: ' + l.join(', ') : 'Desenho sem medidas'; }
+  if (d.tipo === 'caderno') { const c = cadPre(pc), l = c.linhas.map((x, i) => x.cm > 0 ? cadLetra(i) + ' ' + cadFmt(c, x.cm) : '').filter(Boolean); return (l.length ? 'Medidas: ' + l.join(', ') : 'Desenho sem medidas') + (c.larg > 0 ? ' · largura ' + cadFmt(c, c.larg) : ''); }
   if (d.tipo === 'lista') { const n = linhasLista(pc).length; return (listaPre(pc).chapa || 'chapa não escolhida') + ' · ' + n + (n === 1 ? ' peça' : ' peças'); }
   if (d.tipo === 'area') return fmtM(pc.a) + ' × ' + fmtM(pc.b) + ' m';
   if (d.tipo === 'linear') return fmtM(pc.a) + ' ' + un + ((Number(pc.b) || 1) > 1 ? ' × ' + fmtNum(pc.b) : '');
@@ -6263,7 +6271,7 @@ function aplicarPassoPre() {
   const i = passos.indexOf(prePasso), info = PRE_PASSOS[prePasso], pc = preAtual.pecas[prePecaIdx];
   tela.querySelectorAll('[data-passo]').forEach(el => el.classList.toggle('pp-esc', el.dataset.passo !== prePasso));
   const lista = prePasso === 'medidas' && pc && defPre(pc).tipo === 'lista', cadq = prePasso === 'medidas' && pc && defPre(pc).tipo === 'caderno';
-  const q = document.getElementById('pp-q'); if (q) q.innerHTML = esc(lista ? 'O que vai fazer?' : cadq ? 'Desenhe como no caderno' : info[1]) + '<small>' + esc(lista ? 'Escolha a chapa e coloque o corte e a metragem de cada peça. Deslize os cartões para o lado.' : cadq ? 'Risque com o dedo: vira linha reta sozinho. Depois toque em 📏 e coloque os cm.' : info[2]) + '</small>';
+  const q = document.getElementById('pp-q'); if (q) q.innerHTML = esc(lista ? 'O que vai fazer?' : cadq ? 'Desenhe como no caderno' : info[1]) + '<small>' + esc(lista ? 'Escolha a chapa e coloque o corte e a metragem de cada peça. Deslize os cartões para o lado.' : cadq ? 'Risque com o dedo: vira linha reta e ganha uma letra (A, B, C…). Embaixo, coloque a medida de cada letra e a largura.' : info[2]) + '</small>';
   const cab = tela.querySelector('.app-header');
   const topo = document.getElementById('pp-topo');
   if (topo) {
@@ -6347,7 +6355,7 @@ function renderPrePeca() {
   h += '<div class="form-card pre-sec" data-passo="medidas">' + secTitPre(n++, 'Medidas', ajudaMed)
     + '<label for="pre-nome">Nome desta medida <span class="pre-opc">(opcional)</span></label><input type="text" id="pre-nome" autocomplete="off" placeholder="Ex.: Sala, Parede da frente · ' + esc(nomePeca(pc, prePecaIdx)) + '">';
   if (d.tipo === 'lista') h += '<div id="pre-cat"></div>';
-  else if (d.tipo === 'caderno') h += '<div id="pre-cad"></div><div class="pre-med" style="margin-top:10px">' + campoPre('pre-a', 'Área (se não fechar o desenho)', pc.a, 'm²') + '<div></div></div>';
+  else if (d.tipo === 'caderno') h += '<div id="pre-cad"></div>';
   else if (d.tipo === 'area') h += '<div class="pre-med">' + campoPre('pre-a', d.a, pc.a, 'm') + campoPre('pre-b', d.b, pc.b, 'm') + '</div>';
   else if (d.tipo === 'linear') h += '<div class="pre-med">' + campoPre('pre-a', 'Comprimento', pc.a, unPre(pc)) + campoPre('pre-b', d.bRot || 'Quantas vezes', pc.b, '×', true) + '</div>';
   else if (d.tipo === 'un') h += '<div class="pre-med">' + campoPre('pre-a', 'Quantidade', pc.a, 'un', true) + '<div></div></div>';
@@ -6444,9 +6452,17 @@ function statsCaderno(pc) {
     let s2 = 0; for (let i = 0; i < pts.length - 1; i++) s2 += pts[i][0] * pts[i + 1][1] - pts[i + 1][0] * pts[i][1];
     area += Math.abs(s2) / 2 / 10000; perim += cam.reduce((t, ix) => t + cad.linhas[ix].cm, 0) / 100;
   });
+  // linhas soltas (fora de contorno fechado): metro linear × largura da peça
+  const noContorno = new Set(); cadContornos(cad).forEach(cam => cam.forEach(ix => noContorno.add(ix)));
+  const linear = cad.linhas.reduce((t, l, ix) => noContorno.has(ix) ? t : t + (l.cm || 0), 0) / 100, larg = (Number(cad.larg) || 0) / 100;
+  area += linear * larg; perim += linear;
   const maior = Math.max(0, ...cad.linhas.map(l => l.cm || 0)) / 100;
-  return { area: Math.round(area * 100) / 100, perim: Math.round(perim * 100) / 100, maior, fechado: cadContornos(cad).length > 0, todos };
+  return { area: Math.round(area * 100) / 100, perim: Math.round(perim * 100) / 100, maior, linear: Math.round(linear * 100) / 100, larg, fechado: cadContornos(cad).length > 0, todos };
 }
+const CAD_UN = { cm: 1, m: 100, mm: 0.1 };
+function cadLetra(i) { const A = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'; return i < 26 ? A[i] : A[Math.floor(i / 26) - 1] + A[i % 26]; }
+function cadUn(cad) { return CAD_UN[cad.un] ? cad.un : 'cm'; }
+function cadFmt(cad, cm) { const u = cadUn(cad); return (Math.round(cm / CAD_UN[u] * 1000) / 1000).toLocaleString('pt-BR', { maximumFractionDigits: 3 }) + ' ' + u; }
 function cadGuardar(pc) { const c = cadPre(pc), snap = JSON.stringify({ linhas: c.linhas, cubas: c.cubas, textos: c.textos }); c.hist.push(snap); if (c.hist.length > 40) c.hist.shift(); }
 function cadSvg(pc, raw) {
   const cad = cadPre(pc);
@@ -6457,7 +6473,7 @@ function cadSvg(pc, raw) {
   cadPontas(cad).forEach(q => { h += '<circle cx="' + q[0] + '" cy="' + q[1] + '" r="2.6" fill="#1e3a8a"/>'; });
   cad.linhas.forEach(l => {
     const mx = (l.x1 + l.x2) / 2, my = (l.y1 + l.y2) / 2, L = Math.hypot(l.x2 - l.x1, l.y2 - l.y1) || 1, nx = -(l.y2 - l.y1) / L * 13, ny = (l.x2 - l.x1) / L * 13;
-    const t = l.cm > 0 ? fmtNum(l.cm) + ' cm' : '?', w = t.length * 6.6 + 10;
+    const t = cadLetra(cad.linhas.indexOf(l)) + ' · ' + (l.cm > 0 ? cadFmt(cad, l.cm) : '?'), w = t.length * 6.4 + 12;
     h += '<g><rect x="' + (mx + nx - w / 2) + '" y="' + (my + ny - 9) + '" width="' + w + '" height="17" rx="5" fill="' + (l.cm > 0 ? '#fff' : '#fde68a') + '" stroke="' + (l.cm > 0 ? '#c2410c' : '#d97706') + '" stroke-width="1"/><text x="' + (mx + nx) + '" y="' + (my + ny + 4) + '" font-size="11" font-weight="800" fill="#c2410c" text-anchor="middle">' + t + '</text></g>';
   });
   cad.textos.forEach(t => { h += '<text x="' + t.x + '" y="' + t.y + '" font-size="13" font-style="italic" font-weight="700" fill="#374151" text-anchor="middle"></text>'; });
@@ -6470,7 +6486,7 @@ function cadDesenhar(pc, raw) {
   const tx = svg.querySelectorAll('text[font-style="italic"]'); cadPre(pc).textos.forEach((t, i) => { if (tx[i]) tx[i].textContent = t.t; });
 }
 const CAD_FERRS = [['linha', '✏️', 'Desenhar'], ['ret', '▭', 'Retângulo'], ['cuba', '◯', 'Cuba'], ['medida', '📏', 'Medida'], ['texto', '✍️', 'Texto'], ['apagar', '🧽', 'Apagar']];
-const CAD_DICAS = { linha: 'Risque com o dedo. O traço vira linha reta sozinho.', ret: 'Arraste na diagonal para fazer um retângulo.', cuba: 'Toque onde fica a cuba.', medida: 'Toque numa linha e digite a medida em cm.', texto: 'Toque onde quer escrever (ex.: parede, fogão).', apagar: 'Toque numa linha, cuba ou texto para apagar.' };
+const CAD_DICAS = { linha: 'Risque com o dedo. O traço vira linha reta sozinho.', ret: 'Arraste na diagonal para fazer um retângulo.', cuba: 'Toque onde fica a cuba.', medida: 'Toque num risco para ir até a medida dele, embaixo do desenho.', texto: 'Toque onde quer escrever (ex.: parede, fogão).', apagar: 'Toque numa linha, cuba ou texto para apagar.' };
 function renderCadernoPre() {
   const host = document.getElementById('pre-cad'); if (!host) return;
   const pc = preAtual.pecas[prePecaIdx]; cadPre(pc);
@@ -6478,9 +6494,9 @@ function renderCadernoPre() {
     + '<p class="cad-dica" id="cad-dica"></p>'
     + '<svg id="cad-svg" class="cad-svg" viewBox="0 0 ' + CAD_W + ' ' + CAD_H + '" xmlns="http://www.w3.org/2000/svg"></svg>'
     + '<div class="cad-acoes"><button type="button" class="btn-dark-sm" data-cad-a="desfazer">↶ Desfazer</button><button type="button" class="btn-dark-sm" data-cad-a="limpar">🗑 Limpar tudo</button></div>'
-    + '<p class="hint-sm" id="cad-info"></p>';
+    + '<p class="hint-sm" id="cad-info"></p><div id="cad-medidas"></div>';
   host.querySelector('#cad-dica').textContent = CAD_DICAS[cadFerr];
-  cadDesenhar(pc); cadInfo(pc);
+  cadDesenhar(pc); cadInfo(pc); cadListaMedidas(pc);
   const svg = host.querySelector('#cad-svg');
   const pt = ev => { const r = svg.getBoundingClientRect(); return [(ev.clientX - r.left) / r.width * CAD_W, (ev.clientY - r.top) / r.height * CAD_H]; };
   svg.addEventListener('pointerdown', ev => { ev.preventDefault(); try { svg.setPointerCapture(ev.pointerId); } catch (_) {} cadTraco = [pt(ev)]; });
@@ -6492,12 +6508,31 @@ function renderCadernoPre() {
   const fim = ev => { if (!cadTraco) return; const tr = cadTraco; cadTraco = null; cadAcao(pc, tr); };
   svg.addEventListener('pointerup', fim); svg.addEventListener('pointercancel', () => { cadTraco = null; cadDesenhar(pc); });
 }
+// Medidas embaixo do desenho: unidade, largura da peça e uma linha para cada risco (A, B, C...)
+function cadListaMedidas(pc) {
+  const host = document.getElementById('cad-medidas'); if (!host) return;
+  const cad = cadPre(pc), u = cadUn(cad), num = cm => cm > 0 ? (Math.round(cm / CAD_UN[u] * 1000) / 1000).toLocaleString('pt-BR', { maximumFractionDigits: 3 }) : '';
+  let h = '<label>Unidade das medidas</label><div class="cad-uns">' + Object.keys(CAD_UN).map(k => '<button type="button" class="cad-un' + (k === u ? ' on' : '') + '" data-cad-un="' + k + '">' + k + '</button>').join('') + '</div>'
+    + '<label for="cad-larg">Largura da peça <span class="pre-opc">(profundidade da pedra)</span></label><div class="calc-campo"><input type="text" inputmode="decimal" id="cad-larg" data-mic="0" placeholder="Ex.: ' + (u === 'm' ? '0,6' : u === 'mm' ? '600' : '60') + '" value="' + num(cad.larg) + '"><em>' + u + '</em></div>'
+    + '<p class="hint-sm" style="margin-top:4px">Usada nos riscos soltos: metro linear × largura = m².</p>';
+  if (cad.linhas.length) h += '<label style="margin-top:12px">Medida de cada risco</label>' + cad.linhas.map((l, i) => '<div class="cad-lin' + (l.cm > 0 ? '' : ' falta') + '"><b>' + cadLetra(i) + '</b><div class="calc-campo"><input type="text" inputmode="decimal" class="cad-lin-v" data-i="' + i + '" data-mic="0" placeholder="0" value="' + num(l.cm) + '" aria-label="Medida do risco ' + cadLetra(i) + '"><em>' + u + '</em></div></div>').join('');
+  host.innerHTML = h;
+  const conv = t => (parseFloat(String(t).replace(/[^0-9.,]/g, '').replace(',', '.')) || 0) * CAD_UN[u];
+  const larg = host.querySelector('#cad-larg'); larg.oninput = () => { cad.larg = conv(larg.value); salvarPreAtual(); cadInfo(pc); atualizarAreaPre(); };
+  host.querySelectorAll('.cad-lin-v').forEach(inp => inp.oninput = () => {
+    const l = cad.linhas[+inp.dataset.i]; if (!l) return; l.cm = conv(inp.value);
+    if (l.r) cad.linhas.forEach((o, j) => { if (o !== l && o.r === l.r && o.lado === l.lado && !(o.cm > 0)) { o.cm = l.cm; const x = host.querySelector('.cad-lin-v[data-i="' + j + '"]'); if (x) { x.value = inp.value; x.closest('.cad-lin').classList.remove('falta'); } } });
+    inp.closest('.cad-lin').classList.toggle('falta', !(l.cm > 0));
+    salvarPreAtual(); cadDesenhar(pc); cadInfo(pc); atualizarAreaPre();
+  });
+}
 function cadInfo(pc) {
   const el = document.getElementById('cad-info'); if (!el) return;
   const st = statsCaderno(pc), cad = cadPre(pc), falta = cad.linhas.filter(l => !(l.cm > 0)).length;
   el.textContent = !cad.linhas.length ? 'Comece desenhando a pedra. Depois toque em 📏 Medida para colocar os cm.'
-    : st.area > 0 ? '✓ Área pelo desenho: ' + fmtM(st.area) + ' m²' + (falta ? ' · ' + falta + ' linha(s) sem medida fora do contorno' : '')
-    : falta ? 'Falta medida em ' + falta + (falta === 1 ? ' linha' : ' linhas') + ' (as amarelas com "?").' : st.fechado ? 'Confira as medidas.' : 'Feche o desenho (a última linha encostando na primeira) para calcular a área sozinho.';
+    : st.area > 0 ? '✓ Área: ' + fmtM(st.area) + ' m²' + (st.linear > 0 ? ' (inclui ' + fmtM(st.linear) + ' m linear × largura ' + fmtM(st.larg) + ' m)' : '') + (falta ? ' · ' + falta + ' risco(s) sem medida' : '')
+    : st.linear > 0 && !(st.larg > 0) ? 'Metro linear: ' + fmtM(st.linear) + ' m. Coloque a largura da peça para calcular os m².'
+    : falta ? 'Falta medida em ' + falta + (falta === 1 ? ' risco' : ' riscos') + ' (os amarelos com "?"). Preencha embaixo.' : st.fechado ? 'Confira as medidas.' : 'Feche o desenho (a última linha encostando na primeira) para calcular a área sozinho.';
 }
 function cadPerto(pc, p) {
   const cad = cadPre(pc); let mel = null, md = 14;
@@ -6528,6 +6563,8 @@ async function cadAcao(pc, tr) {
   cadSalvo(pc);
 }
 async function cadMedir(pc, i) {
+  const campo = document.querySelector('#cad-medidas .cad-lin-v[data-i="' + i + '"]');
+  if (campo) { campo.scrollIntoView({ block: 'center', behavior: 'smooth' }); setTimeout(() => { try { campo.focus(); campo.select(); } catch (_) {} }, 250); return; }
   const cad = cadPre(pc), l = cad.linhas[i]; if (!l) return;
   const v = await orcaonPerguntar('Medida desta linha em cm (ex.: 120):', l.cm ? fmtNum(l.cm) : ''); if (v == null) return;
   const n = parseQtd(String(v).replace(/cm/i, '').trim()) || 0; cadGuardar(pc); l.cm = n;
@@ -6535,11 +6572,13 @@ async function cadMedir(pc, i) {
   if (l.r) cad.linhas.forEach(o => { if (o !== l && o.r === l.r && o.lado === l.lado && !(o.cm > 0)) o.cm = n; });
   cadSalvo(pc);
 }
-function cadSalvo(pc) { salvarPreAtual(); cadDesenhar(pc); cadInfo(pc); atualizarAreaPre(); }
+function cadSalvo(pc) { salvarPreAtual(); cadDesenhar(pc); cadInfo(pc); cadListaMedidas(pc); atualizarAreaPre(); }
 document.addEventListener('click', function (e) {
   if (!preAtual) return;
   const f = e.target.closest && e.target.closest('#pre-cad [data-cad-f]');
   if (f) { cadFerr = f.dataset.cadF; document.querySelectorAll('#pre-cad .cad-f').forEach(b => b.classList.toggle('on', b === f)); const d = document.getElementById('cad-dica'); if (d) d.textContent = CAD_DICAS[cadFerr]; return; }
+  const un = e.target.closest && e.target.closest('#pre-cad [data-cad-un]');
+  if (un) { const pc = preAtual.pecas[prePecaIdx]; cadPre(pc).un = un.dataset.cadUn; salvarPreAtual(); cadDesenhar(pc); cadListaMedidas(pc); return; }
   const a = e.target.closest && e.target.closest('#pre-cad [data-cad-a]'); if (!a) return;
   const pc = preAtual.pecas[prePecaIdx], cad = cadPre(pc);
   if (a.dataset.cadA === 'desfazer') { const u = cad.hist.pop(); if (!u) return; Object.assign(cad, JSON.parse(u)); cadSalvo(pc); }
