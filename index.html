@@ -876,6 +876,9 @@ body.light .pp-topo,body.light .pp-nav{background:#fff}
 #pre-cad:not(.cad-cheia) .cad-svg{aspect-ratio:6/5;height:auto}
 .cad-zoom{position:absolute;right:4px;top:8px;display:flex;flex-direction:column;align-items:center;gap:6px;z-index:2}
 .cad-zoom button{width:44px;height:44px;border-radius:12px;border:0;background:rgba(11,28,44,.88);color:#fff;font-size:24px;font-weight:900;line-height:1;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.3);font-family:inherit}
+.cad-fontes{position:absolute;left:8px;bottom:8px;display:flex;gap:6px;z-index:2}
+.cad-fonte{width:46px;height:42px;border-radius:12px;border:0;background:#c2410c;color:#fff;font-size:19px;font-weight:900;line-height:1;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.3);font-family:inherit}
+.cad-fonte sup{font-size:13px}
 .cad-zoom span{font-size:12px;font-weight:900;color:#1e3a8a;background:rgba(255,255,255,.9);border-radius:8px;padding:2px 6px}
 .cad-f{display:flex;flex-direction:column;align-items:center;gap:2px;min-height:56px;border-radius:12px;border:2px solid var(--border);background:var(--bg-primary,#0B1C2C);color:var(--text-primary);font-size:13px;font-weight:800;font-family:inherit;cursor:pointer}
 .cad-f b{font-size:20px;line-height:1.1}
@@ -899,6 +902,7 @@ body.light .pp-topo,body.light .pp-nav{background:#fff}
 #pre-cad.cad-cheia .cad-ferrs{grid-template-columns:repeat(7,1fr);gap:4px;margin:0 0 6px}
 #pre-cad.cad-cheia .cad-wrap{flex:1 1 auto;min-height:0;display:flex}
 #pre-cad.cad-cheia .cad-zoom{right:8px}
+#pre-cad.cad-cheia .cad-fontes{left:10px;bottom:10px}
 #pre-cad.cad-cheia .cad-f{min-height:50px;font-size:10.5px;padding:0 2px}
 #pre-cad.cad-cheia .cad-dica{margin:0 2px 6px;font-size:13px;min-height:0}
 #pre-cad.cad-cheia .cad-svg{flex:1 1 auto;min-height:0;width:100%;height:100%;margin:0;object-fit:contain}
@@ -6492,19 +6496,27 @@ function cadLarg(cad, l) { return Number(l.larg) > 0 ? Number(l.larg) : (Number(
 function cadUn(cad) { return CAD_UN[cad.un] ? cad.un : 'cm'; }
 function cadFmt(cad, cm) { const u = cadUn(cad); return (Math.round(cm / CAD_UN[u] * 1000) / 1000).toLocaleString('pt-BR', { maximumFractionDigits: 3 }) + ' ' + u; }
 function cadGuardar(pc) { const c = cadPre(pc), snap = JSON.stringify({ linhas: c.linhas, cubas: c.cubas, textos: c.textos }); c.hist.push(snap); if (c.hist.length > 40) c.hist.shift(); }
+// Tamanho das letras das medidas: a pessoa escolhe e fica gravado neste celular
+const CAD_FONTE_KEY = 'orcaon_cad_fonte';
+function cadFonte() { let v = 1.15; try { const n = parseFloat(localStorage.getItem(CAD_FONTE_KEY)); if (n > 0) v = n; } catch (_) {} return Math.max(0.6, Math.min(2.6, v)); }
+function cadMudarFonte(pc, mais) {
+  const v = Math.round(Math.max(0.6, Math.min(2.6, cadFonte() * (mais ? 1.2 : 1 / 1.2))) * 100) / 100;
+  try { localStorage.setItem(CAD_FONTE_KEY, String(v)); } catch (_) {}
+  cadDesenhar(pc); try { orcaonToast('Letras ' + Math.round(v / 1.15 * 100) + '%'); } catch (_) {}
+}
 function cadSvg(pc, raw) {
-  const cad = cadPre(pc), k = 1 / Math.max(1, cadVista.z || 1);   // com zoom, letras e traços ficam do mesmo tamanho na tela
+  const cad = cadPre(pc), k = 1 / Math.max(1, cadVista.z || 1), fz = cadFonte() / 1.15;   // com zoom, letras e traços ficam do mesmo tamanho na tela
   let h = '<defs><pattern id="cad-gr" width="' + CAD_G + '" height="' + CAD_G + '" patternUnits="userSpaceOnUse"><path d="M' + CAD_G + ' 0H0V' + CAD_G + '" fill="none" stroke="#bcd3ee" stroke-width=".8"/></pattern></defs>'
     + '<rect x="-2000" y="-2000" width="' + (CAD_W + 4000) + '" height="' + (cadAlt(cad) + 4000) + '" fill="#fffdf4"/><rect x="-2000" y="-2000" width="' + (CAD_W + 4000) + '" height="' + (cadAlt(cad) + 4000) + '" fill="url(#cad-gr)"/><line x1="30" y1="0" x2="30" y2="' + cadAlt(cad) + '" stroke="#f3a3a3" stroke-width="1.2"/>';
   cad.cubas.forEach(c => { h += '<rect x="' + (c.x - 22) + '" y="' + (c.y - 15) + '" width="44" height="30" rx="10" fill="#dbeafe" stroke="#1e3a8a" stroke-width="2"/><text x="' + c.x + '" y="' + (c.y + 4) + '" font-size="10" font-weight="800" fill="#1e3a8a" text-anchor="middle">cuba</text>'; });
   cad.linhas.forEach(l => { h += '<line x1="' + l.x1 + '" y1="' + l.y1 + '" x2="' + l.x2 + '" y2="' + l.y2 + '" stroke="#1e3a8a" stroke-width="' + (3 * k) + '" stroke-linecap="round"/>'; });
   cadPontas(cad).forEach(q => { h += '<circle cx="' + q[0] + '" cy="' + q[1] + '" r="' + (2.6 * k) + '" fill="#1e3a8a"/>'; });
   cad.linhas.forEach(l => {
-    const f = 1.15 * k, mx = (l.x1 + l.x2) / 2, my = (l.y1 + l.y2) / 2, L = Math.hypot(l.x2 - l.x1, l.y2 - l.y1) || 1, nx = -(l.y2 - l.y1) / L * 10 * f, ny = (l.x2 - l.x1) / L * 10 * f;
+    const f = cadFonte() * k, mx = (l.x1 + l.x2) / 2, my = (l.y1 + l.y2) / 2, L = Math.hypot(l.x2 - l.x1, l.y2 - l.y1) || 1, nx = -(l.y2 - l.y1) / L * 10 * f, ny = (l.x2 - l.x1) / L * 10 * f;
     const t = cadLetra(cad.linhas.indexOf(l)) + ' · ' + (l.cm > 0 ? cadFmt(cad, l.cm) : '?'), w = (t.length * 6.4 + 10) * f;
     h += '<g><rect x="' + (mx + nx - w / 2) + '" y="' + (my + ny - 8 * f) + '" width="' + w + '" height="' + (15 * f) + '" rx="' + (4 * f) + '" fill="' + (l.cm > 0 ? '#fff' : '#fde68a') + '" stroke="' + (l.cm > 0 ? '#c2410c' : '#d97706') + '" stroke-width="' + f + '"/><text x="' + (mx + nx) + '" y="' + (my + ny + 3.5 * f) + '" font-size="' + (11 * f) + '" font-weight="800" fill="#c2410c" text-anchor="middle">' + t + '</text></g>';
   });
-  cad.textos.forEach(t => { h += '<text x="' + t.x + '" y="' + t.y + '" font-size="' + (12 * k) + '" font-style="italic" font-weight="700" fill="#374151" text-anchor="middle"></text>'; });
+  cad.textos.forEach(t => { h += '<text x="' + t.x + '" y="' + t.y + '" font-size="' + (12 * k * fz) + '" font-style="italic" font-weight="700" fill="#374151" text-anchor="middle"></text>'; });
   if (raw && raw.length > 1) h += '<polyline points="' + raw.map(q => q.join(',')).join(' ') + '" fill="none" stroke="#94a3b8" stroke-width="2" stroke-dasharray="4 3"/>';
   return h;
 }
@@ -6538,7 +6550,7 @@ function renderCadernoPre() {
   host.innerHTML = '<div class="cad-ferrs">' + CAD_FERRS.map(f => '<button type="button" class="cad-f' + (f[0] === cadFerr ? ' on' : '') + '" data-cad-f="' + f[0] + '"><b>' + f[1] + '</b>' + f[2] + '</button>').join('') + '</div>'
     + '<p class="cad-dica" id="cad-dica"></p>'
     + '<div class="cad-wrap"><svg id="cad-svg" class="cad-svg" viewBox="0 0 ' + CAD_W + ' ' + cadAlt(cadPre(pc)) + '" xmlns="http://www.w3.org/2000/svg"></svg>'
-    + '<div class="cad-zoom"><button type="button" data-cad-z="mais" aria-label="Aumentar zoom">＋</button><span id="cad-z-v">1×</span><button type="button" data-cad-z="menos" aria-label="Diminuir zoom">−</button><button type="button" data-cad-z="reset" aria-label="Ver a folha inteira">⤢</button></div></div>'
+    + '<div class="cad-zoom"><button type="button" data-cad-z="mais" aria-label="Aumentar zoom">＋</button><span id="cad-z-v">1×</span><button type="button" data-cad-z="menos" aria-label="Diminuir zoom">−</button><button type="button" data-cad-z="reset" aria-label="Ver a folha inteira">⤢</button></div><div class="cad-fontes"><button type="button" class="cad-fonte" data-cad-fonte="menos" aria-label="Diminuir as letras das medidas">A<sup>−</sup></button><button type="button" class="cad-fonte" data-cad-fonte="mais" aria-label="Aumentar as letras das medidas">A<sup>+</sup></button></div></div>'
     + '<div class="cad-acoes"><button type="button" class="btn-dark-sm" data-cad-a="desfazer">↶ Desfazer</button><button type="button" class="btn-dark-sm" data-cad-a="limpar">🗑 Limpar</button><button type="button" class="btn-dark-sm cad-cheia-bt" data-cad-a="cheia">⛶ Tela cheia</button></div>'
     + '<p class="hint-sm" id="cad-info"></p><div id="cad-medidas"></div>';
   host.querySelector('#cad-dica').textContent = CAD_DICAS[cadFerr];
@@ -6680,6 +6692,8 @@ document.addEventListener('click', function (e) {
   if (f) { cadFerr = f.dataset.cadF; document.querySelectorAll('#pre-cad .cad-f').forEach(b => b.classList.toggle('on', b === f)); const d = document.getElementById('cad-dica'); if (d) d.textContent = CAD_DICAS[cadFerr]; return; }
   const un = e.target.closest && e.target.closest('#pre-cad [data-cad-un]');
   const zb = e.target.closest && e.target.closest('#pre-cad [data-cad-z]');
+  const fb = e.target.closest && e.target.closest('#pre-cad [data-cad-fonte]');
+  if (fb) { cadMudarFonte(preAtual.pecas[prePecaIdx], fb.dataset.cadFonte === 'mais'); return; }
   if (zb) { const pc = preAtual.pecas[prePecaIdx], k = zb.dataset.cadZ; cadZoom(pc, k === 'mais' ? 1.5 : k === 'menos' ? 1 / 1.5 : 0); return; }
   if (un) { const pc = preAtual.pecas[prePecaIdx]; cadPre(pc).un = un.dataset.cadUn; salvarPreAtual(); cadDesenhar(pc); cadListaMedidas(pc); return; }
   const a = e.target.closest && e.target.closest('#pre-cad [data-cad-a]'); if (!a) return;
@@ -10508,7 +10522,7 @@ const COFRE_PREFIXO = 'orcaon_cofre_';
 function chaveDaConta(k) {
   if (k === 'assinaturaDigital' || k === 'profession' || k === 'professionChosenV2') return true;
   if (!k || k.indexOf('orcaon_') !== 0) return false;
-  if (['orcaon_aparelho_id', 'orcaon_boot_google', 'orcaon_instalar_fechado', 'orcaon_mic_aviso', 'orcaon_oferta_pro_pendente', DONO_DADOS_KEY, 'orcaon_plano', 'orcaon_pro_ativo', 'orcaon_admin_visto'].indexOf(k) >= 0) return false;
+  if (['orcaon_aparelho_id', 'orcaon_boot_google', 'orcaon_instalar_fechado', 'orcaon_mic_aviso', 'orcaon_cad_fonte', 'orcaon_oferta_pro_pendente', DONO_DADOS_KEY, 'orcaon_plano', 'orcaon_pro_ativo', 'orcaon_admin_visto'].indexOf(k) >= 0) return false;
   if (k.indexOf(COFRE_PREFIXO) === 0 || k.indexOf('orcaon_backup') === 0 || k.indexOf('orcaon_perfil_inicial_') === 0 || /compartilhados_total$/.test(k)) return false;
   return true;
 }
