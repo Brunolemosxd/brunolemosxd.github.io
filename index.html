@@ -888,7 +888,16 @@ body.light .pp-topo,body.light .pp-nav{background:#fff}
 .cad-lin-c{flex:1;min-width:0}.cad-lin-c small{display:block;font-size:12px;font-weight:700;color:var(--text-secondary);margin:0 0 3px 2px}
 .cad-lin-c .calc-campo input{min-width:0}
 .cad-mesma{width:100%;margin-top:12px;min-height:46px}
-.cad-acoes{display:flex;gap:8px;margin-top:8px}.cad-acoes button{flex:1;min-height:44px}
+.cad-acoes{display:flex;gap:8px;margin-top:8px}.cad-acoes button{flex:1;min-height:48px;padding:0 6px}
+.cad-cheia-bt{background:var(--accent,#F4C430)!important;color:#0B1C2C!important;font-weight:900!important}
+#pre-cad .cad-svg{width:calc(100% + 24px);margin:0 -12px;max-width:none}
+#pre-cad.cad-cheia{position:fixed;inset:0;z-index:300;background:var(--bg-primary,#0B1C2C);padding:10px 10px calc(10px + env(safe-area-inset-bottom));display:flex;flex-direction:column;overflow:hidden}
+#pre-cad.cad-cheia .cad-ferrs{grid-template-columns:repeat(6,1fr);gap:5px;margin:0 0 6px}
+#pre-cad.cad-cheia .cad-f{min-height:50px;font-size:10.5px;padding:0 2px}
+#pre-cad.cad-cheia .cad-dica{margin:0 2px 6px;font-size:13px;min-height:0}
+#pre-cad.cad-cheia .cad-svg{flex:1 1 auto;min-height:0;width:100%;height:100%;margin:0;object-fit:contain}
+#pre-cad.cad-cheia #cad-info,#pre-cad.cad-cheia #cad-medidas{display:none}
+html.cad-travada,html.cad-travada body{overflow:hidden}
 #cad-info{margin-top:8px;font-size:14px;font-weight:700}
 .pre-res-sub{padding-left:14px!important;font-size:14px;opacity:.9}
 .pre-ops-chips .pre-tipo{padding:9px 13px;font-size:14.5px}
@@ -6295,6 +6304,7 @@ function aplicarPassoPre() {
   }
 }
 function irPassoPre(k) {
+  if (typeof cadTelaCheia === 'function') cadTelaCheia(false);
   prePasso = k; salvarPreAtual(); aplicarPassoPre();
   try { window.scrollTo(0, 0); const t = document.getElementById('screen-pre-editor'); if (t) t.scrollTop = 0; const c = t && t.querySelector('.content'); if (c) c.scrollTop = 0; } catch (_) {}
 }
@@ -6381,7 +6391,8 @@ function renderPrePeca() {
   renderCatalogoPre(); renderCadernoPre(); renderOpcoesPre(); renderPreDescontos(); desenharPre(); atualizarAreaPre();
 }
 // ---- Caderno: desenho à mão que vira linhas retas, com medidas em cm ----
-const CAD_W = 360, CAD_H = 300, CAD_G = 15;
+const CAD_W = 360, CAD_H = 450, CAD_G = 15;
+function cadAlt(cad) { return Math.max(CAD_H, Number(cad && cad.h) || 0); }   // a folha cresce para baixo na tela cheia
 let cadFerr = 'linha', cadTraco = null;
 function cadPre(pc) { pc.cad = pc.cad && typeof pc.cad === 'object' ? pc.cad : {}; ['linhas', 'cubas', 'textos', 'hist'].forEach(k => { if (!Array.isArray(pc.cad[k])) pc.cad[k] = []; }); return pc.cad; }
 const cadGrade = v => Math.round(v / CAD_G) * CAD_G;
@@ -6420,7 +6431,7 @@ function cadEndireitar(raw, cad) {
     } else { nx = cadGrade(v[i][0]); ny = cadGrade(v[i][1]); }
     let fim = [nx, ny];
     if (i === v.length - 1) { const g = cadGrudar(fim, cad, [ini]); if (Math.hypot(g[0] - fim[0], g[1] - fim[1]) < 16) fim = g; }
-    fim = [Math.max(0, Math.min(CAD_W, fim[0])), Math.max(0, Math.min(CAD_H, fim[1]))];
+    fim = [Math.max(0, Math.min(CAD_W, fim[0])), Math.max(0, Math.min(cadAlt(cad), fim[1]))];
     if (fim[0] !== cur[0] || fim[1] !== cur[1]) novas.push({ x1: cur[0], y1: cur[1], x2: fim[0], y2: fim[1], cm: 0 });
     cur = fim;
   }
@@ -6474,7 +6485,7 @@ function cadGuardar(pc) { const c = cadPre(pc), snap = JSON.stringify({ linhas: 
 function cadSvg(pc, raw) {
   const cad = cadPre(pc);
   let h = '<defs><pattern id="cad-gr" width="' + CAD_G + '" height="' + CAD_G + '" patternUnits="userSpaceOnUse"><path d="M' + CAD_G + ' 0H0V' + CAD_G + '" fill="none" stroke="#bcd3ee" stroke-width=".8"/></pattern></defs>'
-    + '<rect width="' + CAD_W + '" height="' + CAD_H + '" fill="#fffdf4"/><rect width="' + CAD_W + '" height="' + CAD_H + '" fill="url(#cad-gr)"/><line x1="30" y1="0" x2="30" y2="' + CAD_H + '" stroke="#f3a3a3" stroke-width="1.2"/>';
+    + '<rect width="' + CAD_W + '" height="' + cadAlt(cad) + '" fill="#fffdf4"/><rect width="' + CAD_W + '" height="' + cadAlt(cad) + '" fill="url(#cad-gr)"/><line x1="30" y1="0" x2="30" y2="' + cadAlt(cad) + '" stroke="#f3a3a3" stroke-width="1.2"/>';
   cad.cubas.forEach(c => { h += '<rect x="' + (c.x - 22) + '" y="' + (c.y - 15) + '" width="44" height="30" rx="10" fill="#dbeafe" stroke="#1e3a8a" stroke-width="2"/><text x="' + c.x + '" y="' + (c.y + 4) + '" font-size="10" font-weight="800" fill="#1e3a8a" text-anchor="middle">cuba</text>'; });
   cad.linhas.forEach(l => { h += '<line x1="' + l.x1 + '" y1="' + l.y1 + '" x2="' + l.x2 + '" y2="' + l.y2 + '" stroke="#1e3a8a" stroke-width="3" stroke-linecap="round"/>'; });
   cadPontas(cad).forEach(q => { h += '<circle cx="' + q[0] + '" cy="' + q[1] + '" r="2.6" fill="#1e3a8a"/>'; });
@@ -6499,13 +6510,14 @@ function renderCadernoPre() {
   const pc = preAtual.pecas[prePecaIdx]; cadPre(pc);
   host.innerHTML = '<div class="cad-ferrs">' + CAD_FERRS.map(f => '<button type="button" class="cad-f' + (f[0] === cadFerr ? ' on' : '') + '" data-cad-f="' + f[0] + '"><b>' + f[1] + '</b>' + f[2] + '</button>').join('') + '</div>'
     + '<p class="cad-dica" id="cad-dica"></p>'
-    + '<svg id="cad-svg" class="cad-svg" viewBox="0 0 ' + CAD_W + ' ' + CAD_H + '" xmlns="http://www.w3.org/2000/svg"></svg>'
-    + '<div class="cad-acoes"><button type="button" class="btn-dark-sm" data-cad-a="desfazer">↶ Desfazer</button><button type="button" class="btn-dark-sm" data-cad-a="limpar">🗑 Limpar tudo</button></div>'
+    + '<svg id="cad-svg" class="cad-svg" viewBox="0 0 ' + CAD_W + ' ' + cadAlt(cadPre(pc)) + '" xmlns="http://www.w3.org/2000/svg"></svg>'
+    + '<div class="cad-acoes"><button type="button" class="btn-dark-sm" data-cad-a="desfazer">↶ Desfazer</button><button type="button" class="btn-dark-sm" data-cad-a="limpar">🗑 Limpar</button><button type="button" class="btn-dark-sm cad-cheia-bt" data-cad-a="cheia">⛶ Tela cheia</button></div>'
     + '<p class="hint-sm" id="cad-info"></p><div id="cad-medidas"></div>';
   host.querySelector('#cad-dica').textContent = CAD_DICAS[cadFerr];
   cadDesenhar(pc); cadInfo(pc); cadListaMedidas(pc);
   const svg = host.querySelector('#cad-svg');
-  const pt = ev => { const r = svg.getBoundingClientRect(); return [(ev.clientX - r.left) / r.width * CAD_W, (ev.clientY - r.top) / r.height * CAD_H]; };
+  // posição do dedo no desenho (funciona também na tela cheia, com sobra dos lados)
+  const pt = ev => { try { const m = svg.getScreenCTM(), q = svg.createSVGPoint(); q.x = ev.clientX; q.y = ev.clientY; const r = q.matrixTransform(m.inverse()); return [r.x, r.y]; } catch (_) { const r = svg.getBoundingClientRect(); return [(ev.clientX - r.left) / r.width * CAD_W, (ev.clientY - r.top) / r.height * CAD_H]; } };
   svg.addEventListener('pointerdown', ev => { ev.preventDefault(); try { svg.setPointerCapture(ev.pointerId); } catch (_) {} cadTraco = [pt(ev)]; });
   svg.addEventListener('pointermove', ev => {
     if (!cadTraco) return; const q = pt(ev), u = cadTraco[cadTraco.length - 1]; if (Math.hypot(q[0] - u[0], q[1] - u[1]) < 2) return; cadTraco.push(q);
@@ -6548,6 +6560,20 @@ function cadListaMedidas(pc) {
 }
 // mostra o botão "usar a mesma largura" sem tirar o foco do campo
 function cadListaMedidasDepois(pc, inp) { inp.onblur = () => { inp.onblur = null; setTimeout(() => cadListaMedidas(pc), 0); }; }
+// Tela cheia: o caderno ocupa a tela toda para desenhar com o dedo
+function cadTelaCheia(on) {
+  const h = document.getElementById('pre-cad'); if (!h) return;
+  h.classList.toggle('cad-cheia', on); document.documentElement.classList.toggle('cad-travada', on);
+  const svg = h.querySelector('#cad-svg');
+  if (on && svg && preAtual) {
+    // aumenta a folha para ocupar a tela toda (sem faixas escuras)
+    const pc = preAtual.pecas[prePecaIdx], cad = cadPre(pc), r = svg.getBoundingClientRect();
+    if (r.width > 0 && r.height > 0) { const alt = Math.ceil(CAD_W * r.height / r.width / CAD_G) * CAD_G; if (alt > cadAlt(cad)) { cad.h = alt; salvarPreAtual(); } }
+    svg.setAttribute('viewBox', '0 0 ' + CAD_W + ' ' + cadAlt(cad)); cadDesenhar(pc);
+  }
+  const b = h.querySelector('.cad-cheia-bt'); if (b) b.textContent = on ? '✓ Pronto' : '⛶ Tela cheia';
+  if (!on) setTimeout(() => { try { h.scrollIntoView({ block: 'start' }); } catch (_) {} }, 50);
+}
 function cadInfo(pc) {
   const el = document.getElementById('cad-info'); if (!el) return;
   const st = statsCaderno(pc), cad = cadPre(pc), falta = cad.linhas.filter(l => !(l.cm > 0)).length;
@@ -6603,6 +6629,7 @@ document.addEventListener('click', function (e) {
   if (un) { const pc = preAtual.pecas[prePecaIdx]; cadPre(pc).un = un.dataset.cadUn; salvarPreAtual(); cadDesenhar(pc); cadListaMedidas(pc); return; }
   const a = e.target.closest && e.target.closest('#pre-cad [data-cad-a]'); if (!a) return;
   const pc = preAtual.pecas[prePecaIdx], cad = cadPre(pc);
+  if (a.dataset.cadA === 'cheia') { cadTelaCheia(!document.getElementById('pre-cad').classList.contains('cad-cheia')); return; }
   if (a.dataset.cadA === 'desfazer') { const u = cad.hist.pop(); if (!u) return; Object.assign(cad, JSON.parse(u)); cadSalvo(pc); }
   else orcaonConfirmar('Apagar todo o desenho?', 'Apagar').then(ok => { if (!ok) return; cadGuardar(pc); cad.linhas = []; cad.cubas = []; cad.textos = []; cadSalvo(pc); });
 });
