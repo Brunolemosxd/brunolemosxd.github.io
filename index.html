@@ -3394,6 +3394,11 @@ body.light .sugestao-chip.active,body.light .sugestao-chip.mao-obra.active{backg
 body.light .btn-remove-item{color:#b91c1c}
 #itens-container .item-row:only-child .btn-remove-item{display:none}
 .item-row .sugestoes-label{margin-bottom:8px}
+.btn-sug-toggle{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;min-height:48px;padding:10px 14px;margin:4px 0 10px;border-radius:12px;border:2px dashed var(--accent,#F4C430);background:rgba(244,196,48,.08);color:var(--accent,#F4C430);font-size:15.5px;font-weight:800;font-family:inherit;cursor:pointer;text-align:left}
+.btn-sug-toggle small{font-weight:600;opacity:.85}
+.btn-sug-toggle i{font-style:normal;transition:transform .2s}
+.btn-sug-toggle.on{border-style:solid}.btn-sug-toggle.on i{transform:rotate(180deg)}
+.item-sugestoes.sug-fechada{display:none!important}
 .item-row .sugestoes-row{margin-bottom:12px}
 </style>
 </head>
@@ -5054,8 +5059,8 @@ function itemRowHTML(n) {
       <label class="item-label">Item ${n}</label>
       <button type="button" class="btn-remove-item" onclick="removerItem(this)">✕ Remover item</button>
     </div>
-    <p class="sugestoes-label">Sugestões para <span class="sugestao-prof">sua profissão</span>:</p>
-    <div class="sugestoes-row item-sugestoes"></div>
+    <button type="button" class="btn-sug-toggle" aria-expanded="false" onclick="alternarSugestoesItem(this)"><span>💡 Sugestões de item <small>(<span class="sugestao-prof">sua profissão</span>)</small></span><i aria-hidden="true">▾</i></button>
+    <div class="sugestoes-row item-sugestoes sug-fechada"></div>
     <input type="text" class="item-desc" placeholder="Descrição do serviço/material">
     <input type="text" class="item-detalhes" placeholder="Detalhes: medidas, material, o que está incluso (opcional)" style="margin-top:8px">
     <div class="units">
@@ -5131,9 +5136,16 @@ function carregarSugestoes() {
   document.querySelectorAll('#itens-container .item-row').forEach(preencherSugestoesItem);
 }
 
+// Botão "Sugestões de item": abre e fecha a lista de sugestões daquele item
+function alternarSugestoesItem(b, abrir) {
+  const row = b.closest('.item-row'), box = row && row.querySelector('.item-sugestoes'); if (!box) return;
+  const aberta = abrir != null ? abrir : box.classList.contains('sug-fechada');
+  box.classList.toggle('sug-fechada', !aberta); b.setAttribute('aria-expanded', aberta ? 'true' : 'false'); b.classList.toggle('on', aberta);
+}
 function usarSugestao(btn) {
   const row = btn.closest('.item-row');
   if (!row) return;
+  const tg = row.querySelector('.btn-sug-toggle'); if (tg) alternarSugestoesItem(tg, false);
   row.querySelector('.item-desc').value = btn.dataset.texto;
   marcarSugestaoAtiva(row);
   // Preço do Perfil: preenche unidade e valor (sem apagar um valor que a pessoa já digitou)
@@ -5195,7 +5207,7 @@ function novoOrcamentoEscolhendoModelo() {
 // ---- Orçamento em passo a passo (uma seção por tela) ----
 const OP_PASSOS = [
   ['cliente', 'Cliente', 'Para quem é o orçamento?', 'Nome, WhatsApp e o serviço'],
-  ['itens', 'Itens', 'O que vai cobrar?', 'Toque numa sugestão ou escreva. O total aparece embaixo'],
+  ['itens', 'Itens', 'O que vai cobrar?', 'Escreva o item ou toque em 💡 Sugestões. O total aparece embaixo'],
   ['pagamento', 'Pagamento', 'Como o cliente vai pagar?', 'Escolha um modelo ou escreva do seu jeito'],
   ['detalhes', 'Detalhes', 'Validade e observações', 'Prazo, garantia e número do orçamento'],
   ['marca', 'Assinatura', 'Assinatura e logotipo', 'Opcional: deixa o orçamento com a sua cara'],
