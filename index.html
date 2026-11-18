@@ -5080,10 +5080,12 @@ function profissaoAtual() {
   return (typeof currentUser === 'object' && currentUser && currentUser.profession) || localStorage.getItem('profession') || 'Outro';
 }
 
+// Profissão das sugestões deste orçamento (vem do pré-orçamento; vazio = a do perfil)
+let profSugOrc = null;
 // Preenche as sugestões da profissão dentro de UM item
 function preencherSugestoesItem(row) {
-  const prof = profissaoAtual();
-  const lista = listaSugestoes();
+  const prof = profSugOrc || profissaoAtual();
+  const lista = listaSugestoes(prof);
   const label = row.querySelector('.sugestao-prof');
   if (label) label.textContent = prof;
   const box = row.querySelector('.item-sugestoes');
@@ -5186,6 +5188,7 @@ function novoOrcamentoEscolhendoModelo() {
   abrirModelos(true);
 }
 function goToNewBudget() {
+  profSugOrc = null;
   modeloNovoOrcamento = '';
   logoNovoOrc = undefined;
   setTimeout(function () { if (typeof sincronizarLogoNovoOrc === 'function') { const st = document.getElementById('orc-logo-status'); if (st) st.textContent = 'Nenhum logotipo selecionado.'; sincronizarLogoNovoOrc(); } }, 0);
@@ -6347,7 +6350,7 @@ function renderPreDescontos() {
     host.appendChild(l);
   });
 }
-function sugestoesPre(pc) { const l = (SUGESTOES[profPre(pc)] || []).concat(listaSugestoes()); return l.filter((n, i) => l.indexOf(n) === i); }
+function sugestoesPre(pc) { const l = (SUGESTOES[profPre(pc)] || []).concat(listaSugestoes(profPre(pc))); return l.filter((n, i) => l.indexOf(n) === i); }
 function servicoPadraoPre(pc) {
   const d = defPre(pc), lista = sugestoesPre(pc);
   for (const re of (d.servico || [])) { const s = lista.find(n => re.test(n)); if (s) return s; }
@@ -6975,6 +6978,10 @@ function transformarPreEmOrcamento() {
   salvarPreAtual();
   const pr = preAtual;
   goToNewBudget();
+  // sugestões do orçamento seguem a profissão das medidas (a que mais aparece), não a do perfil
+  const conta = {}; pecas.forEach(pc => { const pf = profPre(pc); if (pf !== 'Outro') conta[pf] = (conta[pf] || 0) + 1; });
+  const profMed = Object.keys(conta).sort((x, y) => conta[y] - conta[x])[0];
+  if (profMed && SUGESTOES[profMed]) profSugOrc = profMed;
   const cl = document.getElementById('orc-cliente'); if (cl) cl.value = pr.cliente || '';
   const ti = document.getElementById('orc-titulo'); if (ti && pr.local) ti.value = pr.local;
   pecas.forEach(pc => {
@@ -7010,6 +7017,7 @@ function transformarPreEmOrcamento() {
     if (det) det.value = 'Material · ' + fmtQtdMat(x.qtd) + ' ' + x.un;
   });
   if (typeof renumerarItens === 'function') renumerarItens();
+  if (typeof carregarSugestoes === 'function') carregarSugestoes();
   if (typeof atualizarTotalOrcamento === 'function') atualizarTotalOrcamento();
   const a = lerPres(), i = a.findIndex(x => x.id === pr.id); if (i >= 0) { a[i].virouOrcamento = Date.now(); gravarPres(a); }
   const sem = pecas.filter(pc => !precoServico((pc.servico || '').trim() || servicoPadraoPre(pc))).length;
@@ -8997,6 +9005,7 @@ function oeMudarTipoDesconto() {
   oeAtualizarResumo();
 }
 function editarOrcamento(id) {
+  profSugOrc = null;
   const o = orcamentos.find(x => Number(x.id) === Number(id));
   if (!o) { alert('Não encontrei esse orçamento. Atualize a lista e tente novamente.'); return; }
   let modal = document.getElementById('orc-edit-modal');
@@ -10309,8 +10318,8 @@ function padroesProprios() {
 const SUG_OCULTAS_KEY = 'orcaon_sugestoes_ocultas';
 function sugestoesOcultas() { try { const a = JSON.parse(localStorage.getItem(SUG_OCULTAS_KEY) || '[]'); return Array.isArray(a) ? a : []; } catch (_) { return []; } }
 function gravarSugestoesOcultas(a) { try { if (a.length) localStorage.setItem(SUG_OCULTAS_KEY, JSON.stringify(a)); else localStorage.removeItem(SUG_OCULTAS_KEY); } catch (_) {} }
-function listaSugestoes() {
-  const base = SUGESTOES[profissaoAtual()] || SUGESTOES['Outro'], ocultas = sugestoesOcultas();
+function listaSugestoes(prof) {
+  const base = SUGESTOES[prof || profissaoAtual()] || SUGESTOES['Outro'], ocultas = sugestoesOcultas();
   return base.filter(n => !ocultas.includes(n)).concat(padroesProprios().filter(n => !base.includes(n)));
 }
 async function removerSugestao(nome) {
