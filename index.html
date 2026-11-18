@@ -809,7 +809,9 @@ body {
 .pre-desenho{background:#0a1826;border:1px dashed rgba(244,196,48,.45);border-radius:14px;margin:12px 0;display:flex;justify-content:center;padding:4px}
 .pre-desenho svg{width:100%;max-width:360px;height:auto;display:block}
 .pre-sec{padding:16px!important;margin-bottom:12px}
-#screen-pre-editor .pp-esc{display:none!important}
+#screen-pre-editor .pp-esc,#screen-new-budget .pp-esc{display:none!important}
+#screen-new-budget.active .pp-nav{display:flex}
+#op-topo .pp-med{color:#2BD67B;font-weight:900}
 #pre-peca .pre-sec-tit{display:none}
 .pp-topo{position:sticky;top:0;z-index:30;background:var(--bg-primary,#0B1C2C);padding:10px 16px 12px;border-bottom:1px solid var(--border)}
 .pp-l{display:flex;justify-content:space-between;gap:10px;font-size:14px;color:var(--text-secondary);font-weight:700}
@@ -3818,9 +3820,11 @@ body.light .btn-remove-item{color:#b91c1c}
         <button class="back-btn" onclick="goBack()">Home</button>
         <h1>Novo Orçamento</h1>
       </header>
-      <div class="content form-content">
+      <div class="pp-topo" id="op-topo"></div>
+      <div class="content form-content pp-content">
+        <div class="pp-q" id="op-q"></div>
 
-        <div class="form-card">
+        <div class="form-card" data-op="cliente">
           <h3>Cliente</h3>
           <label>Cliente salvo</label>
           <select id="orc-cliente-salvo" onchange="preencherClienteSalvo(this.value)">
@@ -3836,14 +3840,14 @@ body.light .btn-remove-item{color:#b91c1c}
           <input type="text" id="orc-titulo" placeholder="Ex: Reforma banheiro completa">
         </div>
 
-        <div class="form-card">
+        <div class="form-card" data-op="itens">
           <h3>Itens do Orçamento</h3>
           
           <div class="item-box" id="itens-container"><!-- itens criados via JS, cada um com suas sugestões --></div>
           <button class="btn-add-item" type="button" onclick="adicionarItem()"><span aria-hidden="true">＋</span> Adicionar item</button>
         </div>
 
-        <div class="form-card">
+        <div class="form-card" data-op="pagamento">
           <h3>Condições de pagamento</h3>
           <p class="hint">Um modelo preenche o texto com os valores certos e ajusta o Pix por etapa. Para escrever do seu jeito, toque em "Texto livre".</p>
           <div class="payment-options" id="orc-pay-opts">
@@ -3885,7 +3889,7 @@ body.light .btn-remove-item{color:#b91c1c}
           <input type="text" id="orc-pagamento" placeholder='Ex: 50% entrada, 50% na entrega, ou A'>
         </div>
 
-        <div class="form-card">
+        <div class="form-card" data-op="detalhes">
           <label>Validade (dias)</label>
           <input type="number" id="orc-validade" value="7">
           <label>Observações adicionais (opcional)</label>
@@ -3906,7 +3910,7 @@ body.light .btn-remove-item{color:#b91c1c}
           </div>
         </div>
 
-        <div class="form-card" id="orc-simples3-panel" style="display:none">
+        <div class="form-card" id="orc-simples3-panel" data-op="detalhes" style="display:none">
           <h3>Dados do Modelo Simples 3</h3>
           <p class="hint">A logo aparece no canto esquerdo e o nome da empresa no centro do cabeçalho.</p>
           <label for="orc-s3-via">Identificação da via (canto superior direito)</label>
@@ -3914,9 +3918,9 @@ body.light .btn-remove-item{color:#b91c1c}
           <label for="orc-s3-titulo">Título do orçamento</label>
           <input type="text" id="orc-s3-titulo" placeholder="Orçamento de Produtos e Serviços">
         </div>
-        <details class="form-card perfil-sec doc-sec" id="orc-sec-ass"><summary><span class="perfil-sec-tit"><b>Assinatura digital</b><small id="orc-sec-ass-st"></small></span></summary><div class="perfil-sec-corpo"><label style="display:flex;gap:8px;align-items:center;margin:0 0 10px;font-weight:600"><input type="checkbox" id="orc-form-sign" checked style="width:auto;margin:0"> Incluir assinatura digital neste orçamento</label><div class="pj-sign-box ass-travada" id="orc-doc-ass-box"><canvas id="orc-doc-ass-canvas" width="360" height="130"></canvas><button type="button" class="ass-lock-bt" onclick="travarAssinatura('orc-doc-ass-box',false)">✏️ Editar assinatura</button><button type="button" class="ass-ok-bt" onclick="travarAssinatura('orc-doc-ass-box',true)">✓ Pronto</button></div><p class="hint">Aparece aqui a assinatura que vai no orçamento (a do Perfil, se você não fizer outra). Para mudar, toque em Editar assinatura.</p><div class="ass-acoes"><button type="button" class="btn-dark-sm" onclick="padUsarPerfil('orc')">Usar assinatura do perfil</button><button type="button" class="btn-dark-sm" onclick="padDesfazer('orc')">↶ Desfazer</button><button type="button" class="btn-dark-sm" onclick="padLimpar('orc')">Limpar assinatura</button><button type="button" class="btn-dark-sm" onclick="document.getElementById('orc-doc-ass-upload').click()">Importar PNG</button><input type="file" id="orc-doc-ass-upload" accept="image/png" style="display:none" onchange="padImportar('orc',event)"></div><p class="ass-padrao">Para importar: PNG de até 2 MB, mínimo 300×80 px, formato horizontal, assinatura escura em fundo branco ou transparente.</p></div></details>
-        <details class="form-card perfil-sec doc-sec" id="orc-sec-ajuste"><summary><span class="perfil-sec-tit"><b>Ajuste da assinatura</b><small id="orc-sec-ajuste-st"></small></span></summary><div class="perfil-sec-corpo"><div id="orc-ass-bloco-form"></div></div></details>
-        <details class="form-card perfil-sec doc-sec" id="orc-sec-logo"><summary><span class="perfil-sec-tit"><b>Logotipo da empresa</b><small id="orc-sec-logo-st"></small></span></summary><div class="perfil-sec-corpo">
+        <details class="form-card perfil-sec doc-sec" id="orc-sec-ass" data-op="marca"><summary><span class="perfil-sec-tit"><b>Assinatura digital</b><small id="orc-sec-ass-st"></small></span></summary><div class="perfil-sec-corpo"><label style="display:flex;gap:8px;align-items:center;margin:0 0 10px;font-weight:600"><input type="checkbox" id="orc-form-sign" checked style="width:auto;margin:0"> Incluir assinatura digital neste orçamento</label><div class="pj-sign-box ass-travada" id="orc-doc-ass-box"><canvas id="orc-doc-ass-canvas" width="360" height="130"></canvas><button type="button" class="ass-lock-bt" onclick="travarAssinatura('orc-doc-ass-box',false)">✏️ Editar assinatura</button><button type="button" class="ass-ok-bt" onclick="travarAssinatura('orc-doc-ass-box',true)">✓ Pronto</button></div><p class="hint">Aparece aqui a assinatura que vai no orçamento (a do Perfil, se você não fizer outra). Para mudar, toque em Editar assinatura.</p><div class="ass-acoes"><button type="button" class="btn-dark-sm" onclick="padUsarPerfil('orc')">Usar assinatura do perfil</button><button type="button" class="btn-dark-sm" onclick="padDesfazer('orc')">↶ Desfazer</button><button type="button" class="btn-dark-sm" onclick="padLimpar('orc')">Limpar assinatura</button><button type="button" class="btn-dark-sm" onclick="document.getElementById('orc-doc-ass-upload').click()">Importar PNG</button><input type="file" id="orc-doc-ass-upload" accept="image/png" style="display:none" onchange="padImportar('orc',event)"></div><p class="ass-padrao">Para importar: PNG de até 2 MB, mínimo 300×80 px, formato horizontal, assinatura escura em fundo branco ou transparente.</p></div></details>
+        <details class="form-card perfil-sec doc-sec" id="orc-sec-ajuste" data-op="marca"><summary><span class="perfil-sec-tit"><b>Ajuste da assinatura</b><small id="orc-sec-ajuste-st"></small></span></summary><div class="perfil-sec-corpo"><div id="orc-ass-bloco-form"></div></div></details>
+        <details class="form-card perfil-sec doc-sec" id="orc-sec-logo" data-op="marca"><summary><span class="perfil-sec-tit"><b>Logotipo da empresa</b><small id="orc-sec-logo-st"></small></span></summary><div class="perfil-sec-corpo">
         <div class="recibo-logo-card" id="orc-logo-card">
           <div class="recibo-logo-heading">
             <div class="recibo-logo-icon" aria-hidden="true"><i class="fas fa-image"></i></div>
@@ -3935,9 +3939,9 @@ body.light .btn-remove-item{color:#b91c1c}
         </div>
         </div></details>
 
-        <button type="button" class="btn-dashed yellow" id="orc-desc-toggle" onclick="alternarDescontoOrcamento()">% Adicionar desconto</button>
+        <button type="button" class="btn-dashed yellow" id="orc-desc-toggle" data-op="revisar" onclick="alternarDescontoOrcamento()">% Adicionar desconto</button>
 
-        <div class="form-card" id="orc-desc-panel" style="display:none">
+        <div class="form-card op-desc" id="orc-desc-panel" data-op="revisar" style="display:none">
           <h3>Desconto</h3>
           <div class="desc-tipos">
             <button type="button" class="desc-tipo active" id="orc-desc-tipo-pct" onclick="definirTipoDesconto('pct')">Porcentagem (%)</button>
@@ -3947,15 +3951,16 @@ body.light .btn-remove-item{color:#b91c1c}
           <input type="text" id="orc-desc-val" class="money-input" inputmode="numeric" autocomplete="off" placeholder="R$ 0,00" style="display:none">
         </div>
 
-        <div class="total-bar" id="orc-total-bar">
+        <div class="total-bar" id="orc-total-bar" data-op="itens revisar">
           <span>TOTAL DO ORÇAMENTO</span>
           <strong id="orc-total">R$ 0,00</strong>
         </div>
-        <p class="hint" id="orc-desc-resumo" style="display:none;text-align:right;margin:-6px 0 12px"></p>
+        <p class="hint" id="orc-desc-resumo" data-op="itens revisar" style="display:none;text-align:right;margin:-6px 0 12px"></p>
 
-        <button type="button" class="btn-corrigir" onclick="abrirCorretor('orcamento')">✔ Corrigir ortografia</button>
-        <button class="btn-primary-lg" onclick="salvarOrcamento()">Salvar</button>
+        <button type="button" class="btn-corrigir" data-op="revisar" onclick="abrirCorretor('orcamento')">✔ Corrigir ortografia</button>
+        <button class="btn-primary-lg" data-op="revisar" style="display:none" onclick="salvarOrcamento()">Salvar</button>
       </div>
+      <div class="pp-nav" id="op-nav"></div>
     </div>
 
     <!-- APÓS SALVAR -->
@@ -5187,8 +5192,50 @@ function novoOrcamentoEscolhendoModelo() {
   ultimoOrcamentoId = null;
   abrirModelos(true);
 }
+// ---- Orçamento em passo a passo (uma seção por tela) ----
+const OP_PASSOS = [
+  ['cliente', 'Cliente', 'Para quem é o orçamento?', 'Nome, WhatsApp e o serviço'],
+  ['itens', 'Itens', 'O que vai cobrar?', 'Toque numa sugestão ou escreva. O total aparece embaixo'],
+  ['pagamento', 'Pagamento', 'Como o cliente vai pagar?', 'Escolha um modelo ou escreva do seu jeito'],
+  ['detalhes', 'Detalhes', 'Validade e observações', 'Prazo, garantia e número do orçamento'],
+  ['marca', 'Assinatura', 'Assinatura e logotipo', 'Opcional: deixa o orçamento com a sua cara'],
+  ['revisar', 'Pronto', 'Confira e salve', 'Desconto, total e ortografia']
+];
+let opPasso = 'cliente';
+function aplicarPassoOrc() {
+  const tela = document.getElementById('screen-new-budget'); if (!tela) return;
+  let i = OP_PASSOS.findIndex(p => p[0] === opPasso); if (i < 0) { i = 0; opPasso = 'cliente'; }
+  const info = OP_PASSOS[i], n = OP_PASSOS.length, ultimo = i === n - 1;
+  tela.querySelectorAll('[data-op]').forEach(el => el.classList.toggle('pp-esc', !el.dataset.op.split(' ').includes(opPasso)));
+  const q = document.getElementById('op-q'); if (q) q.innerHTML = esc(info[2]) + '<small>' + esc(info[3]) + '</small>';
+  const topo = document.getElementById('op-topo'), cab = tela.querySelector('.app-header');
+  if (topo) {
+    if (cab) topo.style.top = cab.offsetHeight + 'px';
+    topo.innerHTML = '<div class="pp-l"><span>Passo <b>' + (i + 1) + '</b> de ' + n + ' · ' + info[1] + '</span><span class="pp-med"></span></div>'
+      + '<div class="pp-bar"><i style="width:' + ((i + 1) / n * 100) + '%"></i></div>'
+      + '<div class="pp-dots">' + OP_PASSOS.map((p, j) => '<button type="button" class="' + (j < i ? 'ok' : j === i ? 'on' : '') + '" data-ir-op="' + p[0] + '" aria-label="Ir para ' + p[1] + '">' + (j < i ? '✓' : j + 1) + '</button>').join('') + '</div>';
+    const tot = document.getElementById('orc-total'); topo.querySelector('.pp-med').textContent = tot ? tot.textContent : '';
+  }
+  const nav = document.getElementById('op-nav');
+  if (nav) {
+    nav.innerHTML = '<button type="button" class="pp-v">' + (i === 0 ? 'Fechar' : '‹ Voltar') + '</button><button type="button" class="pp-p">' + (ultimo ? '💾 Salvar' : 'Próximo ›') + '</button>';
+    nav.querySelector('.pp-v').onclick = () => { if (i === 0) goBack(); else irPassoOrc(OP_PASSOS[i - 1][0]); };
+    nav.querySelector('.pp-p').onclick = () => { if (ultimo) salvarOrcamento(); else irPassoOrc(OP_PASSOS[i + 1][0]); };
+  }
+}
+function irPassoOrc(k) {
+  opPasso = k; aplicarPassoOrc();
+  try { window.scrollTo(0, 0); const t = document.getElementById('screen-new-budget'); if (t) t.scrollTop = 0; const c = t && t.querySelector('.content'); if (c) c.scrollTop = 0; } catch (_) {}
+  if (typeof atualizarResumoSecoes === 'function') try { atualizarResumoSecoes(); } catch (_) {}
+}
+document.addEventListener('click', function (e) {
+  const b = e.target.closest && e.target.closest('#op-topo [data-ir-op]'); if (b) irPassoOrc(b.dataset.irOp);
+});
+// o total no topo acompanha os itens
+document.addEventListener('input', function (e) { if (e.target && e.target.closest && e.target.closest('#screen-new-budget')) setTimeout(function () { const m = document.querySelector('#op-topo .pp-med'), t = document.getElementById('orc-total'); if (m && t) m.textContent = t.textContent; }, 0); });
 function goToNewBudget() {
   profSugOrc = null;
+  setTimeout(function () { irPassoOrc('cliente'); }, 0);
   modeloNovoOrcamento = '';
   logoNovoOrc = undefined;
   setTimeout(function () { if (typeof sincronizarLogoNovoOrc === 'function') { const st = document.getElementById('orc-logo-status'); if (st) st.textContent = 'Nenhum logotipo selecionado.'; sincronizarLogoNovoOrc(); } }, 0);
@@ -6978,6 +7025,7 @@ function transformarPreEmOrcamento() {
   salvarPreAtual();
   const pr = preAtual;
   goToNewBudget();
+  setTimeout(function () { irPassoOrc('itens'); }, 0);
   // sugestões do orçamento seguem a profissão das medidas (a que mais aparece), não a do perfil
   const conta = {}; pecas.forEach(pc => { const pf = profPre(pc); if (pf !== 'Outro') conta[pf] = (conta[pf] || 0) + 1; });
   const profMed = Object.keys(conta).sort((x, y) => conta[y] - conta[x])[0];
