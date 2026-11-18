@@ -873,6 +873,7 @@ body.light .pp-topo,body.light .pp-nav{background:#fff}
 .pre-card-mais{margin-top:auto;min-height:46px;border-radius:24px;border:0;background:var(--accent,#F4C430);color:#0B1C2C;font-weight:900;font-size:15px;font-family:inherit;cursor:pointer;margin-top:14px}
 .cad-ferrs{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin:6px 0 8px}
 .cad-wrap{position:relative}
+#pre-cad:not(.cad-cheia) .cad-svg{aspect-ratio:6/5;height:auto}
 .cad-zoom{position:absolute;right:4px;top:8px;display:flex;flex-direction:column;align-items:center;gap:6px;z-index:2}
 .cad-zoom button{width:44px;height:44px;border-radius:12px;border:0;background:rgba(11,28,44,.88);color:#fff;font-size:24px;font-weight:900;line-height:1;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.3);font-family:inherit}
 .cad-zoom span{font-size:12px;font-weight:900;color:#1e3a8a;background:rgba(255,255,255,.9);border-radius:8px;padding:2px 6px}
@@ -894,7 +895,6 @@ body.light .pp-topo,body.light .pp-nav{background:#fff}
 .cad-mesma{width:100%;margin-top:12px;min-height:46px}
 .cad-acoes{display:flex;gap:8px;margin-top:8px}.cad-acoes button{flex:1;min-height:48px;padding:0 6px}
 .cad-cheia-bt{background:var(--accent,#F4C430)!important;color:#0B1C2C!important;font-weight:900!important}
-#pre-cad .cad-svg{width:calc(100% + 24px);margin:0 -12px;max-width:none}
 #pre-cad.cad-cheia{position:fixed;inset:0;z-index:300;background:var(--bg-primary,#0B1C2C);padding:10px 10px calc(10px + env(safe-area-inset-bottom));display:flex;flex-direction:column;overflow:hidden}
 #pre-cad.cad-cheia .cad-ferrs{grid-template-columns:repeat(7,1fr);gap:4px;margin:0 0 6px}
 #pre-cad.cad-cheia .cad-wrap{flex:1 1 auto;min-height:0;display:flex}
@@ -6397,8 +6397,12 @@ function renderPrePeca() {
   renderCatalogoPre(); renderCadernoPre(); renderOpcoesPre(); renderPreDescontos(); desenharPre(); atualizarAreaPre();
 }
 // ---- Caderno: desenho à mão que vira linhas retas, com medidas em cm ----
-const CAD_W = 360, CAD_H = 450, CAD_G = 15;
-function cadAlt(cad) { return Math.max(CAD_H, Number(cad && cad.h) || 0); }   // a folha cresce para baixo na tela cheia
+const CAD_W = 360, CAD_H = 300, CAD_G = 15;
+// altura da folha: o normal, ou maior se a tela cheia aumentou ou se já tem desenho mais embaixo
+function cadAlt(cad) {
+  let y = 0; if (cad) { (cad.linhas || []).forEach(l => { y = Math.max(y, l.y1, l.y2); }); (cad.cubas || []).forEach(c => { y = Math.max(y, c.y + 15); }); (cad.textos || []).forEach(t => { y = Math.max(y, t.y); }); }
+  return Math.max(CAD_H, Number(cad && cad.h) || 0, y ? Math.ceil((y + 30) / CAD_G) * CAD_G : 0);
+}   // a folha cresce para baixo na tela cheia
 let cadFerr = 'linha', cadTraco = null;
 function cadPre(pc) { pc.cad = pc.cad && typeof pc.cad === 'object' ? pc.cad : {}; ['linhas', 'cubas', 'textos', 'hist'].forEach(k => { if (!Array.isArray(pc.cad[k])) pc.cad[k] = []; }); return pc.cad; }
 const cadGrade = v => Math.round(v / CAD_G) * CAD_G;
@@ -6491,7 +6495,7 @@ function cadGuardar(pc) { const c = cadPre(pc), snap = JSON.stringify({ linhas: 
 function cadSvg(pc, raw) {
   const cad = cadPre(pc);
   let h = '<defs><pattern id="cad-gr" width="' + CAD_G + '" height="' + CAD_G + '" patternUnits="userSpaceOnUse"><path d="M' + CAD_G + ' 0H0V' + CAD_G + '" fill="none" stroke="#bcd3ee" stroke-width=".8"/></pattern></defs>'
-    + '<rect width="' + CAD_W + '" height="' + cadAlt(cad) + '" fill="#fffdf4"/><rect width="' + CAD_W + '" height="' + cadAlt(cad) + '" fill="url(#cad-gr)"/><line x1="30" y1="0" x2="30" y2="' + cadAlt(cad) + '" stroke="#f3a3a3" stroke-width="1.2"/>';
+    + '<rect x="-2000" y="-2000" width="' + (CAD_W + 4000) + '" height="' + (cadAlt(cad) + 4000) + '" fill="#fffdf4"/><rect x="-2000" y="-2000" width="' + (CAD_W + 4000) + '" height="' + (cadAlt(cad) + 4000) + '" fill="url(#cad-gr)"/><line x1="30" y1="0" x2="30" y2="' + cadAlt(cad) + '" stroke="#f3a3a3" stroke-width="1.2"/>';
   cad.cubas.forEach(c => { h += '<rect x="' + (c.x - 22) + '" y="' + (c.y - 15) + '" width="44" height="30" rx="10" fill="#dbeafe" stroke="#1e3a8a" stroke-width="2"/><text x="' + c.x + '" y="' + (c.y + 4) + '" font-size="10" font-weight="800" fill="#1e3a8a" text-anchor="middle">cuba</text>'; });
   cad.linhas.forEach(l => { h += '<line x1="' + l.x1 + '" y1="' + l.y1 + '" x2="' + l.x2 + '" y2="' + l.y2 + '" stroke="#1e3a8a" stroke-width="3" stroke-linecap="round"/>'; });
   cadPontas(cad).forEach(q => { h += '<circle cx="' + q[0] + '" cy="' + q[1] + '" r="2.6" fill="#1e3a8a"/>'; });
