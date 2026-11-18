@@ -3841,7 +3841,6 @@ body.light .btn-remove-item{color:#b91c1c}
           
           <div class="item-box" id="itens-container"><!-- itens criados via JS, cada um com suas sugestões --></div>
           <button class="btn-add-item" type="button" onclick="adicionarItem()"><span aria-hidden="true">＋</span> Adicionar item</button>
-          <button class="btn-calc" type="button" onclick="abrirCalculadora()">🧮 Calculadora de material</button>
         </div>
 
         <div class="form-card">
@@ -4460,7 +4459,7 @@ body.light .btn-remove-item{color:#b91c1c}
         <li><b>PDF ou imagem para o WhatsApp:</b> 4 modelos de orçamento, com logotipo e assinatura digital.</li>
         <li><b>Recibos prontos:</b> vários modelos, salvos no aparelho para consultar e editar depois.</li>
         <li><b>Clientes salvos:</b> nome, WhatsApp e endereço preenchidos automaticamente.</li>
-        <li><b>Calculadora de material:</b> calcula o material de 17 serviços (tinta, calha, piso, fiação, forro, ar-condicionado...) e já coloca no orçamento.</li>
+        <li><b>Pré-orçamento:</b> anote as medidas na visita, veja o desenho e o material, e transforme em orçamento com um toque.</li>
         <li><b>Controle do dinheiro:</b> veja o que está em aberto, a receber e já recebido.</li>
         <li><b>Seu perfil no documento:</b> dados da empresa, Pix e QR Code, e validade padrão do orçamento.</li>
       </ul>
@@ -4468,7 +4467,7 @@ body.light .btn-remove-item{color:#b91c1c}
         <h3 class="ab-title" style="margin-top:0"><i class="fas fa-crown"></i> Por que assinar o Pro</h3>
         <ul class="ab-list">
           <li><b>Sem limites:</b> orçamentos e recibos ilimitados. No gratuito são só 10 de cada.</li>
-          <li><b>Calculadora de material sem limite:</b> no gratuito são 10 cálculos.</li>
+          <li><b>Pré-orçamentos sem limite:</b> no gratuito são 10.</li>
           <li><b>Pré-visualização do recibo</b> enquanto você preenche, antes de enviar.</li>
           <li><b>Visualizar e salvar em PDF</b> antes de mandar para o cliente.</li>
           <li><b>Todos os recursos liberados</b>, sem travar no meio de um serviço.</li>
@@ -4487,7 +4486,7 @@ body.light .btn-remove-item{color:#b91c1c}
       <button class="oferta-pro-close" type="button" aria-label="Fechar oferta" onclick="fecharOfertaPro()">×</button>
       <div class="oferta-pro-topo">
         <div class="op-logo">Orça<span>On</span> <b>PRO</b></div>
-        <p class="op-sub">Orçamentos, recibos e calculadora de material sem limite, backup na nuvem e todos os recursos.</p>
+        <p class="op-sub">Orçamentos, recibos e pré-orçamentos sem limite, backup na nuvem e todos os recursos.</p>
         <div class="op-bf bf-promo">🔥 BLACK FRIDAY · 50% OFF no plano anual</div>
         <p class="op-contador bf-promo">⏳ Acaba em <b class="bf-contador">—</b></p>
         <div class="op-planos">
@@ -4495,7 +4494,7 @@ body.light .btn-remove-item{color:#b91c1c}
           <div class="op-plano op-anual"><em class="op-selo">Mais vantajoso</em><small>Anual</small><s class="bf-promo">R$ 120</s><strong>R$ 60</strong><span>por ano · sai R$ 5/mês</span></div>
         </div>
       </div>
-      <div id="oferta-pro-msg" class="oferta-pro-msg hidden" aria-live="polite"><h3 id="oferta-pro-msg-titulo"></h3><p id="oferta-pro-msg-texto"></p><ul><li><i class="fas fa-check" aria-hidden="true"></i>Orçamentos e recibos sem limite</li><li><i class="fas fa-check" aria-hidden="true"></i>Calculadora de material sem limite</li><li><i class="fas fa-check" aria-hidden="true"></i>Veja o recibo antes de enviar</li><li><i class="fas fa-check" aria-hidden="true"></i>Cópia de segurança na nuvem</li></ul></div>
+      <div id="oferta-pro-msg" class="oferta-pro-msg hidden" aria-live="polite"><h3 id="oferta-pro-msg-titulo"></h3><p id="oferta-pro-msg-texto"></p><ul><li><i class="fas fa-check" aria-hidden="true"></i>Orçamentos e recibos sem limite</li><li><i class="fas fa-check" aria-hidden="true"></i>Pré-orçamentos sem limite</li><li><i class="fas fa-check" aria-hidden="true"></i>Veja o recibo antes de enviar</li><li><i class="fas fa-check" aria-hidden="true"></i>Cópia de segurança na nuvem</li></ul></div>
       <div class="oferta-pro-actions"><button type="button" class="btn-primary-lg" onclick="escolherPlanoPro('anual')"><span class="bf-promo">🔥 </span>Quero o plano anual — R$ 60</button><button type="button" class="btn-outline-lg" onclick="escolherPlanoPro('mensal')">Quero o plano mensal — R$ 10</button><p class="hint">Pagamento por Pix. O Pro é liberado assim que confirmarmos.</p></div>
     </div>
   </div>
@@ -4614,7 +4613,7 @@ const LEGAL_TEXTOS = {
 <li>Usar o app de forma lícita, sem fraudar documentos nem prejudicar terceiros.</li>
 </ul>
 <h3>4. Plano gratuito e plano Pro</h3>
-<p>O plano gratuito inclui até 10 orçamentos e 10 recibos compartilhados ou baixados e 10 cálculos da calculadora de material. O plano Pro libera recursos adicionais e custa R$ 10 por mês ou R$ 60 por ano. O pagamento é feito por Pix e o Pro é liberado na sua conta depois que o pagamento é confirmado. Não há renovação automática: ao fim do período, o plano volta a ser gratuito até um novo pagamento. Você pode desistir em até 7 dias após o pagamento e receber o valor de volta (Código de Defesa do Consumidor, art. 49), pedindo pelo botão Ajuda.</p>
+<p>O plano gratuito inclui até 10 orçamentos e 10 recibos compartilhados ou baixados e 10 pré-orçamentos. O plano Pro libera recursos adicionais e custa R$ 10 por mês ou R$ 60 por ano. O pagamento é feito por Pix e o Pro é liberado na sua conta depois que o pagamento é confirmado. Não há renovação automática: ao fim do período, o plano volta a ser gratuito até um novo pagamento. Você pode desistir em até 7 dias após o pagamento e receber o valor de volta (Código de Defesa do Consumidor, art. 49), pedindo pelo botão Ajuda.</p>
 <h3>5. Seus dados e backup</h3>
 <p>Os dados ficam no seu aparelho. Fazer cópia dos documentos importantes é sua responsabilidade: ao desinstalar o app ou limpar seus dados, eles podem ser perdidos.</p>
 <h3>6. Propriedade intelectual</h3>
