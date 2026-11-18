@@ -871,7 +871,11 @@ body.light .pp-topo,body.light .pp-nav{background:#fff}
 .pre-card-sep{display:flex;justify-content:space-between;align-items:center;margin-top:12px;padding-top:8px;border-top:1px dashed var(--border);font-weight:800;color:var(--text-secondary);font-size:13px}
 .pre-card-sep button{background:none;border:0;color:#ff8a65;font-size:22px;line-height:1;cursor:pointer;padding:0 4px}
 .pre-card-mais{margin-top:auto;min-height:46px;border-radius:24px;border:0;background:var(--accent,#F4C430);color:#0B1C2C;font-weight:900;font-size:15px;font-family:inherit;cursor:pointer;margin-top:14px}
-.cad-ferrs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:6px 0 8px}
+.cad-ferrs{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin:6px 0 8px}
+.cad-wrap{position:relative}
+.cad-zoom{position:absolute;right:4px;top:8px;display:flex;flex-direction:column;align-items:center;gap:6px;z-index:2}
+.cad-zoom button{width:44px;height:44px;border-radius:12px;border:0;background:rgba(11,28,44,.88);color:#fff;font-size:24px;font-weight:900;line-height:1;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.3);font-family:inherit}
+.cad-zoom span{font-size:12px;font-weight:900;color:#1e3a8a;background:rgba(255,255,255,.9);border-radius:8px;padding:2px 6px}
 .cad-f{display:flex;flex-direction:column;align-items:center;gap:2px;min-height:56px;border-radius:12px;border:2px solid var(--border);background:var(--bg-primary,#0B1C2C);color:var(--text-primary);font-size:13px;font-weight:800;font-family:inherit;cursor:pointer}
 .cad-f b{font-size:20px;line-height:1.1}
 .cad-f.on{border-color:var(--accent,#F4C430);background:rgba(244,196,48,.16);color:var(--accent,#F4C430)}
@@ -892,7 +896,9 @@ body.light .pp-topo,body.light .pp-nav{background:#fff}
 .cad-cheia-bt{background:var(--accent,#F4C430)!important;color:#0B1C2C!important;font-weight:900!important}
 #pre-cad .cad-svg{width:calc(100% + 24px);margin:0 -12px;max-width:none}
 #pre-cad.cad-cheia{position:fixed;inset:0;z-index:300;background:var(--bg-primary,#0B1C2C);padding:10px 10px calc(10px + env(safe-area-inset-bottom));display:flex;flex-direction:column;overflow:hidden}
-#pre-cad.cad-cheia .cad-ferrs{grid-template-columns:repeat(6,1fr);gap:5px;margin:0 0 6px}
+#pre-cad.cad-cheia .cad-ferrs{grid-template-columns:repeat(7,1fr);gap:4px;margin:0 0 6px}
+#pre-cad.cad-cheia .cad-wrap{flex:1 1 auto;min-height:0;display:flex}
+#pre-cad.cad-cheia .cad-zoom{right:8px}
 #pre-cad.cad-cheia .cad-f{min-height:50px;font-size:10.5px;padding:0 2px}
 #pre-cad.cad-cheia .cad-dica{margin:0 2px 6px;font-size:13px;min-height:0}
 #pre-cad.cad-cheia .cad-svg{flex:1 1 auto;min-height:0;width:100%;height:100%;margin:0;object-fit:contain}
@@ -6498,34 +6504,76 @@ function cadSvg(pc, raw) {
   if (raw && raw.length > 1) h += '<polyline points="' + raw.map(q => q.join(',')).join(' ') + '" fill="none" stroke="#94a3b8" stroke-width="2" stroke-dasharray="4 3"/>';
   return h;
 }
+// Zoom: a "janela" da folha que aparece na tela (x, y e quanto aproxima)
+let cadVista = { pc: null, x: 0, y: 0, z: 1 };
+function cadPonto(svg, cx, cy) { try { const q = svg.createSVGPoint(); q.x = cx; q.y = cy; const r = q.matrixTransform(svg.getScreenCTM().inverse()); return [r.x, r.y]; } catch (_) { const r = svg.getBoundingClientRect(), vb = svg.viewBox.baseVal; return [vb.x + (cx - r.left) / r.width * vb.width, vb.y + (cy - r.top) / r.height * vb.height]; } }
+function cadAplicarVista(pc) {
+  const svg = document.getElementById('cad-svg'); if (!svg) return;
+  const H = cadAlt(cadPre(pc)), z = cadVista.z = Math.max(1, Math.min(6, cadVista.z || 1)), w = CAD_W / z, h = H / z;
+  cadVista.x = Math.max(0, Math.min(CAD_W - w, cadVista.x || 0)); cadVista.y = Math.max(0, Math.min(H - h, cadVista.y || 0));
+  svg.setAttribute('viewBox', cadVista.x + ' ' + cadVista.y + ' ' + w + ' ' + h);
+  const v = document.getElementById('cad-z-v'); if (v) v.textContent = (Math.round(z * 10) / 10).toLocaleString('pt-BR') + '×';
+}
+function cadZoom(pc, fator) {
+  const svg = document.getElementById('cad-svg'); if (!svg) return;
+  const r = svg.getBoundingClientRect(), c = cadPonto(svg, r.left + r.width / 2, r.top + r.height / 2);
+  cadVista.z = fator ? Math.max(1, Math.min(6, cadVista.z * fator)) : 1; cadAplicarVista(pc);
+  const n = cadPonto(svg, r.left + r.width / 2, r.top + r.height / 2); cadVista.x += c[0] - n[0]; cadVista.y += c[1] - n[1]; cadAplicarVista(pc);
+}
 function cadDesenhar(pc, raw) {
   const svg = document.getElementById('cad-svg'); if (!svg) return;
   svg.innerHTML = cadSvg(pc, raw);
   const tx = svg.querySelectorAll('text[font-style="italic"]'); cadPre(pc).textos.forEach((t, i) => { if (tx[i]) tx[i].textContent = t.t; });
 }
-const CAD_FERRS = [['linha', '✏️', 'Desenhar'], ['ret', '▭', 'Retângulo'], ['cuba', '◯', 'Cuba'], ['medida', '📏', 'Medida'], ['texto', '✍️', 'Texto'], ['apagar', '🧽', 'Apagar']];
-const CAD_DICAS = { linha: 'Risque com o dedo. O traço vira linha reta sozinho.', ret: 'Arraste na diagonal para fazer um retângulo.', cuba: 'Toque onde fica a cuba.', medida: 'Toque num risco para ir até a medida dele, embaixo do desenho.', texto: 'Toque onde quer escrever (ex.: parede, fogão).', apagar: 'Toque numa linha, cuba ou texto para apagar.' };
+const CAD_FERRS = [['linha', '✏️', 'Desenhar'], ['ret', '▭', 'Retângulo'], ['cuba', '◯', 'Cuba'], ['medida', '📏', 'Medida'], ['texto', '✍️', 'Texto'], ['apagar', '🧽', 'Apagar'], ['mover', '✋', 'Mover']];
+const CAD_DICAS = { mover: 'Arraste para andar pela folha. Use ＋ e − (ou dois dedos) para o zoom.', linha: 'Risque com o dedo. O traço vira linha reta sozinho.', ret: 'Arraste na diagonal para fazer um retângulo.', cuba: 'Toque onde fica a cuba.', medida: 'Toque num risco para ir até a medida dele, embaixo do desenho.', texto: 'Toque onde quer escrever (ex.: parede, fogão).', apagar: 'Toque numa linha, cuba ou texto para apagar.' };
 function renderCadernoPre() {
   const host = document.getElementById('pre-cad'); if (!host) return;
   const pc = preAtual.pecas[prePecaIdx]; cadPre(pc);
   host.innerHTML = '<div class="cad-ferrs">' + CAD_FERRS.map(f => '<button type="button" class="cad-f' + (f[0] === cadFerr ? ' on' : '') + '" data-cad-f="' + f[0] + '"><b>' + f[1] + '</b>' + f[2] + '</button>').join('') + '</div>'
     + '<p class="cad-dica" id="cad-dica"></p>'
-    + '<svg id="cad-svg" class="cad-svg" viewBox="0 0 ' + CAD_W + ' ' + cadAlt(cadPre(pc)) + '" xmlns="http://www.w3.org/2000/svg"></svg>'
+    + '<div class="cad-wrap"><svg id="cad-svg" class="cad-svg" viewBox="0 0 ' + CAD_W + ' ' + cadAlt(cadPre(pc)) + '" xmlns="http://www.w3.org/2000/svg"></svg>'
+    + '<div class="cad-zoom"><button type="button" data-cad-z="mais" aria-label="Aumentar zoom">＋</button><span id="cad-z-v">1×</span><button type="button" data-cad-z="menos" aria-label="Diminuir zoom">−</button><button type="button" data-cad-z="reset" aria-label="Ver a folha inteira">⤢</button></div></div>'
     + '<div class="cad-acoes"><button type="button" class="btn-dark-sm" data-cad-a="desfazer">↶ Desfazer</button><button type="button" class="btn-dark-sm" data-cad-a="limpar">🗑 Limpar</button><button type="button" class="btn-dark-sm cad-cheia-bt" data-cad-a="cheia">⛶ Tela cheia</button></div>'
     + '<p class="hint-sm" id="cad-info"></p><div id="cad-medidas"></div>';
   host.querySelector('#cad-dica').textContent = CAD_DICAS[cadFerr];
   cadDesenhar(pc); cadInfo(pc); cadListaMedidas(pc);
   const svg = host.querySelector('#cad-svg');
-  // posição do dedo no desenho (funciona também na tela cheia, com sobra dos lados)
-  const pt = ev => { try { const m = svg.getScreenCTM(), q = svg.createSVGPoint(); q.x = ev.clientX; q.y = ev.clientY; const r = q.matrixTransform(m.inverse()); return [r.x, r.y]; } catch (_) { const r = svg.getBoundingClientRect(); return [(ev.clientX - r.left) / r.width * CAD_W, (ev.clientY - r.top) / r.height * CAD_H]; } };
-  svg.addEventListener('pointerdown', ev => { ev.preventDefault(); try { svg.setPointerCapture(ev.pointerId); } catch (_) {} cadTraco = [pt(ev)]; });
+  if (cadVista.pc !== pc.id) cadVista = { pc: pc.id, x: 0, y: 0, z: 1 };
+  cadAplicarVista(pc);
+  // posição do dedo no desenho (funciona com zoom e na tela cheia)
+  const pt = ev => cadPonto(svg, ev.clientX, ev.clientY);
+  const dedos = new Map(); let gesto = null, arrasto = null;
+  svg.addEventListener('pointerdown', ev => {
+    ev.preventDefault(); try { svg.setPointerCapture(ev.pointerId); } catch (_) {}
+    dedos.set(ev.pointerId, [ev.clientX, ev.clientY]);
+    if (dedos.size >= 2) {   // dois dedos: zoom de pinça e arrastar a folha
+      if (cadTraco) { cadTraco = null; cadDesenhar(pc); }
+      const [a, b] = [...dedos.values()], mid = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+      gesto = { d0: Math.hypot(a[0] - b[0], a[1] - b[1]) || 1, z0: cadVista.z, p0: cadPonto(svg, mid[0], mid[1]) }; return;
+    }
+    if (cadFerr === 'mover') { arrasto = { p0: pt(ev) }; return; }
+    cadTraco = [pt(ev)];
+  });
   svg.addEventListener('pointermove', ev => {
+    if (dedos.has(ev.pointerId)) dedos.set(ev.pointerId, [ev.clientX, ev.clientY]);
+    if (gesto && dedos.size >= 2) {
+      const [a, b] = [...dedos.values()], mid = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+      cadVista.z = Math.max(1, Math.min(6, gesto.z0 * Math.hypot(a[0] - b[0], a[1] - b[1]) / gesto.d0)); cadAplicarVista(pc);
+      const agora = cadPonto(svg, mid[0], mid[1]); cadVista.x += gesto.p0[0] - agora[0]; cadVista.y += gesto.p0[1] - agora[1]; cadAplicarVista(pc); return;
+    }
+    if (arrasto) { const agora = pt(ev); cadVista.x += arrasto.p0[0] - agora[0]; cadVista.y += arrasto.p0[1] - agora[1]; cadAplicarVista(pc); return; }
     if (!cadTraco) return; const q = pt(ev), u = cadTraco[cadTraco.length - 1]; if (Math.hypot(q[0] - u[0], q[1] - u[1]) < 2) return; cadTraco.push(q);
     if (cadFerr === 'linha') cadDesenhar(pc, cadTraco);
     else if (cadFerr === 'ret') { const a = cadTraco[0]; cadDesenhar(pc, [a, [q[0], a[1]], q, [a[0], q[1]], a]); }
   });
-  const fim = ev => { if (!cadTraco) return; const tr = cadTraco; cadTraco = null; cadAcao(pc, tr); };
-  svg.addEventListener('pointerup', fim); svg.addEventListener('pointercancel', () => { cadTraco = null; cadDesenhar(pc); });
+  const fim = ev => {
+    dedos.delete(ev.pointerId);
+    if (gesto) { if (dedos.size < 2) gesto = null; return; }
+    if (arrasto) { arrasto = null; return; }
+    if (!cadTraco) return; const tr = cadTraco; cadTraco = null; cadAcao(pc, tr);
+  };
+  svg.addEventListener('pointerup', fim); svg.addEventListener('pointercancel', ev => { dedos.delete(ev.pointerId); gesto = null; arrasto = null; cadTraco = null; cadDesenhar(pc); });
 }
 // Medidas embaixo do desenho: unidade, largura da peça e uma linha para cada risco (A, B, C...)
 function cadListaMedidas(pc) {
@@ -6569,7 +6617,7 @@ function cadTelaCheia(on) {
     // aumenta a folha para ocupar a tela toda (sem faixas escuras)
     const pc = preAtual.pecas[prePecaIdx], cad = cadPre(pc), r = svg.getBoundingClientRect();
     if (r.width > 0 && r.height > 0) { const alt = Math.ceil(CAD_W * r.height / r.width / CAD_G) * CAD_G; if (alt > cadAlt(cad)) { cad.h = alt; salvarPreAtual(); } }
-    svg.setAttribute('viewBox', '0 0 ' + CAD_W + ' ' + cadAlt(cad)); cadDesenhar(pc);
+    cadAplicarVista(pc); cadDesenhar(pc);
   }
   const b = h.querySelector('.cad-cheia-bt'); if (b) b.textContent = on ? '✓ Pronto' : '⛶ Tela cheia';
   if (!on) setTimeout(() => { try { h.scrollIntoView({ block: 'start' }); } catch (_) {} }, 50);
@@ -6626,6 +6674,8 @@ document.addEventListener('click', function (e) {
   const f = e.target.closest && e.target.closest('#pre-cad [data-cad-f]');
   if (f) { cadFerr = f.dataset.cadF; document.querySelectorAll('#pre-cad .cad-f').forEach(b => b.classList.toggle('on', b === f)); const d = document.getElementById('cad-dica'); if (d) d.textContent = CAD_DICAS[cadFerr]; return; }
   const un = e.target.closest && e.target.closest('#pre-cad [data-cad-un]');
+  const zb = e.target.closest && e.target.closest('#pre-cad [data-cad-z]');
+  if (zb) { const pc = preAtual.pecas[prePecaIdx], k = zb.dataset.cadZ; cadZoom(pc, k === 'mais' ? 1.5 : k === 'menos' ? 1 / 1.5 : 0); return; }
   if (un) { const pc = preAtual.pecas[prePecaIdx]; cadPre(pc).un = un.dataset.cadUn; salvarPreAtual(); cadDesenhar(pc); cadListaMedidas(pc); return; }
   const a = e.target.closest && e.target.closest('#pre-cad [data-cad-a]'); if (!a) return;
   const pc = preAtual.pecas[prePecaIdx], cad = cadPre(pc);
