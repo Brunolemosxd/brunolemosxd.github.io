@@ -806,6 +806,30 @@ body.light .pp-topo,body.light .pp-nav{background:#fff}
 .pre-titulo-lista{font-size:17px;margin:4px 2px 8px}
 .pre-titulo-lista small{display:block;font-size:12.5px;font-weight:400;color:var(--text-secondary)}
 .pre-ops-chips{margin:6px 0 2px}
+.pre-chapas{display:flex;flex-direction:column;gap:8px;margin:6px 0 14px}
+.pre-chapa{display:flex;align-items:center;gap:12px;min-height:54px;padding:0 16px;border-radius:14px;border:2px solid var(--border);background:var(--bg-card,#13283c);color:var(--text-primary);font-weight:800;font-size:16px;font-family:inherit;cursor:pointer;text-align:left}
+.pre-chapa i{width:22px;height:22px;border-radius:50%;border:3px solid currentColor;flex:0 0 auto;opacity:.7}
+.pre-chapa.c0{border-left:8px solid #60a5fa}.pre-chapa.c1{border-left:8px solid #9ca3af}.pre-chapa.c2{border-left:8px solid #F4C430}
+.pre-chapa.on{border-color:var(--accent,#F4C430);background:rgba(244,196,48,.14)}
+.pre-chapa.on i{background:var(--accent,#F4C430);border-color:var(--accent,#F4C430);opacity:1;box-shadow:inset 0 0 0 3px var(--bg-card,#13283c)}
+.pre-chapa.outra{min-height:44px;font-size:14px;color:var(--text-secondary);border-style:dashed;justify-content:center}
+.pre-cat-g h4{display:flex;justify-content:space-between;align-items:baseline;margin:16px 0 8px;font-size:15px;font-weight:900;text-transform:uppercase;letter-spacing:.3px}
+.pre-cat-g h4 small{font-size:12px;font-weight:600;color:var(--text-secondary);text-transform:none;letter-spacing:0}
+.pre-cat-row{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;padding:2px 2px 10px;margin:0 -4px;-webkit-overflow-scrolling:touch}
+.pre-card{flex:0 0 82%;scroll-snap-align:start;border:2px solid var(--border);border-radius:16px;padding:14px;background:var(--bg-primary,#0B1C2C);display:flex;flex-direction:column}
+.pre-card.cheio{border-color:#2BD67B}
+.pre-card-top{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+.pre-card-top b{flex:1;font-size:15.5px;font-weight:900;text-transform:uppercase;line-height:1.15}
+.pre-card-ic{width:44px;height:44px;border-radius:50%;background:var(--accent,#F4C430);display:grid;place-items:center;flex:0 0 auto}
+.pre-card-ic svg{width:26px;height:26px;fill:none;stroke:#0B1C2C;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+.pre-card.cheio .pre-card-ic{background:#2BD67B}
+.pre-card-zerar{background:none;border:0;color:#ff8a65;font-weight:800;font-size:13px;font-family:inherit;text-transform:uppercase;cursor:pointer;padding:6px 0 6px 6px}
+.pre-card label{margin-top:8px}
+.pre-card select{width:100%;min-height:48px;font-size:16px}
+.pre-card-sep{display:flex;justify-content:space-between;align-items:center;margin-top:12px;padding-top:8px;border-top:1px dashed var(--border);font-weight:800;color:var(--text-secondary);font-size:13px}
+.pre-card-sep button{background:none;border:0;color:#ff8a65;font-size:22px;line-height:1;cursor:pointer;padding:0 4px}
+.pre-card-mais{margin-top:auto;min-height:46px;border-radius:24px;border:0;background:var(--accent,#F4C430);color:#0B1C2C;font-weight:900;font-size:15px;font-family:inherit;cursor:pointer;margin-top:14px}
+.pre-res-sub{padding-left:14px!important;font-size:14px;opacity:.9}
 .pre-ops-chips .pre-tipo{padding:9px 13px;font-size:14.5px}
 .pre-mats{margin-top:12px;padding-top:10px;border-top:1px dashed var(--border)}
 .pre-mats h4{margin:0 0 2px;font-size:15px;color:#F4C430}
@@ -5887,6 +5911,7 @@ const PRE_TIPOS = {
   prateleira: { nome: 'Prateleira / tampo', tipo: 'linear', bRot: 'Quantas peças', cor: '#a0703e', padrao: [1.2, 3], servico: [/prateleira/i, /tampo/i] },
   corrimao:   { nome: 'Corrimão / guarda-corpo', tipo: 'linear', bRot: 'Quantos lados', cor: '#94a3b8', padrao: [4, 1], servico: [/corrimão/i, /guarda/i] },
   metalon:    { nome: 'Estrutura (metalon)', tipo: 'linear', bRot: 'Quantas barras', cor: '#94a3b8', padrao: [6, 4], servico: [/metalon/i, /estrutura/i, /serralheria/i] },
+  calhas_lista: { nome: 'Calhas, rufos e condutores', tipo: 'lista', catalogo: 'calheiro', servico: [] },
   calha:      { nome: 'Calha', tipo: 'linear', bRot: 'Quantos lados', cor: '#cbd5e1', perda: 5, padrao: [12, 1], servico: [/calha/i] },
   rufo:       { nome: 'Rufo', tipo: 'linear', bRot: 'Quantos lados', cor: '#cbd5e1', padrao: [8, 1], servico: [/rufo/i] },
   condutor:   { nome: 'Condutor vertical', tipo: 'linear', bRot: 'Quantas descidas', cor: '#cbd5e1', padrao: [3, 2], servico: [/condutor/i, /calha/i] },
@@ -5928,7 +5953,7 @@ const PRE_PROFISSOES = {
   'Marceneiro': ['movel', 'prateleira', 'portas_un'],
   'Serralheiro': ['portao', 'grade', 'corrimao', 'metalon'],
   'Vidraceiro': ['vidro', 'box', 'espelho'],
-  'Calheiro': ['calha', 'rufo', 'condutor', 'telhado'],
+  'Calheiro': ['calhas_lista', 'calha', 'rufo', 'condutor', 'telhado'],
   'Climatização': ['aparelhos_ar', 'tubo_cobre'],
   'Inst. Câmeras': ['cameras', 'cabeamento'],
   'Jardinagem': ['grama', 'cerca_viva', 'arvores'],
@@ -5942,7 +5967,64 @@ const PRE_PROFISSOES = {
   'Outro': []
 };
 const PRE_GERAIS = ['outro', 'metros', 'unidades', 'volume'];
-const PRE_UNIDADE = { area: 'm²', linear: 'm', un: 'un', volume: 'm³' };
+const PRE_UNIDADE = { area: 'm²', linear: 'm', un: 'un', volume: 'm³', lista: 'm' };
+// ---- Lista por cartões (Calheiro): tipo de chapa + cartões com corte e metragem ----
+const PRE_ICONES = {
+  moldura: 'M6 6v11h11l2-3', redonda: 'M4 8a8 8 0 0 0 16 0', coxo: 'M6 6v11h12V6', agua: 'M3 7l9 10 9-10', chale: 'M4 8l5 9h11',
+  condret: 'M5 8h14v8H5z', condred: 'M12 5a7 7 0 1 0 .01 0z', cano: 'M12 5a7 7 0 1 0 .01 0zM12 9a3 3 0 1 0 .01 0z', curva: 'M7 4v7a6 6 0 0 0 6 6h6',
+  parede: 'M8 3v13h9v4', capa: 'M3 12l9-6 9 6M3 12v4M21 12v4', pinga: 'M4 8h14v7', contra: 'M6 4v10l12 5', peca: 'M5 5h14v14H5zM9 9h6v6H9z'
+};
+const CAL_CORTES = ['20 cm', '25 cm', '28 cm', '30 cm', '33 cm', '40 cm', '50 cm', '60 cm'];
+const RUFO_CORTES = ['15 cm', '20 cm', '25 cm', '30 cm', '40 cm', '50 cm'];
+const PRE_CATALOGOS = {
+  calheiro: {
+    chapaRot: 'Tipo de chapa', chapas: ['Alumínio 0,5', 'Galvanizado 26', 'Galvalume 0,5'],
+    grupos: [
+      { nome: 'Calha para telhado externo', itens: [
+        { id: 'moldura', nome: 'Calha moldura', ic: 'moldura', cortes: CAL_CORTES },
+        { id: 'condret', nome: 'Condutor retangular', ic: 'condret', cortes: ['20 cm', '25 cm', '30 cm', '33 cm'] },
+        { id: 'condred', nome: 'Condutor redondo', ic: 'condred', cortes: ['25 cm', '30 cm', '33 cm'] },
+        { id: 'cano', nome: 'Cano PVC', ic: 'cano', corteRot: 'Diâmetro', cortes: ['75 mm', '100 mm', '150 mm'], semChapa: true },
+        { id: 'curva', nome: 'Curvas', ic: 'curva', corteRot: 'Modelo', cortes: ['Curva 45°', 'Curva 90°'], un: 'un' }
+      ] },
+      { nome: 'Calha para telhado interno', itens: [
+        { id: 'coxo', nome: 'Calha coxo', ic: 'coxo', cortes: CAL_CORTES },
+        { id: 'agua', nome: 'Calha água furtada', ic: 'agua', cortes: CAL_CORTES },
+        { id: 'chale', nome: 'Calha chalé', ic: 'chale', cortes: CAL_CORTES },
+        { id: 'redonda', nome: 'Calha redonda', ic: 'redonda', cortes: CAL_CORTES }
+      ] },
+      { nome: 'Rufos', itens: [
+        { id: 'rparede', nome: 'Rufo de parede', ic: 'parede', cortes: RUFO_CORTES },
+        { id: 'rcapa', nome: 'Rufo capa de muro', ic: 'capa', cortes: RUFO_CORTES },
+        { id: 'pinga', nome: 'Pingadeira', ic: 'pinga', cortes: RUFO_CORTES },
+        { id: 'contra', nome: 'Contra-rufo', ic: 'contra', cortes: RUFO_CORTES }
+      ] },
+      { nome: 'Peças avulsas', itens: [
+        { id: 'bocal', nome: 'Bocal / saída', ic: 'peca', un: 'un', semChapa: true },
+        { id: 'cabec', nome: 'Cabeceira (tampa)', ic: 'peca', un: 'un', semChapa: true },
+        { id: 'suporte', nome: 'Suporte', ic: 'peca', un: 'un', semChapa: true },
+        { id: 'bracad', nome: 'Braçadeira', ic: 'peca', un: 'un', semChapa: true }
+      ] }
+    ]
+  }
+};
+function catalogoPre(pc) { return PRE_CATALOGOS[defPre(pc).catalogo] || null; }
+function listaPre(pc) { pc.lista = pc.lista && typeof pc.lista === 'object' ? pc.lista : { chapa: '', it: {} }; pc.lista.it = pc.lista.it || {}; return pc.lista; }
+// Linhas preenchidas da lista (na ordem dos cartões)
+function linhasLista(pc) {
+  const cat = catalogoPre(pc); if (!cat) return [];
+  const li = listaPre(pc), out = [];
+  cat.grupos.forEach(g => g.itens.forEach(it => (li.it[it.id] || []).forEach(l => {
+    const q = Number(l.q) || 0; if (q > 0) out.push({ item: it, corte: l.corte || '', q, un: it.un || 'm', chapa: it.semChapa ? '' : li.chapa || '' });
+  })));
+  return out;
+}
+function textoLista(pc) {
+  const l = linhasLista(pc); if (!l.length) return 'nada preenchido';
+  const m = l.filter(x => x.un === 'm').reduce((t, x) => t + x.q, 0), u = l.filter(x => x.un !== 'm').reduce((t, x) => t + x.q, 0);
+  return [m ? fmtM(m) + ' m' : '', u ? Math.round(u) + ' un' : ''].filter(Boolean).join(' + ');
+}
+function descLinhaLista(x) { return x.item.nome + (x.corte ? (x.item.corteRot ? ' ' : ' corte ') + x.corte : ''); }
 function defPre(pc) { return PRE_TIPOS[pc && pc.tipo] || PRE_TIPOS.outro; }
 function unPre(pc) { const d = defPre(pc); return d.tipo === 'linear' && d.un ? d.un : PRE_UNIDADE[d.tipo]; }
 function profPre(pc) { return (pc && pc.prof && PRE_PROFISSOES[pc.prof]) ? pc.prof : (PRE_PROFISSOES[profissaoAtual()] ? profissaoAtual() : 'Outro'); }
@@ -5955,7 +6037,7 @@ function preTemPro() { return typeof usuarioTemPro === 'function' && usuarioTemP
 function preTemConteudo(pr) {
   return !!((pr.cliente || '').trim() || (pr.local || '').trim() || (pr.notas || '').trim() || (pr.pecas || []).some(pc => {
     const n = novaPecaPre(pc.tipo, pc.prof);
-    return (pc.nome || '').trim() || (pc.descontos || []).length || pc.a !== n.a || pc.b !== n.b || (pc.c || 0) !== (n.c || 0);
+    return (pc.nome || '').trim() || (pc.descontos || []).length || linhasLista(pc).length || pc.a !== n.a || pc.b !== n.b || (pc.c || 0) !== (n.c || 0);
   }));
 }
 function contarPreSePreciso(pr) {
@@ -5984,6 +6066,7 @@ function novaPecaPre(tipo, prof) {
 }
 // Resultado da medida: m², metros, unidades ou m³
 function medidaPeca(pc) {
+  if (defPre(pc).tipo === 'lista') { const t = linhasLista(pc).reduce((s, x) => s + x.q, 0); return { bruta: t, desc: 0, liquida: t, final: Math.round(t * 100) / 100 }; }
   const d = defPre(pc), A = Number(pc.a) || 0, B = Number(pc.b) || 0, C = Number(pc.c) || 0, perda = Number(pc.perda) || 0;
   let bruta = 0, desc = 0;
   if (d.tipo === 'area') { bruta = A * B; if (d.descontos) desc = (pc.descontos || []).reduce((t, x) => t + (Number(x.l) || 0) * (Number(x.a) || 0), 0); }
@@ -5996,10 +6079,11 @@ function medidaPeca(pc) {
 }
 const areaPeca = medidaPeca;
 const fmtM = n => (Number(n) || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-function fmtMedida(pc, n) { const un = unPre(pc); return un === 'un' ? Math.round(n) + (Math.round(n) === 1 ? ' unidade' : ' unidades') : fmtM(n) + ' ' + un; }
+function fmtMedida(pc, n) { if (defPre(pc).tipo === 'lista') return pc.lista ? textoLista(pc) : fmtM(n); const un = unPre(pc); return un === 'un' ? Math.round(n) + (Math.round(n) === 1 ? ' unidade' : ' unidades') : fmtM(n) + ' ' + un; }
 function nomePeca(pc, i) { return (pc.nome || '').trim() || (defPre(pc).nome + ' ' + (i + 1)); }
 function textoMedidas(pc) {
   const d = defPre(pc), un = unPre(pc);
+  if (d.tipo === 'lista') { const n = linhasLista(pc).length; return (listaPre(pc).chapa || 'chapa não escolhida') + ' · ' + n + (n === 1 ? ' peça' : ' peças'); }
   if (d.tipo === 'area') return fmtM(pc.a) + ' × ' + fmtM(pc.b) + ' m';
   if (d.tipo === 'linear') return fmtM(pc.a) + ' ' + un + ((Number(pc.b) || 1) > 1 ? ' × ' + fmtNum(pc.b) : '');
   if (d.tipo === 'un') return Math.round(pc.a) + ' un';
@@ -6066,9 +6150,12 @@ function aplicarPassoPre() {
   const passos = passosPre(); if (!passos.includes(prePasso)) prePasso = passos.includes('materiais') && prePasso === 'detalhes' ? 'materiais' : 'medidas';
   const i = passos.indexOf(prePasso), info = PRE_PASSOS[prePasso], pc = preAtual.pecas[prePecaIdx];
   tela.querySelectorAll('[data-passo]').forEach(el => el.classList.toggle('pp-esc', el.dataset.passo !== prePasso));
-  const q = document.getElementById('pp-q'); if (q) q.innerHTML = esc(info[1]) + '<small>' + esc(info[2]) + '</small>';
+  const lista = prePasso === 'medidas' && pc && defPre(pc).tipo === 'lista';
+  const q = document.getElementById('pp-q'); if (q) q.innerHTML = esc(lista ? 'O que vai fazer?' : info[1]) + '<small>' + esc(lista ? 'Escolha a chapa e coloque o corte e a metragem de cada peça. Deslize os cartões para o lado.' : info[2]) + '</small>';
+  const cab = tela.querySelector('.app-header');
   const topo = document.getElementById('pp-topo');
   if (topo) {
+    if (cab) topo.style.top = cab.offsetHeight + 'px';
     const medida = (prePasso === 'cliente' || prePasso === 'resumo') ? (preAtual.cliente || '').trim() : nomePeca(pc, prePecaIdx);
     topo.innerHTML = '<div class="pp-l"><span>Passo <b>' + (i + 1) + '</b> de ' + passos.length + ' · ' + info[0] + '</span><span class="pp-med"></span></div>'
       + '<div class="pp-bar"><i style="width:' + ((i + 1) / passos.length * 100) + '%"></i></div>'
@@ -6147,11 +6234,12 @@ function renderPrePeca() {
   const ajudaMed = d.tipo === 'area' ? 'O desenho e os m² mudam a cada número' : d.tipo === 'linear' ? 'O desenho e os metros mudam a cada número' : d.tipo === 'un' ? 'Quantas peças vai fazer' : 'Comprimento × largura × altura';
   h += '<div class="form-card pre-sec" data-passo="medidas">' + secTitPre(n++, 'Medidas', ajudaMed)
     + '<label for="pre-nome">Nome desta medida <span class="pre-opc">(opcional)</span></label><input type="text" id="pre-nome" autocomplete="off" placeholder="Ex.: Sala, Parede da frente · ' + esc(nomePeca(pc, prePecaIdx)) + '">';
-  if (d.tipo === 'area') h += '<div class="pre-med">' + campoPre('pre-a', d.a, pc.a, 'm') + campoPre('pre-b', d.b, pc.b, 'm') + '</div>';
+  if (d.tipo === 'lista') h += '<div id="pre-cat"></div>';
+  else if (d.tipo === 'area') h += '<div class="pre-med">' + campoPre('pre-a', d.a, pc.a, 'm') + campoPre('pre-b', d.b, pc.b, 'm') + '</div>';
   else if (d.tipo === 'linear') h += '<div class="pre-med">' + campoPre('pre-a', 'Comprimento', pc.a, unPre(pc)) + campoPre('pre-b', d.bRot || 'Quantas vezes', pc.b, '×', true) + '</div>';
   else if (d.tipo === 'un') h += '<div class="pre-med">' + campoPre('pre-a', 'Quantidade', pc.a, 'un', true) + '<div></div></div>';
   else h += '<div class="pre-med pre-med3">' + campoPre('pre-a', d.a, pc.a, 'm') + campoPre('pre-b', d.b, pc.b, 'm') + campoPre('pre-c', d.c, pc.c, 'm') + '</div>';
-  h += '<div class="pre-desenho" id="pre-desenho"></div>';
+  if (d.tipo !== 'lista') h += '<div class="pre-desenho" id="pre-desenho"></div>';
   if (d.tipo === 'area' && d.descontos) h += '<label>Descontar portas e janelas</label><div id="pre-descs"></div><div class="pre-desc-bts"><button type="button" class="btn-dark-sm" data-add="Porta">+ Porta</button><button type="button" class="btn-dark-sm" data-add="Janela">+ Janela</button><button type="button" class="btn-dark-sm" data-add="Vão">+ Outro vão</button></div>';
   if ((d.tipo === 'area' || d.tipo === 'linear') && (d.perda != null || pc.perda)) h += '<div class="pre-med" style="margin-top:8px">' + campoPre('pre-perda', d.tipo === 'linear' ? 'Sobra / perda' : 'Perda e recorte', pc.perda, '%') + '<div></div></div>';
   h += '<div class="pre-area"><span id="pre-area-rot"></span><b id="pre-area-v"></b></div></div>';
@@ -6159,13 +6247,50 @@ function renderPrePeca() {
   if (temOps) h += '<div class="form-card pre-sec" id="pre-ops" data-passo="detalhes" data-n="' + (n++) + '"></div>'; else h += '<div id="pre-ops" style="display:none"></div>';
   if (temMat) h += '<div class="form-card pre-sec" id="pre-mats" data-passo="materiais" data-n="' + (n++) + '"></div>'; else h += '<div id="pre-mats" style="display:none"></div>';
   // 5. No orçamento
-  h += '<div class="form-card pre-sec" data-passo="' + ultimoM + '">' + secTitPre(n++, 'No orçamento', 'Nome do serviço que vai aparecer para o cliente')
+  if (d.tipo !== 'lista') h += '<div class="form-card pre-sec" data-passo="' + ultimoM + '">' + secTitPre(n++, 'No orçamento', 'Nome do serviço que vai aparecer para o cliente')
     + '<label for="pre-servico">Serviço</label><input type="text" id="pre-servico" list="pre-servicos" autocomplete="off" placeholder="' + esc(servicoPadraoPre(pc)) + '"><datalist id="pre-servicos">' + sugestoesPre(pc).map(x => '<option value="' + esc(x) + '">').join('') + '</datalist>'
     + '<p class="hint-sm" style="margin-top:6px">O valor vem de "Meus preços". Se ainda não tiver, você coloca no orçamento.</p></div>';
   host.innerHTML = h;
   document.getElementById('pre-nome').value = pc.nome || '';
-  document.getElementById('pre-servico').value = pc.servico || '';
-  renderOpcoesPre(); renderPreDescontos(); desenharPre(); atualizarAreaPre();
+  const sv = document.getElementById('pre-servico'); if (sv) sv.value = pc.servico || '';
+  renderCatalogoPre(); renderOpcoesPre(); renderPreDescontos(); desenharPre(); atualizarAreaPre();
+}
+function svgIconePre(k) { return '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="' + (PRE_ICONES[k] || PRE_ICONES.peca) + '"/></svg>'; }
+function renderCatalogoPre() {
+  const host = document.getElementById('pre-cat'); if (!host) return;
+  const pc = preAtual.pecas[prePecaIdx], cat = catalogoPre(pc); if (!cat) { host.innerHTML = ''; return; }
+  const li = listaPre(pc);
+  let h = '<label>' + esc(cat.chapaRot) + '</label><div class="pre-chapas">' + cat.chapas.concat(li.chapa && !cat.chapas.includes(li.chapa) ? [li.chapa] : []).map((c, i) =>
+    '<button type="button" class="pre-chapa c' + (i % 3) + (c === li.chapa ? ' on' : '') + '" data-chapa="' + esc(c) + '"><i></i>' + esc(c) + '</button>').join('')
+    + '<button type="button" class="pre-chapa outra" data-chapa-outra="1">✎ Outra</button></div>';
+  cat.grupos.forEach(g => {
+    h += '<div class="pre-cat-g"><h4>' + esc(g.nome) + '<small>deslize ➜</small></h4><div class="pre-cat-row">';
+    g.itens.forEach(it => {
+      const linhas = li.it[it.id] && li.it[it.id].length ? li.it[it.id] : [{ corte: '', q: 0 }], cheio = linhas.some(l => Number(l.q) > 0);
+      h += '<div class="pre-card' + (cheio ? ' cheio' : '') + '" data-item="' + it.id + '"><div class="pre-card-top"><span class="pre-card-ic">' + svgIconePre(it.ic) + '</span><b>' + esc(it.nome) + '</b><button type="button" class="pre-card-zerar" data-zerar="' + it.id + '">Zerar</button></div>';
+      linhas.forEach((l, j) => {
+        const cortes = it.cortes ? (l.corte && !it.cortes.includes(l.corte) ? it.cortes.concat([l.corte]) : it.cortes) : null;
+        h += '<div class="pre-card-linha">' + (j ? '<div class="pre-card-sep"><span>' + (j + 1) + 'º</span><button type="button" data-tira="' + it.id + '" data-j="' + j + '" aria-label="Tirar">×</button></div>' : '')
+          + (cortes ? '<label>' + esc(it.corteRot || 'Corte') + '</label><select class="pre-card-corte" data-it="' + it.id + '" data-j="' + j + '"><option value="">Escolha</option>' + cortes.map(c => '<option' + (c === l.corte ? ' selected' : '') + '>' + esc(c) + '</option>').join('') + '<option value="__outro">✎ Outro…</option></select>' : '')
+          + '<label>' + (it.un === 'un' ? 'Quantidade' : 'Metragem') + '</label><div class="calc-campo"><input type="text" inputmode="decimal" class="pre-card-q" data-mic="0" data-it="' + it.id + '" data-j="' + j + '" value="' + (Number(l.q) ? fmtQtd(l.q) : '') + '" placeholder="0"><em>' + (it.un || 'm') + '</em></div></div>';
+      });
+      h += '<button type="button" class="pre-card-mais" data-mais="' + it.id + '">＋ ' + (it.cortes ? 'Outro ' + (it.corteRot || 'corte').toLowerCase() : 'Mais') + '</button></div>';
+    });
+    h += '</div></div>';
+  });
+  host.innerHTML = h;
+  host.querySelectorAll('.pre-card-q').forEach(inp => inp.oninput = () => {
+    let t = inp.value.replace(/[^0-9.,]/g, '').replace('.', ','); if (t !== inp.value) inp.value = t;
+    const arr = li.it[inp.dataset.it] = li.it[inp.dataset.it] || [{ corte: '', q: 0 }], j = +inp.dataset.j; arr[j] = arr[j] || { corte: '', q: 0 };
+    arr[j].q = parseFloat(t.replace(',', '.')) || 0;
+    const card = inp.closest('.pre-card'); card.classList.toggle('cheio', arr.some(l => Number(l.q) > 0));
+    salvarPreAtual(); atualizarAreaPre();
+  });
+  host.querySelectorAll('.pre-card-corte').forEach(sel => sel.onchange = () => {
+    const arr = li.it[sel.dataset.it] = li.it[sel.dataset.it] || [{ corte: '', q: 0 }], j = +sel.dataset.j; arr[j] = arr[j] || { corte: '', q: 0 };
+    if (sel.value === '__outro') { const v = (prompt('Digite a medida (ex.: 35 cm):', arr[j].corte || '') || '').trim(); if (v) arr[j].corte = v; salvarPreAtual(); renderCatalogoPre(); atualizarAreaPre(); return; }
+    arr[j].corte = sel.value; salvarPreAtual(); atualizarAreaPre();
+  });
 }
 function renderPreDescontos() {
   const host = document.getElementById('pre-descs'); if (!host) return;
@@ -6192,7 +6317,7 @@ function servicoPadraoPre(pc) {
 function atualizarAreaPre() {
   const pc = preAtual.pecas[prePecaIdx], d = defPre(pc), m = medidaPeca(pc);
   const rot = document.getElementById('pre-area-rot'), v = document.getElementById('pre-area-v');
-  let r = d.tipo === 'area' ? 'Área' : d.tipo === 'linear' ? (unPre(pc) === 'km' ? 'Distância total' : 'Metragem total') : d.tipo === 'un' ? 'Quantidade' : 'Volume';
+  let r = d.tipo === 'lista' ? 'Total' : d.tipo === 'area' ? 'Área' : d.tipo === 'linear' ? (unPre(pc) === 'km' ? 'Distância total' : 'Metragem total') : d.tipo === 'un' ? 'Quantidade' : 'Volume';
   if (d.tipo === 'area' && m.desc > 0) r += ' (já sem portas/janelas)';
   if ((d.tipo === 'area' || d.tipo === 'linear') && pc.perda) r += ' com ' + fmtNum(pc.perda) + '% de ' + (d.tipo === 'linear' ? 'sobra' : 'perda');
   if (d.tipo === 'volume' && pc.tipo === 'piscina') r += ' · ' + Math.round(m.final * 1000).toLocaleString('pt-BR') + ' litros';
@@ -6725,10 +6850,16 @@ function renderPreResumo() {
   const porTipo = {};
   let h = secTitPre('✓', 'Resumo da visita', 'Tudo o que você mediu e os materiais somados');
   preAtual.pecas.forEach((pc, i) => {
-    const m = medidaPeca(pc), k = pc.tipo + '|' + unPre(pc); porTipo[k] = (porTipo[k] || 0) + m.final;
+    const m = medidaPeca(pc);
+    if (defPre(pc).tipo === 'lista') {
+      h += '<div class="pre-res-linha"><span><b style="color:inherit">' + esc(nomePeca(pc, i)) + '</b> · ' + esc(listaPre(pc).chapa || 'chapa não escolhida') + '</span><b>' + esc(textoLista(pc)) + '</b></div>';
+      h += linhasLista(pc).map(x => '<div class="pre-res-linha pre-res-sub"><span>' + esc(descLinhaLista(x)) + '</span><b>' + (x.un === 'm' ? fmtM(x.q) + ' m' : Math.round(x.q) + ' un') + '</b></div>').join('');
+      return;
+    }
+    const k = pc.tipo + '|' + unPre(pc); porTipo[k] = (porTipo[k] || 0) + m.final;
     h += '<div class="pre-res-linha"><span>' + esc(nomePeca(pc, i)) + ' · ' + esc(textoMedidas(pc)) + (textoOpcoes(pc) ? '<br><small class="hint-sm">' + esc(textoOpcoes(pc)) + '</small>' : '') + '</span><b>' + fmtMedida(pc, m.final) + '</b></div>';
   });
-  if (preAtual.pecas.length > 1) h += Object.keys(porTipo).map(k => { const t = k.split('|')[0], pc = { tipo: t }; return '<div class="pre-res-linha"><span><b style="color:inherit">Total ' + PRE_TIPOS[t].nome.toLowerCase() + '</b></span><b style="color:#2BD67B">' + fmtMedida(pc, Math.round(porTipo[k] * 100) / 100) + '</b></div>'; }).join('');
+  if (preAtual.pecas.filter(pc => defPre(pc).tipo !== 'lista').length > 1) h += Object.keys(porTipo).map(k => { const t = k.split('|')[0], pc = { tipo: t }; return '<div class="pre-res-linha"><span><b style="color:inherit">Total ' + PRE_TIPOS[t].nome.toLowerCase() + '</b></span><b style="color:#2BD67B">' + fmtMedida(pc, Math.round(porTipo[k] * 100) / 100) + '</b></div>'; }).join('');
   const mats = materiaisTodos();
   if (mats.length) h += '<h4 style="margin:14px 0 4px">🧰 Materiais de todas as medidas</h4>' + mats.map(x => '<div class="pre-res-linha"><span>' + esc(x.nome) + '</span><b>' + fmtQtdMat(x.qtd) + ' ' + esc(x.un) + '</b></div>').join('');
   host.innerHTML = h;
@@ -6776,6 +6907,19 @@ document.addEventListener('click', function (e) {
     pc.op = pc.op || {}; pc.op[id] = v;
     salvarPreAtual(); renderOpcoesPre(); renderMateriaisPre(); renderPreResumo(); return;
   }
+  const cb = e.target.closest && e.target.closest('#pre-cat [data-chapa], #pre-cat [data-chapa-outra], #pre-cat [data-zerar], #pre-cat [data-mais], #pre-cat [data-tira]');
+  if (cb) {
+    const pc = preAtual.pecas[prePecaIdx], li = listaPre(pc), ds = cb.dataset;
+    if (ds.chapa != null) li.chapa = li.chapa === ds.chapa ? '' : ds.chapa;
+    else if (ds.chapaOutra) { const v = (prompt('Qual chapa? (ex.: Cobre, Galvanizado 24)', li.chapa || '') || '').trim(); if (!v) return; li.chapa = v; }
+    else if (ds.zerar) delete li.it[ds.zerar];
+    else if (ds.mais) { const a = li.it[ds.mais] = li.it[ds.mais] && li.it[ds.mais].length ? li.it[ds.mais] : [{ corte: '', q: 0 }]; a.push({ corte: '', q: 0 }); }
+    else if (ds.tira) { const a = li.it[ds.tira] || []; a.splice(+ds.j, 1); }
+    const card = ds.mais || ds.tira || ds.zerar, sx = card ? (cb.closest('.pre-cat-row') || {}).scrollLeft : 0;
+    salvarPreAtual(); renderCatalogoPre(); atualizarAreaPre();
+    if (card) { const c = document.querySelector('#pre-cat .pre-card[data-item="' + card + '"]'), row = c && c.closest('.pre-cat-row'); if (row) row.scrollLeft = sx; if (ds.mais && c) { const qs = c.querySelectorAll('.pre-card-q'); const last = qs[qs.length - 1]; if (last) last.focus(); } }
+    return;
+  }
   const ad = e.target.closest && e.target.closest('#pre-peca [data-add]');
   if (ad) {
     const pc = preAtual.pecas[prePecaIdx], nome = ad.dataset.add;
@@ -6795,6 +6939,15 @@ function transformarPreEmOrcamento() {
   const cl = document.getElementById('orc-cliente'); if (cl) cl.value = pr.cliente || '';
   const ti = document.getElementById('orc-titulo'); if (ti && pr.local) ti.value = pr.local;
   pecas.forEach(pc => {
+    if (defPre(pc).tipo === 'lista') {
+      linhasLista(pc).forEach(x => {
+        const desc = descLinhaLista(x), preco = precoServico(desc) || precoServico(x.item.nome);
+        colocarItemNoOrcamento({ desc, qtd: x.q, un: x.un === 'm' ? 'm' : 'un', valor: preco ? preco.valor : 0 });
+        const rows = document.querySelectorAll('#itens-container .item-row'), row = rows[rows.length - 1], det = row && row.querySelector('.item-detalhes');
+        if (det) det.value = [x.chapa ? 'Chapa ' + x.chapa : '', pc.nome ? pc.nome.trim() : ''].filter(Boolean).join(' · ');
+      });
+      return;
+    }
     const d = defPre(pc), m = medidaPeca(pc), serv = (pc.servico || '').trim() || servicoPadraoPre(pc), preco = precoServico(serv);
     const un = unPre(pc), unOrc = PRECO_UNIDADES.includes(un) ? un : 'un';
     colocarItemNoOrcamento({ desc: serv, qtd: m.final, un: unOrc, valor: preco ? preco.valor : 0 });
