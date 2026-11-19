@@ -885,6 +885,19 @@ body.light .pp-topo,body.light .pp-nav{background:#fff}
 .cad-f.on{border-color:var(--accent,#F4C430);background:rgba(244,196,48,.16);color:var(--accent,#F4C430)}
 .cad-dica{font-size:14px;color:var(--text-secondary);margin:2px 2px 8px;min-height:20px}
 .cad-svg{display:block;width:100%;height:auto;border-radius:12px;border:2px solid #e2d6b5;touch-action:none;-webkit-user-select:none;user-select:none;box-shadow:0 4px 14px rgba(0,0,0,.25)}
+.orc-des{position:relative;display:flex;flex-direction:column;align-items:center;gap:4px;margin:6px 0 10px}
+.orc-des img{max-width:100%;border-radius:10px;border:1px solid var(--border);background:#fff}
+.orc-des span{font-size:12px;color:var(--text-secondary);text-align:center}
+.orc-des button{position:absolute;top:6px;right:6px;width:34px;height:34px;border-radius:50%;border:0;background:rgba(11,28,44,.85);color:#fff;font-size:20px;cursor:pointer}
+.esq-folhas{display:flex;flex-direction:column;gap:8px;margin:6px 0}
+.esq-fl{display:flex;align-items:center;gap:8px}
+.esq-fl>b{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:var(--border);flex:0 0 auto}
+.esq-fl-bt{display:flex;border:2px solid var(--border);border-radius:12px;overflow:hidden}
+.esq-fl-bt button{min-height:42px;padding:0 12px;border:0;background:transparent;color:var(--text-primary);font-size:14px;font-weight:800;font-family:inherit;cursor:pointer}
+.esq-fl-bt button.on{background:var(--accent,#F4C430);color:#0B1C2C}
+.esq-mao{flex:1;min-height:42px;border-radius:12px;border:2px dashed #2BD67B;background:transparent;color:#2BD67B;font-size:13.5px;font-weight:800;font-family:inherit;cursor:pointer;padding:0 8px}
+.esq-mao.on{border-style:solid;background:#2BD67B;color:#06301A}
+.esq-mao-v{flex:1}
 .esq-desenho svg{display:block;width:100%;height:auto}
 .esq-leg{margin:6px 2px 10px}
 .esq-tit{margin:14px 0 4px;font-size:15px}
@@ -3896,6 +3909,11 @@ body.light .btn-remove-item{color:#b91c1c}
           <div class="item-box" id="itens-container"><!-- itens criados via JS, cada um com suas sugestões --></div>
           <button class="btn-add-item" type="button" onclick="adicionarItem()"><span aria-hidden="true">＋</span> Adicionar item</button>
         </div>
+        <div class="form-card" id="orc-desenhos-card" data-op="itens" style="display:none">
+          <h3>🖼️ Desenho no orçamento</h3>
+          <div id="orc-desenhos"></div>
+          <p class="hint-sm">Vai no PDF para o cliente ver como vai ficar. Toque no × para tirar.</p>
+        </div>
 
         <div class="form-card" data-op="pagamento">
           <h3>Condições de pagamento</h3>
@@ -5290,8 +5308,49 @@ document.addEventListener('click', function (e) {
 });
 // o total no topo acompanha os itens
 document.addEventListener('input', function (e) { if (e.target && e.target.closest && e.target.closest('#screen-new-budget')) setTimeout(function () { const m = document.querySelector('#op-topo .pp-med'), t = document.getElementById('orc-total'); if (m && t) m.textContent = t.textContent; }, 0); });
+// Desenhos que vieram do pré-orçamento (vão no PDF, na parte "Como vai ficar")
+let orcDesenhos = [];
+function renderOrcDesenhos() {
+  const card = document.getElementById('orc-desenhos-card'), host = document.getElementById('orc-desenhos'); if (!card || !host) return;
+  card.style.display = orcDesenhos.length ? '' : 'none';
+  host.innerHTML = '';
+  orcDesenhos.forEach((d, i) => {
+    const el = document.createElement('div'); el.className = 'orc-des';
+    el.innerHTML = '<img alt=""><span></span><button type="button" aria-label="Tirar este desenho">×</button>';
+    el.querySelector('img').src = d.img; el.querySelector('span').textContent = d.titulo || '';
+    el.querySelector('button').onclick = () => { orcDesenhos.splice(i, 1); renderOrcDesenhos(); };
+    host.appendChild(el);
+  });
+}
+// SVG → imagem (JPG leve) para guardar no orçamento e sair no PDF
+function svgParaImagem(svg) {
+  return new Promise(res => {
+    try {
+      const m = svg.match(/viewBox="([\d.\-]+) ([\d.\-]+) ([\d.]+) ([\d.]+)"/), vw = m ? +m[3] : 340, vh = m ? +m[4] : 270, esc2 = Math.min(3, 900 / vw);
+      const img = new Image();
+      img.onload = () => { try { const c = document.createElement('canvas'); c.width = Math.round(vw * esc2); c.height = Math.round(vh * esc2); const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height); x.drawImage(img, 0, 0, c.width, c.height); res(c.toDataURL('image/jpeg', 0.82)); } catch (_) { res(''); } };
+      img.onerror = () => res('');
+      img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg.replace('<svg ', '<svg width="' + vw + '" height="' + vh + '" font-family="Arial, Helvetica, sans-serif" '));
+    } catch (_) { res(''); }
+  });
+}
+// desenho de cada medida do pré-orçamento (janela/porta de vidro e caderno)
+function svgDaPeca(pc) {
+  const t = defPre(pc).tipo;
+  if (t === 'esquadria') { const s = esqSvg(pc); return /^<svg/.test(s) ? s : ''; }
+  if (t === 'caderno') {
+    const cad = cadPre(pc); if (!cad.linhas.length && !cad.cubas.length) return '';
+    const z = cadVista.z; cadVista.z = 1;
+    const tmp = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); tmp.setAttribute('xmlns', 'http://www.w3.org/2000/svg'); tmp.setAttribute('viewBox', '0 0 ' + CAD_W + ' ' + cadAlt(cad));
+    tmp.innerHTML = cadSvg(pc); cadVista.z = z;
+    const tx = tmp.querySelectorAll('text[font-style="italic"]'); cad.textos.forEach((x, i) => { if (tx[i]) tx[i].textContent = x.t; });
+    return new XMLSerializer().serializeToString(tmp);
+  }
+  return '';
+}
 function goToNewBudget() {
   profSugOrc = null;
+  orcDesenhos = []; setTimeout(renderOrcDesenhos, 0);
   setTimeout(function () { irPassoOrc('cliente'); }, 0);
   modeloNovoOrcamento = '';
   logoNovoOrc = undefined;
@@ -6234,7 +6293,7 @@ function fmtMedida(pc, n) { if (defPre(pc).tipo === 'lista') return pc.lista ? t
 function nomePeca(pc, i) { return (pc.nome || '').trim() || (defPre(pc).nome + ' ' + (i + 1)); }
 function textoMedidas(pc) {
   const d = defPre(pc), un = unPre(pc);
-  if (d.tipo === 'esquadria') { const c = esqCalc(pc), md = ESQ_MODELOS[c.modelo]; return md.nome + ' ' + c.folhas.length + (c.folhas.length === 1 ? ' folha' : ' folhas') + ' · vão ' + esqFmt(c, c.L) + ' × ' + esqFmt(c, c.H) + (c.modelo !== 'fixo' ? ' (' + (c.folhas.length - c.moveis) + ' fixa' + (c.folhas.length - c.moveis === 1 ? '' : 's') + ', ' + c.moveis + ' móve' + (c.moveis === 1 ? 'l' : 'is') + ')' : ''); }
+  if (d.tipo === 'esquadria') { const c = esqCalc(pc), md = ESQ_MODELOS[c.modelo]; return md.nome + ' ' + c.folhas.length + (c.folhas.length === 1 ? ' folha' : ' folhas') + ' · vão ' + esqFmt(c, c.L) + ' × ' + esqFmt(c, c.H) + (c.modelo !== 'fixo' ? ' (' + (c.folhas.length - c.moveis) + ' fixa' + (c.folhas.length - c.moveis === 1 ? '' : 's') + ', ' + c.moveis + ' móve' + (c.moveis === 1 ? 'l' : 'is') + (c.maos ? ', ' + c.maos + ' mão amiga' : '') + ')' : ''); }
   if (d.tipo === 'caderno') { const c = cadPre(pc), l = c.linhas.map((x, i) => x.cm > 0 ? cadLetra(i) + ' ' + cadFmt(c, x.cm) + (cadLarg(c, x) > 0 ? ' × ' + cadFmt(c, cadLarg(c, x)) : '') : '').filter(Boolean); return l.length ? 'Medidas: ' + l.join(', ') : 'Desenho sem medidas'; }
   if (d.tipo === 'lista') { const n = linhasLista(pc).length; return (listaPre(pc).chapa || 'chapa não escolhida') + ' · ' + n + (n === 1 ? ' peça' : ' peças'); }
   if (d.tipo === 'area') return fmtM(pc.a) + ' × ' + fmtM(pc.b) + ' m';
@@ -6741,7 +6800,7 @@ function esqCalc(pc) {
   const w = correr ? Math.round((L + aj.transp * (n - 1)) / n) : Math.round(L / n - aj.desc), h = Math.round(H - aj.desc);
   const emCima = !/embaixo/i.test(op.rold || '');
   const folhas = e.folhas.map((t, i) => {
-    const f = { i, tipo: correr ? t : 'F', w, h, x: correr ? i * (w - aj.transp) : i * (L / n) + aj.desc / 2, furos: [] };
+    const f = { i, tipo: correr ? t : 'F', w, h, x: correr ? i * (w - aj.transp) : i * (L / n) + aj.desc / 2, furos: [], mao: correr && t === 'M' && !!(e.mao || [])[i] };
     if (correr && f.tipo === 'M') {
       f.furos.push({ k: 'roldana', x: aj.furo, y: emCima ? 35 : h - 35 }, { k: 'roldana', x: w - aj.furo, y: emCima ? 35 : h - 35 });
       // puxador e fecho na borda que encosta quando fecha: nas pontas, do lado da parede; no meio, do lado do centro
@@ -6751,8 +6810,8 @@ function esqCalc(pc) {
     }
     return f;
   });
-  const moveis = folhas.filter(f => f.tipo === 'M').length;
-  return { modelo: e.modelo, un: e.un, L, H, folhas, moveis, aj, emCima, m2Vidro: Math.round(folhas.reduce((t, f) => t + f.w * f.h, 0) / 1e4) / 100 };
+  const moveis = folhas.filter(f => f.tipo === 'M').length, maos = folhas.filter(f => f.mao).length;
+  return { modelo: e.modelo, un: e.un, L, H, folhas, moveis, maos, aj, emCima, m2Vidro: Math.round(folhas.reduce((t, f) => t + f.w * f.h, 0) / 1e4) / 100 };
 }
 function esqSvg(pc) {
   const c = esqCalc(pc), op = opPeca(pc); if (!(c.L > 0 && c.H > 0)) return '<p class="hint-sm" style="padding:30px;text-align:center">Coloque a largura e a altura do vão.</p>';
@@ -6766,11 +6825,18 @@ function esqSvg(pc) {
       + '<text x="' + (x + w / 2) + '" y="' + (y + h / 2 - 4) + '" fill="#fff" font-size="' + Math.min(13, w / 4.4) + '" font-weight="900" text-anchor="middle" paint-order="stroke" stroke="#0b1c2c" stroke-width="3">' + (mov ? 'MÓVEL' : 'FIXA') + '</text>'
       + '<text x="' + (x + w / 2) + '" y="' + (y + h / 2 + 12) + '" fill="#fff" font-size="' + Math.min(10.5, w / 5.2) + '" font-weight="700" text-anchor="middle" paint-order="stroke" stroke="#0b1c2c" stroke-width="3">' + Math.round(f.w) + '×' + Math.round(f.h) + '</text>'
       + (mov ? '<text x="' + (x + w / 2) + '" y="' + (y + h / 2 + 28) + '" fill="#F4C430" font-size="14" font-weight="900" text-anchor="middle" paint-order="stroke" stroke="#0b1c2c" stroke-width="3">⟷</text>' : '');
+    if (f.mao) s += '<rect x="' + (x + w / 2 - 17) + '" y="' + (y + h - 24) + '" width="34" height="18" rx="5" fill="#2BD67B" stroke="#0b1c2c" stroke-width="1.2"/><text x="' + (x + w / 2) + '" y="' + (y + h - 11) + '" fill="#06301A" font-size="10" font-weight="900" text-anchor="middle">M.A.</text>';
     f.furos.forEach(u => { const fx = x + u.x * k, fy = y + u.y * k; s += u.k === 'roldana' ? '<circle cx="' + fx + '" cy="' + fy + '" r="4.5" fill="#F4C430" stroke="#0b1c2c" stroke-width="1.5"/>' : '<rect x="' + (fx - 3) + '" y="' + (fy - 14) + '" width="6" height="28" rx="3" fill="' + (perfil === '#111827' ? '#e5e7eb' : '#111827') + '"/>'; });
     s += '</g>';
   });
   s += cotaPre(ox, oy - 20, ox + c.L * k, oy - 20, esqFmt(c, c.L)) + cotaPre(ox + c.L * k + 46, oy, ox + c.L * k + 46, oy + c.H * k, esqFmt(c, c.H), true);
   return '<svg viewBox="0 0 ' + W + ' ' + Hh + '" xmlns="http://www.w3.org/2000/svg">' + s + '</svg>';
+}
+function esqArranjo(e) { const f = e.folhas, n = f.length; if (f.every(x => x === 'M')) return 'nenhum'; if (n > 1 && f[0] === 'F' && f[n - 1] === 'F' && f.slice(1, -1).every(x => x === 'M')) return 'pontas'; if (n > 1 && f[0] === 'M' && f[n - 1] === 'M' && f.slice(1, -1).some(x => x === 'F')) return 'meio'; return ''; }
+function esqFolhasArranjo(n, k) {
+  if (k === 'nenhum') return Array(n).fill('M');
+  if (k === 'meio') { const a = Array(n).fill('M'); if (n === 2) return ['M', 'F']; const m = Math.floor(n / 2); if (n % 2) a[m] = 'F'; else { a[m - 1] = 'F'; a[m] = 'F'; } return n <= 3 ? (n === 3 ? ['M', 'F', 'M'] : a) : a; }
+  return esqPadraoFolhas(n, 'janela');
 }
 function esqCampo(id, rot, mm, e, ajuda) { const v = mm ? (e.un === 'cm' ? (Math.round(mm) / 10).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) : String(Math.round(mm))) : ''; return '<div><label for="' + id + '">' + rot + '</label><div class="calc-campo"><input type="text" inputmode="decimal" id="' + id + '" data-mic="0" autocomplete="off" value="' + v + '" placeholder="0"><em>' + e.un + '</em></div>' + (ajuda ? '<small class="esq-aj-h">' + ajuda + '</small>' : '') + '</div>'; }
 function renderEsqPre() {
@@ -6780,8 +6846,11 @@ function renderEsqPre() {
     + '<label>Unidade</label><div class="cad-uns">' + ['mm', 'cm'].map(u => '<button type="button" class="cad-un' + (u === e.un ? ' on' : '') + '" data-esq-un="' + u + '">' + u + '</button>').join('') + '</div>'
     + '<div class="pre-med">' + esqCampo('esq-L', 'Largura do vão', e.L, e) + esqCampo('esq-H', 'Altura do vão', e.H, e) + '</div>'
     + '<label>Quantas folhas</label><div class="pre-tipos">' + [1, 2, 3, 4, 6].map(k => '<button type="button" class="pre-tipo esq-n' + (k === n ? ' on' : '') + '" data-esq-n="' + k + '">' + k + '</button>').join('') + '</div>'
+    + (e.modelo !== 'fixo' && n > 1 ? '<label>Tem vidro fixo?</label><div class="pre-tipos">' + [['pontas', 'Sim, nas pontas'], ['meio', 'Sim, no meio'], ['nenhum', 'Não, todas correm']].map(([k, t]) => '<button type="button" class="pre-tipo' + (esqArranjo(e) === k ? ' on' : '') + '" data-esq-arr="' + k + '">' + t + '</button>').join('') + '</div>' : '')
     + '<div class="pre-desenho esq-desenho" id="esq-desenho"></div>'
-    + '<p class="hint-sm esq-leg"><b style="color:#F4C430">●</b> furo de roldana &nbsp; <b>▮</b> furo do puxador &nbsp; Toque numa folha para trocar fixa ⟷ móvel.</p>'
+    + (e.modelo !== 'fixo' ? '<label>Cada folha</label><div class="esq-folhas">' + e.folhas.map((t, i) => '<div class="esq-fl"><b>' + (i + 1) + '</b><div class="esq-fl-bt"><button type="button" class="' + (t === 'F' ? 'on' : '') + '" data-esq-ft="' + i + ':F">Fixa</button><button type="button" class="' + (t === 'M' ? 'on' : '') + '" data-esq-ft="' + i + ':M">Móvel</button></div>'
+      + (t === 'M' ? '<button type="button" class="esq-mao' + ((e.mao || [])[i] ? ' on' : '') + '" data-esq-mao="' + i + '">🤝 Mão amiga</button>' : '<span class="esq-mao-v"></span>') + '</div>').join('') + '</div><p class="hint-sm">Mão amiga: ferragem que faz a folha puxar a vizinha junto (comum em 4 folhas).</p>' : '')
+    + '<p class="hint-sm esq-leg"><b style="color:#F4C430">●</b> furo de roldana &nbsp; <b>▮</b> furo do puxador &nbsp; <b style="color:#2BD67B">M.A.</b> mão amiga</p>'
     + '<div id="esq-pecas"></div>'
     + '<details class="esq-ajustes"><summary>⚙️ Ajustes do seu padrão (folgas e furos)</summary>'
     + '<div class="pre-med">' + esqCampo('esq-transp', 'Transpasse entre folhas', aj.transp, e, 'Quanto uma folha passa da outra') + esqCampo('esq-desc', 'Desconto na altura', aj.desc, e, 'Vão − isto = altura do vidro') + '</div>'
@@ -6806,6 +6875,7 @@ function esqAtualizar(pc) {
 function esqTextoFuros(c, f) {
   const r = f.furos.filter(u => u.k === 'roldana'), p = f.furos.find(u => u.k === 'puxador'), t = [];
   if (r.length) t.push(r.length + ' furos de roldana ' + (c.emCima ? 'em cima' : 'embaixo') + ' a ' + esqFmt(c, c.aj.furo) + ' das bordas');
+  if (f.mao) t.push('mão amiga (furo conforme o modelo da ferragem)');
   if (p) t.push('puxador à ' + p.lado + ', a ' + esqFmt(c, c.aj.puxBorda) + ' da borda e ' + esqFmt(c, f.h - p.y) + ' da base do vidro');
   return t.join('; ');
 }
@@ -6820,11 +6890,19 @@ document.addEventListener('click', function (e) {
   if (!preAtual || !e.target.closest) return;
   const host = e.target.closest('#pre-esq'); if (!host) return;
   const pc = preAtual.pecas[prePecaIdx], es = esqPre(pc);
+  const arr = e.target.closest('[data-esq-arr]'), ft = e.target.closest('[data-esq-ft]'), ma = e.target.closest('[data-esq-mao]');
+  if (arr || ft || ma) {
+    if (arr) es.folhas = esqFolhasArranjo(es.folhas.length, arr.dataset.esqArr);
+    else if (ft) { const [i, t] = ft.dataset.esqFt.split(':'); es.folhas[+i] = t; }
+    else { es.mao = es.mao || []; const i = +ma.dataset.esqMao; es.mao[i] = !es.mao[i]; }
+    (es.mao || []).forEach((v, i) => { if (es.folhas[i] !== 'M') es.mao[i] = false; });
+    es.mexeu = true; salvarPreAtual(); renderEsqPre(); renderMateriaisPre(); renderPreResumo(); return;
+  }
   const mod = e.target.closest('[data-esq-mod]'), un = e.target.closest('[data-esq-un]'), nb = e.target.closest('[data-esq-n]'), fo = e.target.closest('.esq-folha'), pd = e.target.closest('[data-esq-pedido]');
-  if (mod) { const k = mod.dataset.esqMod, md = ESQ_MODELOS[k]; if (k === es.modelo) return; if (!es.mexeu) { es.L = md.L; es.H = md.H; } es.modelo = k; es.folhas = esqPadraoFolhas(k === 'fixo' ? 1 : md.n, k); es.aj = {}; es.mexeu = true; }
+  if (mod) { const k = mod.dataset.esqMod, md = ESQ_MODELOS[k]; if (k === es.modelo) return; if (!es.mexeu) { es.L = md.L; es.H = md.H; } es.modelo = k; es.folhas = esqPadraoFolhas(k === 'fixo' ? 1 : md.n, k); es.mao = []; es.aj = {}; es.mexeu = true; }
   else if (un) { es.un = un.dataset.esqUn; }
-  else if (nb) { es.folhas = esqPadraoFolhas(+nb.dataset.esqN, es.modelo); es.mexeu = true; }
-  else if (fo) { if (es.modelo === 'fixo') return; const i = +fo.dataset.f; es.folhas[i] = es.folhas[i] === 'M' ? 'F' : 'M'; es.mexeu = true; salvarPreAtual(); esqAtualizar(pc); renderMateriaisPre(); renderPreResumo(); return; }
+  else if (nb) { es.folhas = esqPadraoFolhas(+nb.dataset.esqN, es.modelo); es.mao = []; es.mexeu = true; }
+  else if (fo) { if (es.modelo === 'fixo') return; const i = +fo.dataset.f; es.folhas[i] = es.folhas[i] === 'M' ? 'F' : 'M'; if (es.mao && es.folhas[i] !== 'M') es.mao[i] = false; es.mexeu = true; salvarPreAtual(); renderEsqPre(); renderMateriaisPre(); renderPreResumo(); return; }
   else if (pd) { const t = esqPedidoTexto(pc); window.open('https://wa.me/?text=' + encodeURIComponent(t + '\n\n(feito no app OrçaOn)'), '_blank'); return; }
   else return;
   salvarPreAtual(); renderEsqPre(); atualizarAreaPre(); renderPreTabs(); renderPreResumo();
@@ -7068,10 +7146,12 @@ const PRE_MATERIAIS = {
       l.push(['Perfil U ' + perfil.toLowerCase(), 'm', up(2 * (Lm + Hm), 1)], ['Calço de apoio', 'un', 2 * c.folhas.length]);
     } else if (op.compra === 'Kit completo') {
       l.push(['Kit ' + md.nome.toLowerCase() + ' ' + c.folhas.length + ' folhas ' + perfil.toLowerCase(), 'un', 1]);
+      if (c.maos) l.push(['Mão amiga ' + perfil.toLowerCase(), 'un', c.maos]);
     } else {
       l.push(['Trilho superior ' + perfil.toLowerCase(), 'm', up(Lm, 1)], ['Trilho inferior / guia ' + perfil.toLowerCase(), 'm', up(Lm, 1)],
         ['Roldana', 'un', 2 * c.moveis], ['Puxador ' + perfil.toLowerCase(), 'un', c.moveis],
         ['Capuchinho (tampa do trilho)', 'un', 4], ['Escova de vedação', 'm', up(2 * Hm * c.moveis, 1)]);
+      if (c.maos) l.push(['Mão amiga ' + perfil.toLowerCase(), 'un', c.maos]);
       if (op.fecho !== 'Só puxador' && c.moveis) l.push([op.fecho, 'un', 1], ['Contra-fecho / batedor', 'un', 1]);
     }
     l.push(['Silicone (tubo)', 'tubo', Math.max(1, up(2 * (Lm + Hm) / 8))], ['Parafuso e bucha', 'un', Math.ceil(Lm * 4) + 4]);
@@ -7546,6 +7626,9 @@ function transformarPreEmOrcamento() {
   salvarPreAtual();
   const pr = preAtual;
   goToNewBudget();
+  // desenho de como vai ficar (vai junto no orçamento)
+  const desenhosPre = pecas.map(pc => ({ titulo: ((pc.nome || '').trim() ? pc.nome.trim() + ' · ' : '') + textoMedidas(pc), svg: svgDaPeca(pc) })).filter(x => x.svg);
+  Promise.all(desenhosPre.map(x => svgParaImagem(x.svg))).then(imgs => { orcDesenhos = desenhosPre.map((x, i) => ({ titulo: x.titulo, img: imgs[i] })).filter(x => x.img); renderOrcDesenhos(); });
   setTimeout(function () { irPassoOrc('itens'); }, 0);
   // sugestões do orçamento seguem a profissão das medidas (a que mais aparece), não a do perfil
   const conta = {}; pecas.forEach(pc => { const pf = profPre(pc); if (pf !== 'Outro') conta[pf] = (conta[pf] || 0) + 1; });
@@ -9472,6 +9555,7 @@ function salvarOrcamento() {
   };
   if (logoNovoOrc !== undefined) orc.logo = logoNovoOrc;
   if (orcAssinaturaData) orc.assinaturaImg = orcAssinaturaData;
+  if (orcDesenhos.length) orc.desenhos = orcDesenhos.map(d => ({ titulo: d.titulo, img: d.img }));
   try { guardarItensComoSugestao(itens); } catch (e) { console.warn('Sugestões:', e); }
   if ((modeloNovoOrcamento || modeloOrcamentoEscolhido) === 'Modelo Simples 3') {
     const via = v('orc-s3-via'), tit = v('orc-s3-titulo');
@@ -10348,7 +10432,25 @@ function montarHTMLModeloSimples(o, emp, logoImg, assinaturaSrc, assinaturaOn, b
 </div>` };
 }
 
+// Coloca "Como vai ficar" (desenhos do pré-orçamento) logo depois dos itens e totais, em qualquer modelo
 function montarHTMLDocumentoOrcamento(o) {
+  const r = montarHTMLDocumentoOrcamentoBase(o);
+  const des = (o.desenhos || []).filter(d => d && d.img); if (!des.length || !r || !r.html) return r;
+  const bloco = '<div class="orc-desenhos-doc" style="margin-top:22px;page-break-inside:avoid"><div style="font-weight:700;font-size:14px;margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">Como vai ficar</div>'
+    + des.map(d => '<div style="page-break-inside:avoid;margin-bottom:12px;text-align:center"><img src="' + d.img + '" style="max-width:100%;max-height:420px;object-fit:contain;border:1px solid #e2e8f0;border-radius:6px">' + (d.titulo ? '<div style="font-size:11px;color:#64748b;margin-top:4px">' + escaparHTMLOrc(d.titulo) + '</div>' : '') + '</div>').join('') + '</div>';
+  try {
+    const t = document.createElement('template'); t.innerHTML = r.html;
+    const pag = t.content.querySelector('.orcapro-doc-page'), tabs = pag && pag.querySelectorAll('table');
+    if (pag && tabs.length) {
+      let el = tabs[tabs.length - 1]; while (el.parentElement && el.parentElement !== pag) el = el.parentElement;
+      while (el.nextElementSibling && /total|subtotal|desconto|valor l[ií]quido/i.test(el.nextElementSibling.textContent || '') && !/pagamento|assinatura/i.test(el.nextElementSibling.textContent || '')) el = el.nextElementSibling;
+      el.insertAdjacentHTML('afterend', bloco);
+      return Object.assign({}, r, { html: t.innerHTML });
+    }
+  } catch (_) {}
+  return Object.assign({}, r, { html: r.html.replace(/<\/div>\s*$/, bloco + '</div>') });
+}
+function montarHTMLDocumentoOrcamentoBase(o) {
   const emp = dadosEmpresaPerfil();
   if (o.pixChave !== undefined) emp.pix = o.pixChave;   // Pix escolhido neste orçamento
   if (o.pixQr !== undefined) emp.pixQr = o.pixQr;
