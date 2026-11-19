@@ -108,8 +108,19 @@ final class Zap {
         return null; // números curtos (operadora, serviços) não têm WhatsApp
     }
 
-    static Intent intentWhatsApp(String numeroZap) {
-        Intent i = new Intent(Intent.ACTION_VIEW, Uri.parse("https://wa.me/" + numeroZap));
+    static final String MSG_RECEBIDA = "Oi, recebi uma ligação sua. Posso ajudar?";
+    static final String MSG_FEITA = "Oi, te liguei agora há pouco. Posso ajudar?";
+
+    /** Mensagem pronta: uma para ligações que você recebeu/perdeu, outra para as que você fez. */
+    static String mensagem(Context c, int tipo) {
+        if (tipo == CallLog.Calls.OUTGOING_TYPE) return prefs(c).getString("msgFeita", MSG_FEITA);
+        return prefs(c).getString("msgRecebida", MSG_RECEBIDA);
+    }
+
+    static Intent intentWhatsApp(String numeroZap, String texto) {
+        String url = "https://wa.me/" + numeroZap;
+        if (!TextUtils.isEmpty(texto)) url += "?text=" + Uri.encode(texto);
+        Intent i = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
         i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         return i;
     }
@@ -130,7 +141,7 @@ final class Zap {
         criarCanal(c);
 
         int idAviso = (int) (l.id % Integer.MAX_VALUE);
-        PendingIntent abrirZap = PendingIntent.getActivity(c, idAviso, intentWhatsApp(zap),
+        PendingIntent abrirZap = PendingIntent.getActivity(c, idAviso, intentWhatsApp(zap, mensagem(c, l.tipo)),
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
 
         Intent ligar = new Intent(Intent.ACTION_DIAL, Uri.parse("tel:" + l.numero));

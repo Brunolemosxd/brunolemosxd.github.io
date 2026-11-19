@@ -120,6 +120,13 @@ public class MainActivity extends Activity {
         raiz.addView(linhaDdd);
         espaco(8);
 
+        raiz.addView(texto("Mensagem pronta (ligação que você recebeu ou perdeu)", 15, true));
+        raiz.addView(campoMensagem(p, "msgRecebida", Zap.MSG_RECEBIDA));
+        raiz.addView(texto("Mensagem pronta (ligação que você fez)", 15, true));
+        raiz.addView(campoMensagem(p, "msgFeita", Zap.MSG_FEITA));
+        raiz.addView(texto("Deixe em branco para abrir a conversa sem mensagem. Dá para mudar o texto antes de enviar.", 13, false));
+        espaco(8);
+
         raiz.addView(botao("Testar aviso com a última ligação", false, v -> testar()));
         raiz.addView(texto("Se o aviso não aparecer depois de uma ligação de verdade: em Configurações do app, ligue \"Início automático\" (Xiaomi) e deixe a bateria \"Sem restrições\".", 13, false));
         raiz.addView(botao("Abrir configurações do app", false, v -> abrirConfigApp()));
@@ -152,15 +159,15 @@ public class MainActivity extends Activity {
         info.addView(tSub);
         linha.addView(info, new LinearLayout.LayoutParams(0, -2, 1));
 
-        Button zap = botao("WhatsApp", true, v -> abrirZap(l.numero));
+        Button zap = botao("WhatsApp", true, v -> abrirZap(l));
         linha.addView(zap, new LinearLayout.LayoutParams(-2, -2));
         return linha;
     }
 
-    private void abrirZap(String numero) {
-        String z = Zap.numeroParaZap(this, numero);
+    private void abrirZap(Zap.Ligacao l) {
+        String z = Zap.numeroParaZap(this, l.numero);
         if (z == null) { toast("Esse número não dá para usar no WhatsApp"); return; }
-        try { startActivity(Zap.intentWhatsApp(z)); }
+        try { startActivity(Zap.intentWhatsApp(z, Zap.mensagem(this, l.tipo))); }
         catch (Exception e) { toast("Não achei o WhatsApp neste celular"); }
     }
 
@@ -225,6 +232,21 @@ public class MainActivity extends Activity {
             b.setPadding(dp(16), 0, dp(16), 0);
         }
         return b;
+    }
+
+    private EditText campoMensagem(SharedPreferences p, String chave, String padrao) {
+        EditText e = new EditText(this);
+        e.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_MULTI_LINE
+                | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
+        e.setText(p.getString(chave, padrao));
+        e.addTextChangedListener(new TextWatcher() {
+            public void beforeTextChanged(CharSequence s, int a, int b, int c) {}
+            public void onTextChanged(CharSequence s, int a, int b, int c) {}
+            public void afterTextChanged(Editable s) {
+                p.edit().putString(chave, s.toString().trim()).apply();
+            }
+        });
+        return e;
     }
 
     private Switch chave(String s, boolean on) {
