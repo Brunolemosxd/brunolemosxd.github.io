@@ -27,6 +27,21 @@
             </intent-filter>
         </activity>
 
+        <!-- Opção "WhatsApp" no menu de texto selecionado -->
+        <activity
+            android:name=".ZapTextoActivity"
+            android:label="WhatsApp"
+            android:exported="true"
+            android:excludeFromRecents="true"
+            android:noHistory="true"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar">
+            <intent-filter>
+                <action android:name="android.intent.action.PROCESS_TEXT" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/plain" />
+            </intent-filter>
+        </activity>
+
         <receiver
             android:name=".ChamadaReceiver"
             android:exported="true"
