@@ -6315,7 +6315,7 @@ function novaPecaPre(tipo, prof) {
 }
 // Resultado da medida: m², metros, unidades ou m³
 function medidaPeca(pc) {
-  if (defPre(pc).tipo === 'esquadria') { const c = esqCalc(pc), t = Math.round(c.L * c.H / 1e4) / 100; return { bruta: t, desc: 0, liquida: t, final: t }; }
+  if (defPre(pc).tipo === 'esquadria') { const c = esqCalc(pc), t = Math.round((c.L + c.Ll) * c.H / 1e4) / 100; return { bruta: t, desc: 0, liquida: t, final: t }; }
   if (defPre(pc).tipo === 'caderno') { const t = statsCaderno(pc).area; return { bruta: t, desc: 0, liquida: t, final: Math.round(t * 100) / 100 }; }
   if (defPre(pc).tipo === 'lista') { const t = linhasLista(pc).reduce((s, x) => s + x.q, 0); return { bruta: t, desc: 0, liquida: t, final: Math.round(t * 100) / 100 }; }
   const d = defPre(pc), A = Number(pc.a) || 0, B = Number(pc.b) || 0, C = Number(pc.c) || 0, perda = Number(pc.perda) || 0;
@@ -6334,7 +6334,7 @@ function fmtMedida(pc, n) { if (defPre(pc).tipo === 'lista') return pc.lista ? t
 function nomePeca(pc, i) { return (pc.nome || '').trim() || (defPre(pc).nome + ' ' + (i + 1)); }
 function textoMedidas(pc) {
   const d = defPre(pc), un = unPre(pc);
-  if (d.tipo === 'esquadria') { const c = esqCalc(pc), md = ESQ_MODELOS[c.modelo]; return md.nome + ' ' + c.folhas.length + (c.folhas.length === 1 ? ' folha' : ' folhas') + ' · vão ' + esqFmt(c, c.L) + ' × ' + esqFmt(c, c.H) + (c.modelo !== 'fixo' ? ' (' + (c.folhas.length - c.moveis) + ' fixa' + (c.folhas.length - c.moveis === 1 ? '' : 's') + ', ' + c.moveis + ' móve' + (c.moveis === 1 ? 'l' : 'is') + (c.maos ? ', ' + c.maos + (c.maos === 1 ? ' mão amiga' : ' mãos amigas') : '') + (c.fechos ? ', fechadura em ' + c.fechos + (c.fechos === 1 ? ' folha' : ' folhas') : '') + ')' : ''); }
+  if (d.tipo === 'esquadria') { const c = esqCalc(pc), md = ESQ_MODELOS[c.modelo]; if (c.emL) return 'Box de canto (em L) · frente ' + esqFmt(c, c.L) + ' com 2 folhas + lateral ' + esqFmt(c, c.Ll) + (c.latDois ? ' com 2 folhas' : ' vidro fixo') + ' · altura ' + esqFmt(c, c.H); return md.nome + ' ' + c.folhas.length + (c.folhas.length === 1 ? ' folha' : ' folhas') + ' · vão ' + esqFmt(c, c.L) + ' × ' + esqFmt(c, c.H) + (c.modelo !== 'fixo' ? ' (' + (c.folhas.length - c.moveis) + ' fixa' + (c.folhas.length - c.moveis === 1 ? '' : 's') + ', ' + c.moveis + ' móve' + (c.moveis === 1 ? 'l' : 'is') + (c.maos ? ', ' + c.maos + (c.maos === 1 ? ' mão amiga' : ' mãos amigas') : '') + (c.fechos ? ', fechadura em ' + c.fechos + (c.fechos === 1 ? ' folha' : ' folhas') : '') + ')' : ''); }
   if (d.tipo === 'caderno') { const c = cadPre(pc), l = c.linhas.map((x, i) => x.cm > 0 ? cadLetra(i) + ' ' + cadFmt(c, x.cm) + (cadLarg(c, x) > 0 ? ' × ' + cadFmt(c, cadLarg(c, x)) : '') : '').filter(Boolean); return l.length ? 'Medidas: ' + l.join(', ') : 'Desenho sem medidas'; }
   if (d.tipo === 'lista') { const n = linhasLista(pc).length; return (listaPre(pc).chapa || 'chapa não escolhida') + ' · ' + n + (n === 1 ? ' peça' : ' peças'); }
   if (d.tipo === 'area') return fmtM(pc.a) + ' × ' + fmtM(pc.b) + ' m';
@@ -6864,6 +6864,21 @@ function esqCalc(pc) {
     }
     return f;
   });
+  // box em L (de canto): a lateral vem depois das folhas da frente; o canto fica à direita da frente e à esquerda da lateral
+  const emL = e.modelo === 'box' && e.formato === 'L', Ll = emL ? Math.max(0, Number(e.latL) || 0) : 0;
+  if (emL) {
+    const dois = e.latTipo === '2folhas', pat = dois ? ['M', 'F'] : ['F'], wl = dois ? Math.round((Ll + aj.transp) / 2) : Math.round(Ll - aj.desc);
+    pat.forEach((t, j) => {
+      const f = { i: n + j, lat: true, tipo: t, w: wl, h, x: dois ? j * (wl - aj.transp) : aj.desc / 2, furos: [], mao: 0 };
+      if (t === 'M') {
+        const fr = /2/.test(op.roldFuro || '') ? 2 : 1, ry = emCima ? aj.roldTopo : h - aj.roldTopo;
+        [aj.furo, wl - aj.furo].forEach(rx => f.furos.push({ k: 'roldana', x: rx, y: ry, n: fr }));
+        const py = aj.puxAlt > 0 ? Math.min(h - 60, Math.max(60, h - (aj.puxAlt - aj.desc / 2))) : h / 2;
+        f.furos.push({ k: 'puxador', x: aj.puxBorda, y: Math.round(py), lado: 'esquerda' });   // puxador no canto
+      }
+      folhas.push(f);
+    });
+  }
   // furação da mão amiga: a folha marcada e a vizinha que ela encontra são furadas na mesma altura
   folhas.forEach(f => { f.maoPos = f.mao ? f.maoY.map(y => ({ lado: f.maoLado, y })) : []; });
   folhas.forEach((f, i) => {
@@ -6875,16 +6890,20 @@ function esqCalc(pc) {
   const manual = e.furacao === 'manual';
   if (manual) folhas.forEach(f => { f.furos = []; f.maoPos = []; f.man = (e.furosMan || []).map((u, j) => Object.assign({ j }, u)).filter(u => u.f === f.i); });
   const fechos = folhas.filter(f => f.fecho).length, moveis = folhas.filter(f => f.tipo === 'M').length, maos = manual ? folhas.reduce((t, f) => t + (f.mao || 0), 0) : folhas.reduce((t, f) => t + f.maoPos.length, 0);
-  return { modelo: e.modelo, un: e.un, L, H, folhas, moveis, maos, fechos, manual, furosRold: /2/.test(op.roldFuro || '') ? 2 : 1, aj, emCima, m2Vidro: Math.round(folhas.reduce((t, f) => t + f.w * f.h, 0) / 1e4) / 100 };
+  return { modelo: e.modelo, un: e.un, L, H, Ll, emL, latDois: emL && e.latTipo === '2folhas', folhas, moveis, maos, fechos, manual, furosRold: /2/.test(op.roldFuro || '') ? 2 : 1, aj, emCima, m2Vidro: Math.round(folhas.reduce((t, f) => t + f.w * f.h, 0) / 1e4) / 100 };
 }
 function esqSvg(pc) {
   const c = esqCalc(pc), op = opPeca(pc); if (!(c.L > 0 && c.H > 0)) return '<p class="hint-sm" style="padding:30px;text-align:center">Coloque a largura e a altura do vão.</p>';
-  const W = 340, Hh = 270, k = Math.min((W - 110) / c.L, (Hh - 70) / c.H), ox = 22 + (W - 110 - c.L * k) / 2, oy = 38 + (Hh - 70 - c.H * k) / 2;
+  const W = 340, Hh = 270, gap = c.emL ? 30 : 0, Lt = c.L + (c.emL ? c.Ll : 0), k = Math.min((W - 110 - gap) / Lt, (Hh - 80) / c.H), ox = 22 + (W - 110 - gap - Lt * k) / 2, oy = 38 + (Hh - 80 - c.H * k) / 2, oxl = ox + c.L * k + gap;
   const vidro = ESQ_CORES[op.cor] || ESQ_CORES.Incolor, perfil = ESQ_PERFIL[op.perfil] || '#111827';
   let s = defsPre(k) + '<rect width="' + W + '" height="' + Hh + '" rx="10" fill="#dfe6ee"/><rect x="' + (ox - 6) + '" y="' + (oy - 6) + '" width="' + (c.L * k + 12) + '" height="' + (c.H * k + 12) + '" fill="none" stroke="' + perfil + '" stroke-width="6" rx="2"/>';
+  if (c.emL && c.Ll > 0) s += '<rect x="' + (oxl - 6) + '" y="' + (oy - 6) + '" width="' + (c.Ll * k + 12) + '" height="' + (c.H * k + 12) + '" fill="none" stroke="' + perfil + '" stroke-width="6" rx="2"/>'
+    + '<text x="' + (ox + c.L * k / 2) + '" y="' + (oy + c.H * k + 22) + '" font-size="11" font-weight="900" fill="#334155" text-anchor="middle">FRENTE</text>'
+    + '<text x="' + (oxl + c.Ll * k / 2) + '" y="' + (oy + c.H * k + 22) + '" font-size="11" font-weight="900" fill="#334155" text-anchor="middle">LATERAL</text>'
+    + '<text x="' + (ox + c.L * k + gap / 2) + '" y="' + (oy + c.H * k + 22) + '" font-size="10" font-weight="900" fill="#ef4444" text-anchor="middle">canto</text>';
   const ordem = c.folhas.slice().sort((a, b) => (a.tipo === 'M') - (b.tipo === 'M'));
   ordem.forEach(f => {
-    const x = ox + f.x * k, y = oy + (c.H - f.h) / 2 * k, w = f.w * k, h = f.h * k, mov = f.tipo === 'M';
+    const x = (f.lat ? oxl : ox) + f.x * k, y = oy + (c.H - f.h) / 2 * k, w = f.w * k, h = f.h * k, mov = f.tipo === 'M';
     esqGeo[f.i] = { x, y, k, w: f.w, h: f.h };
     s += '<g class="esq-folha" data-f="' + f.i + '" style="cursor:pointer"><rect x="' + x + '" y="' + y + '" width="' + w + '" height="' + h + '" fill="' + vidro + '" stroke="' + (mov ? '#F4C430' : '#e5edf5') + '" stroke-width="' + (mov ? 2.5 : 1.5) + '"/>'
       + '<text x="' + (x + w / 2) + '" y="' + (y + h * 0.26 - 4) + '" fill="#fff" font-size="' + Math.min(13, w / 4.4) + '" font-weight="900" text-anchor="middle" paint-order="stroke" stroke="#0b1c2c" stroke-width="3">' + (mov ? 'MÓVEL' : 'FIXA') + '</text>'
@@ -6906,7 +6925,8 @@ function esqSvg(pc) {
     });
     s += '</g>';
   });
-  s += cotaPre(ox, oy - 20, ox + c.L * k, oy - 20, esqFmt(c, c.L)) + cotaPre(ox + c.L * k + 46, oy, ox + c.L * k + 46, oy + c.H * k, esqFmt(c, c.H), true);
+  const fim = c.emL && c.Ll > 0 ? oxl + c.Ll * k : ox + c.L * k;
+  s += cotaPre(ox, oy - 20, ox + c.L * k, oy - 20, esqFmt(c, c.L)) + (c.emL && c.Ll > 0 ? cotaPre(oxl, oy - 20, oxl + c.Ll * k, oy - 20, esqFmt(c, c.Ll)) : '') + cotaPre(fim + 46, oy, fim + 46, oy + c.H * k, esqFmt(c, c.H), true);
   return '<svg viewBox="0 0 ' + W + ' ' + Hh + '" xmlns="http://www.w3.org/2000/svg">' + s + '</svg>';
 }
 // quantas mãos amigas a folha tem (antes era sim/não: sim = 1)
@@ -6960,7 +6980,7 @@ function esqManualHtml(pc, e) {
   const c = esqCalc(pc), num = mm => e.un === 'cm' ? (Math.round(mm) / 10).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) : String(Math.round(mm));
   let h = '<label>Furos colocados</label>';
   const comFuro = c.folhas.filter(f => (f.man || []).length);
-  h += comFuro.length ? comFuro.map(f => '<div class="esq-man-f"><b>Folha ' + (f.i + 1) + ' · ' + (f.tipo === 'M' ? 'móvel' : 'fixa') + '</b>' + f.man.map((u, n) => '<div class="esq-man-l' + (u.j === esqSel ? ' sel' : '') + '"><button type="button" class="esq-man-n" data-esq-sel="' + u.j + '" aria-label="Escolher este furo">' + (n + 1) + '</button><span class="esq-man-t">' + ESQ_FUROS[u.t][0] + '</span>'
+  h += comFuro.length ? comFuro.map(f => '<div class="esq-man-f"><b>Folha ' + (f.i + 1) + ' · ' + (f.tipo === 'M' ? 'móvel' : 'fixa') + (f.lat ? ' · lateral' : '') + '</b>' + f.man.map((u, n) => '<div class="esq-man-l' + (u.j === esqSel ? ' sel' : '') + '"><button type="button" class="esq-man-n" data-esq-sel="' + u.j + '" aria-label="Escolher este furo">' + (n + 1) + '</button><span class="esq-man-t">' + ESQ_FUROS[u.t][0] + '</span>'
       + '<label>da esquerda<div class="calc-campo"><input type="text" inputmode="decimal" class="esq-man-v" data-j="' + u.j + '" data-k="x" data-mic="0" value="' + num(u.x) + '"><em>' + e.un + '</em></div></label>'
       + '<label>da base<div class="calc-campo"><input type="text" inputmode="decimal" class="esq-man-v" data-j="' + u.j + '" data-k="y" data-mic="0" value="' + num(u.y) + '"><em>' + e.un + '</em></div></label>'
       + '<button type="button" class="esq-man-x" data-esq-man-x="' + u.j + '" aria-label="Tirar este furo">×</button></div>'
@@ -6975,10 +6995,12 @@ function renderEsqPre() {
   let h = '<label>O que vai fazer</label><div class="pre-tipos">' + Object.keys(ESQ_MODELOS).map(k => '<button type="button" class="pre-tipo esq-mod' + (k === e.modelo ? ' on' : '') + '" data-esq-mod="' + k + '">' + ESQ_MODELOS[k].nome + '</button>').join('') + '</div>'
     + '<label>Unidade</label><div class="cad-uns">' + ['mm', 'cm'].map(u => '<button type="button" class="cad-un' + (u === e.un ? ' on' : '') + '" data-esq-un="' + u + '">' + u + '</button>').join('') + '</div>'
     + '<div class="pre-med">' + esqCampo('esq-L', 'Largura do vão', e.L, e) + esqCampo('esq-H', 'Altura do vão', e.H, e) + '</div>'
-    + '<label>Quantas folhas</label><div class="pre-tipos">' + [1, 2, 3, 4, 6].map(k => '<button type="button" class="pre-tipo esq-n' + (k === n ? ' on' : '') + '" data-esq-n="' + k + '">' + k + '</button>').join('') + '</div>'
-    + (e.modelo !== 'fixo' && n > 1 ? '<label>Tem vidro fixo?</label><div class="pre-tipos">' + [['pontas', 'Sim, nas pontas'], ['meio', 'Sim, no meio'], ['nenhum', 'Não, todas correm']].map(([k, t]) => '<button type="button" class="pre-tipo' + (esqArranjo(e) === k ? ' on' : '') + '" data-esq-arr="' + k + '">' + t + '</button>').join('') + '</div>' : '')
+    + (e.modelo === 'box' ? '<label>Formato do box</label><div class="pre-tipos">' + [['reto', 'Reto (2 folhas)'], ['L', 'Em L (de canto)']].map(([k, t]) => '<button type="button" class="pre-tipo' + ((e.formato === 'L' ? 'L' : 'reto') === k ? ' on' : '') + '" data-esq-formato="' + k + '">' + t + '</button>').join('') + '</div>'
+      + (e.formato === 'L' ? '<div class="pre-med">' + esqCampo('esq-latL', 'Largura da lateral', e.latL, e) + '<div></div></div><label>Lateral</label><div class="pre-tipos">' + [['fixo', 'Vidro fixo'], ['2folhas', '2 folhas (fixa + móvel)']].map(([k, t]) => '<button type="button" class="pre-tipo' + ((e.latTipo === '2folhas' ? '2folhas' : 'fixo') === k ? ' on' : '') + '" data-esq-lattipo="' + k + '">' + t + '</button>').join('') + '</div><p class="hint-sm">A largura do vão acima é a da frente. O canto fica à direita da frente.</p>' : '')
+    : '<label>Quantas folhas</label><div class="pre-tipos">' + [1, 2, 3, 4, 6].map(k => '<button type="button" class="pre-tipo esq-n' + (k === n ? ' on' : '') + '" data-esq-n="' + k + '">' + k + '</button>').join('') + '</div>')
+    + (e.modelo !== 'fixo' && e.modelo !== 'box' && n > 1 ? '<label>Tem vidro fixo?</label><div class="pre-tipos">' + [['pontas', 'Sim, nas pontas'], ['meio', 'Sim, no meio'], ['nenhum', 'Não, todas correm']].map(([k, t]) => '<button type="button" class="pre-tipo' + (esqArranjo(e) === k ? ' on' : '') + '" data-esq-arr="' + k + '">' + t + '</button>').join('') + '</div>' : '')
     + (true ? '<label>Furação</label><div class="pre-tipos">' + [['auto', 'Automática'], ['manual', '✍️ Eu coloco os furos']].map(([k, t]) => '<button type="button" class="pre-tipo' + ((e.furacao === 'manual' ? 'manual' : 'auto') === k ? ' on' : '') + '" data-esq-furacao="' + k + '">' + t + '</button>').join('') + '</div>' : '')
-    + (e.furacao === 'manual' ? '<div id="esq-man-ferr">' + esqFerrHtml(n) + '</div>' : '')
+    + (e.furacao === 'manual' ? '<div id="esq-man-ferr">' + esqFerrHtml(esqCalc(pc).folhas.length) + '</div>' : '')
     + '<div class="pre-desenho esq-desenho" id="esq-desenho"></div>'
     + (e.furacao === 'manual' ? '<div id="esq-mover">' + esqMoverHtml(pc) + '</div><div id="esq-man">' + esqManualHtml(pc, e) + '</div>' : '')
     + (e.modelo !== 'fixo' && e.furacao !== 'manual' ? opcoesPeca(pc).filter(o => o.noDesenho).map(o => { const v = opPeca(pc)[o.id]; return '<label>' + esc(o.rot) + '</label><div class="pre-tipos pre-ops-chips">' + o.valores.map(x => '<button type="button" class="pre-tipo pre-op' + (x === v ? ' on' : '') + '" data-op="' + esc(o.id) + '" data-val="' + esc(x) + '">' + esc(x) + '</button>').join('') + '</div>'; }).join('') : '')
@@ -6997,7 +7019,7 @@ function renderEsqPre() {
   const num = t => { const v = parseFloat(String(t).replace(/[^0-9.,]/g, '').replace(',', '.')); return isNaN(v) ? null : (e.un === 'cm' ? v * 10 : v); };
   host.querySelectorAll('input[id^="esq-"]').forEach(inp => inp.oninput = () => {
     const k = inp.id.slice(4), v = num(inp.value); e.mexeu = true;
-    if (k === 'L' || k === 'H') e[k] = v || 0; else { if (v == null) delete e.aj[k]; else e.aj[k] = v; }
+    if (k === 'L' || k === 'H' || k === 'latL') e[k] = v || 0; else { if (v == null) delete e.aj[k]; else e.aj[k] = v; }
     salvarPreAtual(); esqAtualizar(pc); atualizarAreaPre();
   });
   host.querySelectorAll('.esq-man-v').forEach(inp => inp.oninput = () => {
@@ -7014,7 +7036,7 @@ function esqAtualizar(pc) {
   const d = document.getElementById('esq-desenho'); if (d) d.innerHTML = esqSvg(pc);
   const l = document.getElementById('esq-pecas'); if (!l) return;
   const c = esqCalc(pc);
-  l.innerHTML = c.L > 0 && c.H > 0 ? '<h4 class="esq-tit">Vidros para pedir (' + c.folhas.length + ') · ' + fmtM(c.m2Vidro) + ' m²</h4>' + c.folhas.map(f => '<div class="pre-res-linha"><span>Folha ' + (f.i + 1) + ' · ' + (f.tipo === 'M' ? 'móvel' : 'fixa') + ((f.furos.length || (f.maoPos || []).length || (f.man || []).length) ? '<br><small class="hint-sm">' + esqTextoFuros(c, f) + '</small>' : '') + '</span><b>' + esqFmt(c, f.w) + ' × ' + esqFmt(c, f.h) + '</b></div>').join('') : '';
+  l.innerHTML = c.L > 0 && c.H > 0 ? '<h4 class="esq-tit">Vidros para pedir (' + c.folhas.length + ') · ' + fmtM(c.m2Vidro) + ' m²</h4>' + c.folhas.map(f => '<div class="pre-res-linha"><span>Folha ' + (f.i + 1) + ' · ' + (f.tipo === 'M' ? 'móvel' : 'fixa') + (f.lat ? ' · lateral' : '') + ((f.furos.length || (f.maoPos || []).length || (f.man || []).length) ? '<br><small class="hint-sm">' + esqTextoFuros(c, f) + '</small>' : '') + '</span><b>' + esqFmt(c, f.w) + ' × ' + esqFmt(c, f.h) + '</b></div>').join('') : '';
 }
 function esqTextoFuros(c, f) {
   if (c.manual) return (f.man || []).map((u, n) => 'Furo ' + (n + 1) + ': ' + ESQ_FUROS[u.t][1].toLowerCase() + (u.t === '2h' || u.t === '2v' ? ' (' + esqFmt(c, c.aj.entre) + ' entre eles)' : '') + ', centro a ' + esqFmt(c, u.x) + ' da borda esquerda e ' + esqFmt(c, u.y) + ' da base').concat(f.fecho ? ['fechadura/trinco nesta folha'] : []).join('; ');
@@ -7031,8 +7053,8 @@ function esqTextoFuros(c, f) {
 }
 function esqPedidoTexto(pc) {
   const c = esqCalc(pc), op = opPeca(pc), md = ESQ_MODELOS[c.modelo], pr = preAtual || {};
-  const linhas = ['Pedido de vidro' + (pr.cliente ? ' — ' + pr.cliente : ''), md.nome + ' · vão ' + esqFmt(c, c.L) + ' × ' + esqFmt(c, c.H), 'Vidro ' + op.tipo.toLowerCase() + ' ' + op.esp + ' ' + op.cor.toLowerCase(), ''];
-  c.folhas.forEach(f => { linhas.push('• Folha ' + (f.i + 1) + ' (' + (f.tipo === 'M' ? 'móvel' : 'fixa') + '): ' + esqFmt(c, f.w) + ' × ' + esqFmt(c, f.h)); if (f.furos.length || (f.maoPos || []).length || (f.man || []).length) linhas.push('   ' + esqTextoFuros(c, f)); });
+  const linhas = ['Pedido de vidro' + (pr.cliente ? ' — ' + pr.cliente : ''), (c.emL ? 'Box de canto (em L) · frente ' + esqFmt(c, c.L) + ' + lateral ' + esqFmt(c, c.Ll) + ' × ' + esqFmt(c, c.H) : md.nome + ' · vão ' + esqFmt(c, c.L) + ' × ' + esqFmt(c, c.H)), 'Vidro ' + op.tipo.toLowerCase() + ' ' + op.esp + ' ' + op.cor.toLowerCase(), ''];
+  c.folhas.forEach(f => { linhas.push('• Folha ' + (f.i + 1) + ' (' + (f.tipo === 'M' ? 'móvel' : 'fixa') + (f.lat ? ', lateral' : '') + '): ' + esqFmt(c, f.w) + ' × ' + esqFmt(c, f.h)); if (f.furos.length || (f.maoPos || []).length || (f.man || []).length) linhas.push('   ' + esqTextoFuros(c, f)); });
   linhas.push('', 'Total: ' + c.folhas.length + (c.folhas.length === 1 ? ' peça' : ' peças') + ' · ' + fmtM(c.m2Vidro) + ' m²', 'Ferragens: ' + op.perfil.toLowerCase() + (c.modelo !== 'fixo' && !c.manual ? ' · roldanas ' + (c.emCima ? 'em cima' : 'embaixo') : ''));
   return linhas.join('\n');
 }
@@ -7047,6 +7069,9 @@ document.addEventListener('click', function (e) {
   if (mx) { const j = +mx.dataset.esqManX; es.furosMan.splice(j, 1); if (esqSel === j) esqSel = -1; else if (esqSel > j) esqSel--; salvarPreAtual(); renderEsqPre(); return; }
   const mv = e.target.closest('[data-esq-mv]'), ps = e.target.closest('[data-esq-passo]');
   if (ps) { esqPasso = +ps.dataset.esqPasso || 10; esqMoverAtualizar(pc); return; }
+  const fmt = e.target.closest('[data-esq-formato]'), lt = e.target.closest('[data-esq-lattipo]');
+  if (fmt) { es.formato = fmt.dataset.esqFormato === 'L' ? 'L' : ''; if (es.formato === 'L' && !(Number(es.latL) > 0)) es.latL = 900; es.folhas = ['F', 'M']; es.mexeu = true; salvarPreAtual(); renderEsqPre(); atualizarAreaPre(); renderMateriaisPre(); renderPreResumo(); renderPreTabs(); return; }
+  if (lt) { es.latTipo = lt.dataset.esqLattipo === '2folhas' ? '2folhas' : ''; es.mexeu = true; salvarPreAtual(); renderEsqPre(); atualizarAreaPre(); renderMateriaisPre(); renderPreResumo(); return; }
   const al = e.target.closest('[data-esq-alvo]');
   if (al) { esqAlvo = +al.dataset.esqAlvo; if (esqAlvo >= es.folhas.length) esqAlvo = -1; renderEsqPre(); return; }
   const sl = e.target.closest('[data-esq-sel]');
@@ -7326,7 +7351,7 @@ const REBOCO_MAT = (A, op) => {
 };
 const PRE_MATERIAIS = {
   'esquadria': (m) => {
-    const c = esqCalc(m.pc), op = m.op, md = ESQ_MODELOS[c.modelo], perfil = op.perfil, Lm = c.L / 1000, Hm = c.H / 1000;
+    const c = esqCalc(m.pc), op = m.op, md = c.emL ? { nome: 'Box de canto' } : ESQ_MODELOS[c.modelo], perfil = op.perfil, Lm = (c.L + c.Ll) / 1000, Hm = c.H / 1000;
     const l = [['Vidro ' + op.tipo.toLowerCase() + ' ' + op.esp + ' ' + op.cor.toLowerCase() + ' (' + c.folhas.length + (c.folhas.length === 1 ? ' peça' : ' peças') + ')', 'm²', c.m2Vidro]];
     if (c.modelo === 'fixo') {
       l.push(['Perfil U ' + perfil.toLowerCase(), 'm', up(2 * (Lm + Hm), 1)], ['Calço de apoio', 'un', 2 * c.folhas.length]);
