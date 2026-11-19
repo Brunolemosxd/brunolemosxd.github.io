@@ -890,7 +890,8 @@ body.light .pp-topo,body.light .pp-nav{background:#fff}
 .orc-des span{font-size:12px;color:var(--text-secondary);text-align:center}
 .orc-des button{position:absolute;top:6px;right:6px;width:34px;height:34px;border-radius:50%;border:0;background:rgba(11,28,44,.85);color:#fff;font-size:20px;cursor:pointer}
 .esq-folhas{display:flex;flex-direction:column;gap:8px;margin:6px 0}
-.esq-fl{display:flex;align-items:center;gap:8px}
+.esq-fl{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.esq-fl .esq-mao,.esq-fl .esq-mao-n{flex:1 1 calc(100% - 96px);margin-left:42px}
 .esq-fl>b{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:var(--border);flex:0 0 auto}
 .esq-fl-bt{display:flex;border:2px solid var(--border);border-radius:12px;overflow:hidden}
 .esq-fl-bt button{min-height:42px;padding:0 12px;border:0;background:transparent;color:var(--text-primary);font-size:14px;font-weight:800;font-family:inherit;cursor:pointer}
@@ -6865,7 +6866,7 @@ function renderEsqPre() {
     + (e.modelo !== 'fixo' && n > 1 ? '<label>Tem vidro fixo?</label><div class="pre-tipos">' + [['pontas', 'Sim, nas pontas'], ['meio', 'Sim, no meio'], ['nenhum', 'Não, todas correm']].map(([k, t]) => '<button type="button" class="pre-tipo' + (esqArranjo(e) === k ? ' on' : '') + '" data-esq-arr="' + k + '">' + t + '</button>').join('') + '</div>' : '')
     + '<div class="pre-desenho esq-desenho" id="esq-desenho"></div>'
     + (e.modelo !== 'fixo' ? '<label>Cada folha</label><div class="esq-folhas">' + e.folhas.map((t, i) => '<div class="esq-fl"><b>' + (i + 1) + '</b><div class="esq-fl-bt"><button type="button" class="' + (t === 'F' ? 'on' : '') + '" data-esq-ft="' + i + ':F">Fixa</button><button type="button" class="' + (t === 'M' ? 'on' : '') + '" data-esq-ft="' + i + ':M">Móvel</button></div>'
-      + (t === 'M' ? (esqMaoQtd(e, i) ? '<div class="esq-mao on esq-mao-n"><button type="button" data-esq-mao="' + i + ':-1" aria-label="Uma mão amiga a menos">−</button><span>🤝 ' + esqMaoQtd(e, i) + '</span><button type="button" data-esq-mao="' + i + ':1" aria-label="Uma mão amiga a mais">＋</button></div>' : '<button type="button" class="esq-mao" data-esq-mao="' + i + ':1">🤝 Mão amiga</button>') + '<button type="button" class="esq-fech' + (esqTemFecho(e, i) ? ' on' : '') + '" data-esq-fech="' + i + '" aria-label="Fechadura nesta folha">🔒</button>' : '<span class="esq-mao-v"></span>') + '</div>').join('') + '</div><p class="hint-sm">🤝 Mão amiga: faz a folha puxar a vizinha junto (comum em 4 folhas). 🔒 Toque no cadeado das folhas que levam fechadura ou trinco.</p>' : '')
+      + (t === 'M' ? (esqMaoQtd(e, i) ? '<div class="esq-mao on esq-mao-n"><button type="button" data-esq-mao="' + i + ':-1" aria-label="Uma mão amiga a menos">−</button><span>🤝 Mão amiga: ' + esqMaoQtd(e, i) + '</span><button type="button" data-esq-mao="' + i + ':1" aria-label="Uma mão amiga a mais">＋</button></div>' : '<button type="button" class="esq-mao" data-esq-mao="' + i + ':1">🤝 Mão amiga</button>') + '<button type="button" class="esq-fech' + (esqTemFecho(e, i) ? ' on' : '') + '" data-esq-fech="' + i + '" aria-label="Fechadura nesta folha">🔒</button>' : '<span class="esq-mao-v"></span>') + '</div>').join('') + '</div><p class="hint-sm">🤝 Mão amiga: faz a folha puxar a vizinha junto (comum em 4 folhas). 🔒 Toque no cadeado das folhas que levam fechadura ou trinco.</p>' : '')
     + '<p class="hint-sm esq-leg"><b style="color:#F4C430">●</b> furo de roldana &nbsp; <b>▮</b> furo do puxador &nbsp; <b style="color:#2BD67B">M.A.</b> mão amiga</p>'
     + '<div id="esq-pecas"></div>'
     + '<details class="esq-ajustes"><summary>⚙️ Ajustes do seu padrão (folgas e furos)</summary>'
