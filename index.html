@@ -885,6 +885,10 @@ body.light .pp-topo,body.light .pp-nav{background:#fff}
 .cad-f.on{border-color:var(--accent,#F4C430);background:rgba(244,196,48,.16);color:var(--accent,#F4C430)}
 .cad-dica{font-size:14px;color:var(--text-secondary);margin:2px 2px 8px;min-height:20px}
 .cad-svg{display:block;width:100%;height:auto;border-radius:12px;border:2px solid #e2d6b5;touch-action:none;-webkit-user-select:none;user-select:none;box-shadow:0 4px 14px rgba(0,0,0,.25)}
+.orc-des{position:relative;display:flex;flex-direction:column;align-items:center;gap:4px;margin:6px 0 10px}
+.orc-des img{max-width:100%;border-radius:10px;border:1px solid var(--border);background:#fff}
+.orc-des span{font-size:12px;color:var(--text-secondary);text-align:center}
+.orc-des button{position:absolute;top:6px;right:6px;width:34px;height:34px;border-radius:50%;border:0;background:rgba(11,28,44,.85);color:#fff;font-size:20px;cursor:pointer}
 .esq-folhas{display:flex;flex-direction:column;gap:8px;margin:6px 0}
 .esq-fl{display:flex;align-items:center;gap:8px}
 .esq-fl>b{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:var(--border);flex:0 0 auto}
@@ -3905,6 +3909,11 @@ body.light .btn-remove-item{color:#b91c1c}
           <div class="item-box" id="itens-container"><!-- itens criados via JS, cada um com suas sugestões --></div>
           <button class="btn-add-item" type="button" onclick="adicionarItem()"><span aria-hidden="true">＋</span> Adicionar item</button>
         </div>
+        <div class="form-card" id="orc-desenhos-card" data-op="itens" style="display:none">
+          <h3>🖼️ Desenho no orçamento</h3>
+          <div id="orc-desenhos"></div>
+          <p class="hint-sm">Vai no PDF para o cliente ver como vai ficar. Toque no × para tirar.</p>
+        </div>
 
         <div class="form-card" data-op="pagamento">
           <h3>Condições de pagamento</h3>
@@ -5299,8 +5308,49 @@ document.addEventListener('click', function (e) {
 });
 // o total no topo acompanha os itens
 document.addEventListener('input', function (e) { if (e.target && e.target.closest && e.target.closest('#screen-new-budget')) setTimeout(function () { const m = document.querySelector('#op-topo .pp-med'), t = document.getElementById('orc-total'); if (m && t) m.textContent = t.textContent; }, 0); });
+// Desenhos que vieram do pré-orçamento (vão no PDF, na parte "Como vai ficar")
+let orcDesenhos = [];
+function renderOrcDesenhos() {
+  const card = document.getElementById('orc-desenhos-card'), host = document.getElementById('orc-desenhos'); if (!card || !host) return;
+  card.style.display = orcDesenhos.length ? '' : 'none';
+  host.innerHTML = '';
+  orcDesenhos.forEach((d, i) => {
+    const el = document.createElement('div'); el.className = 'orc-des';
+    el.innerHTML = '<img alt=""><span></span><button type="button" aria-label="Tirar este desenho">×</button>';
+    el.querySelector('img').src = d.img; el.querySelector('span').textContent = d.titulo || '';
+    el.querySelector('button').onclick = () => { orcDesenhos.splice(i, 1); renderOrcDesenhos(); };
+    host.appendChild(el);
+  });
+}
+// SVG → imagem (JPG leve) para guardar no orçamento e sair no PDF
+function svgParaImagem(svg) {
+  return new Promise(res => {
+    try {
+      const m = svg.match(/viewBox="([\d.\-]+) ([\d.\-]+) ([\d.]+) ([\d.]+)"/), vw = m ? +m[3] : 340, vh = m ? +m[4] : 270, esc2 = Math.min(3, 900 / vw);
+      const img = new Image();
+      img.onload = () => { try { const c = document.createElement('canvas'); c.width = Math.round(vw * esc2); c.height = Math.round(vh * esc2); const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height); x.drawImage(img, 0, 0, c.width, c.height); res(c.toDataURL('image/jpeg', 0.82)); } catch (_) { res(''); } };
+      img.onerror = () => res('');
+      img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg.replace('<svg ', '<svg width="' + vw + '" height="' + vh + '" font-family="Arial, Helvetica, sans-serif" '));
+    } catch (_) { res(''); }
+  });
+}
+// desenho de cada medida do pré-orçamento (janela/porta de vidro e caderno)
+function svgDaPeca(pc) {
+  const t = defPre(pc).tipo;
+  if (t === 'esquadria') { const s = esqSvg(pc); return /^<svg/.test(s) ? s : ''; }
+  if (t === 'caderno') {
+    const cad = cadPre(pc); if (!cad.linhas.length && !cad.cubas.length) return '';
+    const z = cadVista.z; cadVista.z = 1;
+    const tmp = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); tmp.setAttribute('xmlns', 'http://www.w3.org/2000/svg'); tmp.setAttribute('viewBox', '0 0 ' + CAD_W + ' ' + cadAlt(cad));
+    tmp.innerHTML = cadSvg(pc); cadVista.z = z;
+    const tx = tmp.querySelectorAll('text[font-style="italic"]'); cad.textos.forEach((x, i) => { if (tx[i]) tx[i].textContent = x.t; });
+    return new XMLSerializer().serializeToString(tmp);
+  }
+  return '';
+}
 function goToNewBudget() {
   profSugOrc = null;
+  orcDesenhos = []; setTimeout(renderOrcDesenhos, 0);
   setTimeout(function () { irPassoOrc('cliente'); }, 0);
   modeloNovoOrcamento = '';
   logoNovoOrc = undefined;
@@ -7576,6 +7626,9 @@ function transformarPreEmOrcamento() {
   salvarPreAtual();
   const pr = preAtual;
   goToNewBudget();
+  // desenho de como vai ficar (vai junto no orçamento)
+  const desenhosPre = pecas.map(pc => ({ titulo: ((pc.nome || '').trim() ? pc.nome.trim() + ' · ' : '') + textoMedidas(pc), svg: svgDaPeca(pc) })).filter(x => x.svg);
+  Promise.all(desenhosPre.map(x => svgParaImagem(x.svg))).then(imgs => { orcDesenhos = desenhosPre.map((x, i) => ({ titulo: x.titulo, img: imgs[i] })).filter(x => x.img); renderOrcDesenhos(); });
   setTimeout(function () { irPassoOrc('itens'); }, 0);
   // sugestões do orçamento seguem a profissão das medidas (a que mais aparece), não a do perfil
   const conta = {}; pecas.forEach(pc => { const pf = profPre(pc); if (pf !== 'Outro') conta[pf] = (conta[pf] || 0) + 1; });
@@ -9502,6 +9555,7 @@ function salvarOrcamento() {
   };
   if (logoNovoOrc !== undefined) orc.logo = logoNovoOrc;
   if (orcAssinaturaData) orc.assinaturaImg = orcAssinaturaData;
+  if (orcDesenhos.length) orc.desenhos = orcDesenhos.map(d => ({ titulo: d.titulo, img: d.img }));
   try { guardarItensComoSugestao(itens); } catch (e) { console.warn('Sugestões:', e); }
   if ((modeloNovoOrcamento || modeloOrcamentoEscolhido) === 'Modelo Simples 3') {
     const via = v('orc-s3-via'), tit = v('orc-s3-titulo');
@@ -10378,7 +10432,25 @@ function montarHTMLModeloSimples(o, emp, logoImg, assinaturaSrc, assinaturaOn, b
 </div>` };
 }
 
+// Coloca "Como vai ficar" (desenhos do pré-orçamento) logo depois dos itens e totais, em qualquer modelo
 function montarHTMLDocumentoOrcamento(o) {
+  const r = montarHTMLDocumentoOrcamentoBase(o);
+  const des = (o.desenhos || []).filter(d => d && d.img); if (!des.length || !r || !r.html) return r;
+  const bloco = '<div class="orc-desenhos-doc" style="margin-top:22px;page-break-inside:avoid"><div style="font-weight:700;font-size:14px;margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">Como vai ficar</div>'
+    + des.map(d => '<div style="page-break-inside:avoid;margin-bottom:12px;text-align:center"><img src="' + d.img + '" style="max-width:100%;max-height:420px;object-fit:contain;border:1px solid #e2e8f0;border-radius:6px">' + (d.titulo ? '<div style="font-size:11px;color:#64748b;margin-top:4px">' + escaparHTMLOrc(d.titulo) + '</div>' : '') + '</div>').join('') + '</div>';
+  try {
+    const t = document.createElement('template'); t.innerHTML = r.html;
+    const pag = t.content.querySelector('.orcapro-doc-page'), tabs = pag && pag.querySelectorAll('table');
+    if (pag && tabs.length) {
+      let el = tabs[tabs.length - 1]; while (el.parentElement && el.parentElement !== pag) el = el.parentElement;
+      while (el.nextElementSibling && /total|subtotal|desconto|valor l[ií]quido/i.test(el.nextElementSibling.textContent || '') && !/pagamento|assinatura/i.test(el.nextElementSibling.textContent || '')) el = el.nextElementSibling;
+      el.insertAdjacentHTML('afterend', bloco);
+      return Object.assign({}, r, { html: t.innerHTML });
+    }
+  } catch (_) {}
+  return Object.assign({}, r, { html: r.html.replace(/<\/div>\s*$/, bloco + '</div>') });
+}
+function montarHTMLDocumentoOrcamentoBase(o) {
   const emp = dadosEmpresaPerfil();
   if (o.pixChave !== undefined) emp.pix = o.pixChave;   // Pix escolhido neste orçamento
   if (o.pixQr !== undefined) emp.pixQr = o.pixQr;
