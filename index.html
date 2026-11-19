@@ -934,7 +934,7 @@ button.esq-man-n{border:0;cursor:pointer;font-family:inherit}
 .esq-mp-lados button.on{border-color:#2BD67B;background:#2BD67B;color:#06301A}
 .esq-mp-alts{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
 .esq-mp-alts label{font-size:12px;margin:0}
-.esq-fech{width:44px;min-height:42px;border-radius:12px;border:2px dashed #94a3b8;background:transparent;font-size:18px;cursor:pointer;opacity:.55;flex:0 0 auto}
+.esq-fech{width:auto;padding:0 12px;font-size:14px!important;font-weight:800;color:var(--text-primary);font-family:inherit;min-height:42px;border-radius:12px;border:2px dashed #94a3b8;background:transparent;font-size:18px;cursor:pointer;opacity:.55;flex:0 0 auto}
 .esq-fech.on{border-style:solid;border-color:#F4C430;background:rgba(244,196,48,.18);opacity:1}
 .esq-mao-n{display:flex;align-items:center;justify-content:space-between;padding:0}
 .esq-mao-n button{width:42px;height:38px;border:0;background:transparent;color:#06301A;font-size:22px;font-weight:900;cursor:pointer;font-family:inherit}
@@ -6910,7 +6910,7 @@ function esqSvg(pc) {
   return '<svg viewBox="0 0 ' + W + ' ' + Hh + '" xmlns="http://www.w3.org/2000/svg">' + s + '</svg>';
 }
 // quantas mãos amigas a folha tem (antes era sim/não: sim = 1)
-function esqMaoQtd(e, i) { const v = (e.mao || [])[i]; return v === true ? 1 : Math.max(0, Math.min(9, parseInt(v, 10) || 0)); }
+function esqMaoQtd(e, i) { return 0; }   // mão amiga foi retirada a pedido do Bruno (os furos dela podem ser colocados à mão)
 // fechadura / trinco: a pessoa escolhe em quais folhas móveis; se nunca mexeu, vai na primeira móvel
 function esqTemFecho(e, i) {
   if (e.folhas[i] !== 'M') return false;
@@ -6987,14 +6987,13 @@ function renderEsqPre() {
     + (e.furacao === 'manual' ? '<div id="esq-mover">' + esqMoverHtml(pc) + '</div><div id="esq-man">' + esqManualHtml(pc, e) + '</div>' : '')
     + (e.modelo !== 'fixo' && e.furacao !== 'manual' ? opcoesPeca(pc).filter(o => o.noDesenho).map(o => { const v = opPeca(pc)[o.id]; return '<label>' + esc(o.rot) + '</label><div class="pre-tipos pre-ops-chips">' + o.valores.map(x => '<button type="button" class="pre-tipo pre-op' + (x === v ? ' on' : '') + '" data-op="' + esc(o.id) + '" data-val="' + esc(x) + '">' + esc(x) + '</button>').join('') + '</div>'; }).join('') : '')
     + (e.modelo !== 'fixo' ? '<label>Cada folha</label><div class="esq-folhas">' + e.folhas.map((t, i) => '<div class="esq-fl"><b>' + (i + 1) + '</b><div class="esq-fl-bt"><button type="button" class="' + (t === 'F' ? 'on' : '') + '" data-esq-ft="' + i + ':F">Fixa</button><button type="button" class="' + (t === 'M' ? 'on' : '') + '" data-esq-ft="' + i + ':M">Móvel</button></div>'
-      + ((esqMaoQtd(e, i) ? '<div class="esq-mao on esq-mao-n"><button type="button" data-esq-mao="' + i + ':-1" aria-label="Uma mão amiga a menos">−</button><span>🤝 Mão amiga: ' + esqMaoQtd(e, i) + '</span><button type="button" data-esq-mao="' + i + ':1" aria-label="Uma mão amiga a mais">＋</button></div>' : '<button type="button" class="esq-mao" data-esq-mao="' + i + ':1">🤝 Mão amiga</button>') + (t === 'M' ? '<button type="button" class="esq-fech' + (esqTemFecho(e, i) ? ' on' : '') + '" data-esq-fech="' + i + '" aria-label="Fechadura nesta folha">🔒</button>' : '<span class="esq-fech-v"></span>')) + esqMaoPosHtml(pc, e, i) + '</div>').join('') + '</div><p class="hint-sm">🤝 Mão amiga: 2 furos um em cima do outro, na borda onde as folhas se encontram. A folha vizinha é furada junto, na mesma altura. 1 fica no meio da altura; 2 ou mais ficam divididas. 🔒 Toque no cadeado das folhas que levam fechadura ou trinco.</p>' : '')
-    + '<p class="hint-sm esq-leg"><b style="color:#F4C430">●</b> furo de roldana &nbsp; <b>▮</b> puxador &nbsp; <b style="color:#2BD67B">⁚</b> furos da mão amiga &nbsp; 🔒 fechadura</p>'
+      + (t === 'M' ? '<button type="button" class="esq-fech' + (esqTemFecho(e, i) ? ' on' : '') + '" data-esq-fech="' + i + '" aria-label="Fechadura nesta folha">🔒 Fechadura</button>' : '') + '</div>').join('') + '</div><p class="hint-sm">🔒 Toque em "Fechadura" nas folhas que levam fechadura ou trinco.</p>' : '')
+    + '<p class="hint-sm esq-leg"><b style="color:#F4C430">●</b> furo de roldana &nbsp; <b>▮</b> puxador &nbsp; 🔒 fechadura</p>'
     + '<div id="esq-pecas"></div>'
     + '<details class="esq-ajustes"><summary>⚙️ Ajustes do seu padrão (folgas e furos)</summary>'
     + '<div class="pre-med">' + esqCampo('esq-transp', 'Transpasse entre folhas', aj.transp, e, 'Quanto uma folha passa da outra') + esqCampo('esq-desc', 'Desconto na altura', aj.desc, e, 'Vão − isto = altura do vidro') + '</div>'
     + '<div class="pre-med">' + esqCampo('esq-furo', 'Furo da roldana', aj.furo, e, 'Distância da borda lateral') + esqCampo('esq-puxBorda', 'Furo do puxador', aj.puxBorda, e, 'Distância da borda lateral') + '</div>'
     + '<div class="pre-med">' + esqCampo('esq-puxAlt', 'Altura do puxador', aj.puxAlt, e, 'Do chão. Vazio = meio da folha') + esqCampo('esq-roldTopo', 'Roldana do topo', aj.roldTopo, e, 'Centro do furo até a beira de cima (ou de baixo)') + '</div>'
-    + '<div class="pre-med">' + esqCampo('esq-maoBorda', 'Mão amiga: furo da borda', aj.maoBorda, e, 'Centro dos furos até a borda') + esqCampo('esq-maoEntre', 'Mão amiga: entre furos', aj.maoEntre, e, 'Distância entre os 2 furos') + '</div>'
     + '<div class="pre-med">' + esqCampo('esq-entre', 'Furo duplo (manual)', aj.entre, e, 'Distância entre os 2 furos que você coloca') + '<div></div></div>'
     + '<p class="hint-sm">Valores comuns de mercado. Ajuste para o seu jeito: o app usa nas próximas contas desta medida.</p></details>'
     + '<button type="button" class="btn-outline-lg esq-pedido" data-esq-pedido="1">📋 Enviar pedido do vidro (WhatsApp)</button>';
