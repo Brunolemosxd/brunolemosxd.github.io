@@ -6912,11 +6912,7 @@ function esqSvg(pc) {
 // quantas mãos amigas a folha tem (antes era sim/não: sim = 1)
 function esqMaoQtd(e, i) { return 0; }   // mão amiga foi retirada a pedido do Bruno (os furos dela podem ser colocados à mão)
 // fechadura / trinco: a pessoa escolhe em quais folhas móveis; se nunca mexeu, vai na primeira móvel
-function esqTemFecho(e, i) {
-  if (e.folhas[i] !== 'M') return false;
-  if (Array.isArray(e.fech)) return !!e.fech[i];
-  return e.folhas.indexOf('M') === i;
-}
+function esqTemFecho(e, i) { return false; }   // fechadura foi retirada a pedido do Bruno
 // Onde fica a mão amiga desta folha: lado e altura de cada uma (vazio = automático)
 function esqMaoPosHtml(pc, e, i) {
   const q = esqMaoQtd(e, i); if (!q || e.modelo === 'fixo') return '';
@@ -6946,7 +6942,7 @@ function esqMoverHtml(pc) {
     + '<div class="esq-mv-passo">Cada toque move: ' + [1, 5, 10, 50].map(v => '<button type="button" class="' + (esqPasso === v ? 'on' : '') + '" data-esq-passo="' + v + '">' + v + ' mm</button>').join('') + '</div></div>';
 }
 function esqMoverAtualizar(pc) { const m = document.getElementById('esq-mover'); if (m) m.innerHTML = esqMoverHtml(pc); }
-const ESQ_FUROS = { '1': ['●', '1 furo'], '2h': ['●●', '2 furos lado a lado'], '2v': ['⁚', '2 furos um em cima do outro'], 'rec': ['▭', 'Recorte (fechadura)'] };
+const ESQ_FUROS = { '1': ['●', '1 furo'], '2h': ['●●', '2 furos lado a lado'], '2v': ['⁚', '2 furos um em cima do outro'], 'rec': ['▭', 'Recorte'] };
 function esqFuroSvg(t, cx, cy, entre) {
   const c = (x, y) => '<circle cx="' + x + '" cy="' + y + '" r="3" fill="#F4C430" stroke="#0b1c2c" stroke-width="1.2"/>', d = Math.max(3.4, entre / 2);
   if (t === '2h') return c(cx - d, cy) + c(cx + d, cy);
@@ -6987,8 +6983,8 @@ function renderEsqPre() {
     + (e.furacao === 'manual' ? '<div id="esq-mover">' + esqMoverHtml(pc) + '</div><div id="esq-man">' + esqManualHtml(pc, e) + '</div>' : '')
     + (e.modelo !== 'fixo' && e.furacao !== 'manual' ? opcoesPeca(pc).filter(o => o.noDesenho).map(o => { const v = opPeca(pc)[o.id]; return '<label>' + esc(o.rot) + '</label><div class="pre-tipos pre-ops-chips">' + o.valores.map(x => '<button type="button" class="pre-tipo pre-op' + (x === v ? ' on' : '') + '" data-op="' + esc(o.id) + '" data-val="' + esc(x) + '">' + esc(x) + '</button>').join('') + '</div>'; }).join('') : '')
     + (e.modelo !== 'fixo' ? '<label>Cada folha</label><div class="esq-folhas">' + e.folhas.map((t, i) => '<div class="esq-fl"><b>' + (i + 1) + '</b><div class="esq-fl-bt"><button type="button" class="' + (t === 'F' ? 'on' : '') + '" data-esq-ft="' + i + ':F">Fixa</button><button type="button" class="' + (t === 'M' ? 'on' : '') + '" data-esq-ft="' + i + ':M">Móvel</button></div>'
-      + (t === 'M' ? '<button type="button" class="esq-fech' + (esqTemFecho(e, i) ? ' on' : '') + '" data-esq-fech="' + i + '" aria-label="Fechadura nesta folha">🔒 Fechadura</button>' : '') + '</div>').join('') + '</div><p class="hint-sm">🔒 Toque em "Fechadura" nas folhas que levam fechadura ou trinco.</p>' : '')
-    + '<p class="hint-sm esq-leg"><b style="color:#F4C430">●</b> furo de roldana &nbsp; <b>▮</b> puxador &nbsp; 🔒 fechadura</p>'
+      + '</div>').join('') + '</div>' : '')
+    + '<p class="hint-sm esq-leg"><b style="color:#F4C430">●</b> furo de roldana &nbsp; <b>▮</b> puxador </p>'
     + '<div id="esq-pecas"></div>'
     + '<details class="esq-ajustes"><summary>⚙️ Ajustes do seu padrão (folgas e furos)</summary>'
     + '<div class="pre-med">' + esqCampo('esq-transp', 'Transpasse entre folhas', aj.transp, e, 'Quanto uma folha passa da outra') + esqCampo('esq-desc', 'Desconto na altura', aj.desc, e, 'Vão − isto = altura do vidro') + '</div>'
@@ -7257,7 +7253,6 @@ const PRE_OPCOES = {
     { id: 'perfil', rot: 'Cor dos perfis e ferragens', valores: ['Branco', 'Preto', 'Fosco (natural)', 'Bronze', 'Cromado'], padrao: 'Preto' },
     { id: 'rold', rot: 'Roldanas', valores: ['Em cima (aparente)', 'Embaixo'], padrao: 'Em cima (aparente)', noDesenho: true },
     { id: 'roldFuro', rot: 'Furos de cada roldana', valores: ['1 furo', '2 furos'], padrao: '1 furo', noDesenho: true },
-    { id: 'fecho', rot: 'Fechamento', valores: ['Trinco', 'Fechadura com chave', 'Só puxador'], padrao: 'Trinco' },
     { id: 'compra', rot: 'Ferragens', valores: ['Kit completo', 'Peças avulsas'], padrao: 'Kit completo' }
   ],
   'caderno': [{ id: 'pedra', rot: 'Pedra', valores: ['Granito', 'Mármore', 'Quartzo', 'Porcelanato'], padrao: 'Granito' }, { id: 'esp', rot: 'Espessura', valores: ['2 cm', '3 cm'], padrao: '2 cm' }],
