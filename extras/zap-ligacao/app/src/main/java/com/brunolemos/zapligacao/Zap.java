@@ -109,11 +109,10 @@ final class Zap {
     }
 
     static final String MSG_RECEBIDA = "Oi, recebi uma ligação sua. Posso ajudar?";
-    static final String MSG_FEITA = "Oi, te liguei agora há pouco. Posso ajudar?";
 
-    /** Mensagem pronta: uma para ligações que você recebeu/perdeu, outra para as que você fez. */
+    /** Mensagem pronta só para ligações que você recebeu/perdeu. As que você fez abrem sem texto. */
     static String mensagem(Context c, int tipo) {
-        if (tipo == CallLog.Calls.OUTGOING_TYPE) return prefs(c).getString("msgFeita", MSG_FEITA);
+        if (tipo == CallLog.Calls.OUTGOING_TYPE) return null;
         return prefs(c).getString("msgRecebida", MSG_RECEBIDA);
     }
 

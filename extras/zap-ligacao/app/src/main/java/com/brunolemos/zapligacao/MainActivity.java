@@ -122,9 +122,7 @@ public class MainActivity extends Activity {
 
         raiz.addView(texto("Mensagem pronta (ligação que você recebeu ou perdeu)", 15, true));
         raiz.addView(campoMensagem(p, "msgRecebida", Zap.MSG_RECEBIDA));
-        raiz.addView(texto("Mensagem pronta (ligação que você fez)", 15, true));
-        raiz.addView(campoMensagem(p, "msgFeita", Zap.MSG_FEITA));
-        raiz.addView(texto("Deixe em branco para abrir a conversa sem mensagem. Dá para mudar o texto antes de enviar.", 13, false));
+        raiz.addView(texto("Ligações que você fez abrem sem mensagem. Deixe em branco para nunca usar mensagem pronta.", 13, false));
         espaco(8);
 
         raiz.addView(botao("Testar aviso com a última ligação", false, v -> testar()));
