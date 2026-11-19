@@ -71,16 +71,49 @@ public class MainActivity extends Activity {
         montar();
     }
 
+    private boolean naConfig = false;
+    private android.window.OnBackInvokedCallback voltarCallback;
+
+    private void abrirConfig(boolean abrir) {
+        naConfig = abrir;
+        if (Build.VERSION.SDK_INT >= 33) {
+            if (abrir && voltarCallback == null) {
+                voltarCallback = () -> abrirConfig(false);
+                getOnBackInvokedDispatcher().registerOnBackInvokedCallback(
+                        android.window.OnBackInvokedDispatcher.PRIORITY_DEFAULT, voltarCallback);
+            } else if (!abrir && voltarCallback != null) {
+                getOnBackInvokedDispatcher().unregisterOnBackInvokedCallback(voltarCallback);
+                voltarCallback = null;
+            }
+        }
+        montar();
+        ((ScrollView) raiz.getParent()).scrollTo(0, 0);
+    }
+
+    @Override
+    public void onBackPressed() {
+        if (naConfig) abrirConfig(false);
+        else super.onBackPressed();
+    }
+
+    /** Cabeçalho: título à esquerda e um botão pequeno à direita. */
+    private void cabecalho(String titulo, String textoBotao, View.OnClickListener ao) {
+        LinearLayout linha = new LinearLayout(this);
+        linha.setGravity(Gravity.CENTER_VERTICAL);
+        linha.addView(texto(titulo, 24, true), new LinearLayout.LayoutParams(0, -2, 1));
+        linha.addView(botao(textoBotao, false, ao), new LinearLayout.LayoutParams(-2, -2));
+        raiz.addView(linha);
+        espaco(8);
+    }
+
     private void montar() {
         raiz.removeAllViews();
-        SharedPreferences p = Zap.prefs(this);
+        if (naConfig) montarConfig(); else montarInicio();
+    }
 
-        TextView titulo = texto("Zap da Ligação", 24, true);
-        raiz.addView(titulo);
-        raiz.addView(texto("Quando uma ligação termina, aparece um aviso para mandar WhatsApp para o número.", 15, false));
-        espaco(12);
+    private void montarInicio() {
+        cabecalho("Zap da Ligação", "⚙️ Config", v -> abrirConfig(true));
 
-        // Permissões
         List<String> faltam = permissoesFaltando();
         if (!faltam.isEmpty()) {
             raiz.addView(cartao("⚠️ Falta permissão",
@@ -91,7 +124,21 @@ public class MainActivity extends Activity {
             espaco(16);
         }
 
-        // Opções
+        raiz.addView(texto("Ligações recentes", 18, true));
+        espaco(4);
+        List<Zap.Ligacao> lista = Zap.ultimas(this, 30, 0);
+        if (lista.isEmpty()) {
+            raiz.addView(texto(faltam.isEmpty() ? "Nenhuma ligação encontrada." : "Dê as permissões para ver as ligações aqui.", 14, false));
+        }
+        for (Zap.Ligacao l : lista) raiz.addView(linhaLigacao(l));
+    }
+
+    private void montarConfig() {
+        SharedPreferences p = Zap.prefs(this);
+        cabecalho("Configurações", "← Voltar", v -> abrirConfig(false));
+        raiz.addView(texto("Quando uma ligação termina, aparece um aviso para mandar WhatsApp para o número.", 14, false));
+        espaco(8);
+
         Switch ligado = chave("Avisar depois das ligações", p.getBoolean("ligado", true));
         ligado.setOnCheckedChangeListener((v, on) -> p.edit().putBoolean("ligado", on).apply());
         raiz.addView(ligado);
@@ -123,21 +170,11 @@ public class MainActivity extends Activity {
         raiz.addView(texto("Mensagem pronta (ligação que você recebeu ou perdeu)", 15, true));
         raiz.addView(campoMensagem(p, "msgRecebida", Zap.MSG_RECEBIDA));
         raiz.addView(texto("Ligações que você fez abrem sem mensagem. Deixe em branco para nunca usar mensagem pronta.", 13, false));
-        espaco(8);
+        espaco(12);
 
         raiz.addView(botao("Testar aviso com a última ligação", false, v -> testar()));
         raiz.addView(texto("Se o aviso não aparecer depois de uma ligação de verdade: em Configurações do app, ligue \"Início automático\" (Xiaomi) e deixe a bateria \"Sem restrições\".", 13, false));
         raiz.addView(botao("Abrir configurações do app", false, v -> abrirConfigApp()));
-        espaco(20);
-
-        // Lista de ligações
-        raiz.addView(texto("Ligações recentes", 18, true));
-        espaco(4);
-        List<Zap.Ligacao> lista = Zap.ultimas(this, 30, 0);
-        if (lista.isEmpty()) {
-            raiz.addView(texto(faltam.isEmpty() ? "Nenhuma ligação encontrada." : "Dê as permissões para ver as ligações aqui.", 14, false));
-        }
-        for (Zap.Ligacao l : lista) raiz.addView(linhaLigacao(l));
     }
 
     private View linhaLigacao(Zap.Ligacao l) {
