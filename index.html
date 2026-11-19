@@ -6834,7 +6834,7 @@ function esqSvg(pc) {
       + '<text x="' + (x + w / 2) + '" y="' + (y + h / 2 + 12) + '" fill="#fff" font-size="' + Math.min(10.5, w / 5.2) + '" font-weight="700" text-anchor="middle" paint-order="stroke" stroke="#0b1c2c" stroke-width="3">' + Math.round(f.w) + '×' + Math.round(f.h) + '</text>'
       + (mov ? '<text x="' + (x + w / 2) + '" y="' + (y + h / 2 + 28) + '" fill="#F4C430" font-size="14" font-weight="900" text-anchor="middle" paint-order="stroke" stroke="#0b1c2c" stroke-width="3">⟷</text>' : '');
     if (f.fecho) { const p = f.furos.find(u => u.k === 'puxador'); if (p) s += '<text x="' + (x + p.x * k + (p.lado === 'esquerda' ? 4 : -4)) + '" y="' + (y + p.y * k + 30) + '" font-size="13" text-anchor="middle">🔒</text>'; }
-    if (f.mao) { const tm = 'M.A.' + (f.mao > 1 ? ' ×' + f.mao : ''), lw = f.mao > 1 ? 46 : 34; s += '<rect x="' + (x + w / 2 - lw / 2) + '" y="' + (y + h - 24) + '" width="' + lw + '" height="18" rx="5" fill="#2BD67B" stroke="#0b1c2c" stroke-width="1.2"/><text x="' + (x + w / 2) + '" y="' + (y + h - 11) + '" fill="#06301A" font-size="10" font-weight="900" text-anchor="middle">' + tm + '</text>'; }
+    if (f.mao) { const tm = 'M.A.' + (f.mao > 1 ? ' ×' + f.mao : ''), lw = f.mao > 1 ? 46 : 34; const my = c.emCima ? y + h - 24 : y + 6; s += '<rect x="' + (x + w / 2 - lw / 2) + '" y="' + my + '" width="' + lw + '" height="18" rx="5" fill="#2BD67B" stroke="#0b1c2c" stroke-width="1.2"/><text x="' + (x + w / 2) + '" y="' + (my + 13) + '" fill="#06301A" font-size="10" font-weight="900" text-anchor="middle">' + tm + '</text>'; }
     f.furos.forEach(u => { const fx = x + u.x * k, fy = y + u.y * k; s += u.k === 'roldana' ? '<circle cx="' + fx + '" cy="' + fy + '" r="4.5" fill="#F4C430" stroke="#0b1c2c" stroke-width="1.5"/>' : '<rect x="' + (fx - 3) + '" y="' + (fy - 14) + '" width="6" height="28" rx="3" fill="' + (perfil === '#111827' ? '#e5e7eb' : '#111827') + '"/>'; });
     s += '</g>';
   });
@@ -6865,6 +6865,7 @@ function renderEsqPre() {
     + '<label>Quantas folhas</label><div class="pre-tipos">' + [1, 2, 3, 4, 6].map(k => '<button type="button" class="pre-tipo esq-n' + (k === n ? ' on' : '') + '" data-esq-n="' + k + '">' + k + '</button>').join('') + '</div>'
     + (e.modelo !== 'fixo' && n > 1 ? '<label>Tem vidro fixo?</label><div class="pre-tipos">' + [['pontas', 'Sim, nas pontas'], ['meio', 'Sim, no meio'], ['nenhum', 'Não, todas correm']].map(([k, t]) => '<button type="button" class="pre-tipo' + (esqArranjo(e) === k ? ' on' : '') + '" data-esq-arr="' + k + '">' + t + '</button>').join('') + '</div>' : '')
     + '<div class="pre-desenho esq-desenho" id="esq-desenho"></div>'
+    + (e.modelo !== 'fixo' ? opcoesPeca(pc).filter(o => o.noDesenho).map(o => { const v = opPeca(pc)[o.id]; return '<label>' + esc(o.rot) + '</label><div class="pre-tipos pre-ops-chips">' + o.valores.map(x => '<button type="button" class="pre-tipo pre-op' + (x === v ? ' on' : '') + '" data-op="' + esc(o.id) + '" data-val="' + esc(x) + '">' + esc(x) + '</button>').join('') + '</div>'; }).join('') : '')
     + (e.modelo !== 'fixo' ? '<label>Cada folha</label><div class="esq-folhas">' + e.folhas.map((t, i) => '<div class="esq-fl"><b>' + (i + 1) + '</b><div class="esq-fl-bt"><button type="button" class="' + (t === 'F' ? 'on' : '') + '" data-esq-ft="' + i + ':F">Fixa</button><button type="button" class="' + (t === 'M' ? 'on' : '') + '" data-esq-ft="' + i + ':M">Móvel</button></div>'
       + (t === 'M' ? (esqMaoQtd(e, i) ? '<div class="esq-mao on esq-mao-n"><button type="button" data-esq-mao="' + i + ':-1" aria-label="Uma mão amiga a menos">−</button><span>🤝 Mão amiga: ' + esqMaoQtd(e, i) + '</span><button type="button" data-esq-mao="' + i + ':1" aria-label="Uma mão amiga a mais">＋</button></div>' : '<button type="button" class="esq-mao" data-esq-mao="' + i + ':1">🤝 Mão amiga</button>') + '<button type="button" class="esq-fech' + (esqTemFecho(e, i) ? ' on' : '') + '" data-esq-fech="' + i + '" aria-label="Fechadura nesta folha">🔒</button>' : '<span class="esq-mao-v"></span>') + '</div>').join('') + '</div><p class="hint-sm">🤝 Mão amiga: faz a folha puxar a vizinha junto (comum em 4 folhas). 🔒 Toque no cadeado das folhas que levam fechadura ou trinco.</p>' : '')
     + '<p class="hint-sm esq-leg"><b style="color:#F4C430">●</b> furo de roldana &nbsp; <b>▮</b> furo do puxador &nbsp; <b style="color:#2BD67B">M.A.</b> mão amiga</p>'
@@ -7084,8 +7085,8 @@ const PRE_OPCOES = {
     { id: 'esp', rot: 'Espessura do vidro', valores: ['6 mm', '8 mm', '10 mm'], padrao: '8 mm' },
     { id: 'tipo', rot: 'Tipo do vidro', valores: ['Temperado', 'Laminado', 'Comum'], padrao: 'Temperado' },
     { id: 'perfil', rot: 'Cor dos perfis e ferragens', valores: ['Branco', 'Preto', 'Fosco (natural)', 'Bronze', 'Cromado'], padrao: 'Preto' },
-    { id: 'rold', rot: 'Roldanas', valores: ['Em cima (aparente)', 'Embaixo'], padrao: 'Em cima (aparente)' },
-    { id: 'roldFuro', rot: 'Furos de cada roldana', valores: ['1 furo', '2 furos'], padrao: '1 furo' },
+    { id: 'rold', rot: 'Roldanas', valores: ['Em cima (aparente)', 'Embaixo'], padrao: 'Em cima (aparente)', noDesenho: true },
+    { id: 'roldFuro', rot: 'Furos de cada roldana', valores: ['1 furo', '2 furos'], padrao: '1 furo', noDesenho: true },
     { id: 'fecho', rot: 'Fechamento', valores: ['Trinco', 'Fechadura com chave', 'Só puxador'], padrao: 'Trinco' },
     { id: 'compra', rot: 'Ferragens', valores: ['Kit completo', 'Peças avulsas'], padrao: 'Kit completo' }
   ],
@@ -7507,7 +7508,7 @@ function materiaisPeca(pc) {
 // Bloco das especificações (chips + "✎ Outro")
 function renderOpcoesPre() {
   const host = document.getElementById('pre-ops'); if (!host) return;
-  const pc = preAtual.pecas[prePecaIdx], l = opcoesPeca(pc), op = opPeca(pc);
+  const pc = preAtual.pecas[prePecaIdx], l = opcoesPeca(pc).filter(o => !o.noDesenho), op = opPeca(pc);
   if (!l.length) { host.innerHTML = ''; host.style.display = 'none'; return; }
   host.style.display = '';
   host.innerHTML = secTitPre(host.dataset.n || 3, 'Especificações', 'Bitola, diâmetro, espessura… toque em ✎ Outro para digitar') + l.map(o => {
@@ -7616,7 +7617,7 @@ document.addEventListener('click', async function (e) {
     let v = opb.dataset.val;
     if (opb.dataset.outro) { v = await orcaonPerguntar(o.rot + ' (digite como quiser):', opPeca(pc)[id] || ''); if (v == null) return; v = v.trim(); if (!v) return; }
     pc.op = pc.op || {}; pc.op[id] = v;
-    salvarPreAtual(); renderOpcoesPre(); renderMateriaisPre(); renderPreResumo(); if (defPre(pc).tipo === 'esquadria') esqAtualizar(pc); return;
+    salvarPreAtual(); renderOpcoesPre(); renderMateriaisPre(); renderPreResumo(); if (defPre(pc).tipo === 'esquadria') { if (o.noDesenho) renderEsqPre(); else esqAtualizar(pc); } return;
   }
   const cb = e.target.closest && e.target.closest('#pre-cat [data-chapa], #pre-cat [data-chapa-outra], #pre-cat [data-zerar], #pre-cat [data-mais], #pre-cat [data-tira]');
   if (cb) {
