@@ -898,6 +898,8 @@ body.light .pp-topo,body.light .pp-nav{background:#fff}
 .esq-mao{flex:1;min-height:42px;border-radius:12px;border:2px dashed #2BD67B;background:transparent;color:#2BD67B;font-size:13.5px;font-weight:800;font-family:inherit;cursor:pointer;padding:0 8px}
 .esq-mao.on{border-style:solid;background:#2BD67B;color:#06301A}
 .esq-mao-v{flex:1}
+.esq-fech{width:44px;min-height:42px;border-radius:12px;border:2px dashed #94a3b8;background:transparent;font-size:18px;cursor:pointer;opacity:.55;flex:0 0 auto}
+.esq-fech.on{border-style:solid;border-color:#F4C430;background:rgba(244,196,48,.18);opacity:1}
 .esq-mao-n{display:flex;align-items:center;justify-content:space-between;padding:0}
 .esq-mao-n button{width:42px;height:38px;border:0;background:transparent;color:#06301A;font-size:22px;font-weight:900;cursor:pointer;font-family:inherit}
 .esq-mao-n span{font-size:15px;font-weight:900}
@@ -6296,7 +6298,7 @@ function fmtMedida(pc, n) { if (defPre(pc).tipo === 'lista') return pc.lista ? t
 function nomePeca(pc, i) { return (pc.nome || '').trim() || (defPre(pc).nome + ' ' + (i + 1)); }
 function textoMedidas(pc) {
   const d = defPre(pc), un = unPre(pc);
-  if (d.tipo === 'esquadria') { const c = esqCalc(pc), md = ESQ_MODELOS[c.modelo]; return md.nome + ' ' + c.folhas.length + (c.folhas.length === 1 ? ' folha' : ' folhas') + ' · vão ' + esqFmt(c, c.L) + ' × ' + esqFmt(c, c.H) + (c.modelo !== 'fixo' ? ' (' + (c.folhas.length - c.moveis) + ' fixa' + (c.folhas.length - c.moveis === 1 ? '' : 's') + ', ' + c.moveis + ' móve' + (c.moveis === 1 ? 'l' : 'is') + (c.maos ? ', ' + c.maos + (c.maos === 1 ? ' mão amiga' : ' mãos amigas') : '') + ')' : ''); }
+  if (d.tipo === 'esquadria') { const c = esqCalc(pc), md = ESQ_MODELOS[c.modelo]; return md.nome + ' ' + c.folhas.length + (c.folhas.length === 1 ? ' folha' : ' folhas') + ' · vão ' + esqFmt(c, c.L) + ' × ' + esqFmt(c, c.H) + (c.modelo !== 'fixo' ? ' (' + (c.folhas.length - c.moveis) + ' fixa' + (c.folhas.length - c.moveis === 1 ? '' : 's') + ', ' + c.moveis + ' móve' + (c.moveis === 1 ? 'l' : 'is') + (c.maos ? ', ' + c.maos + (c.maos === 1 ? ' mão amiga' : ' mãos amigas') : '') + (c.fechos ? ', fechadura em ' + c.fechos + (c.fechos === 1 ? ' folha' : ' folhas') : '') + ')' : ''); }
   if (d.tipo === 'caderno') { const c = cadPre(pc), l = c.linhas.map((x, i) => x.cm > 0 ? cadLetra(i) + ' ' + cadFmt(c, x.cm) + (cadLarg(c, x) > 0 ? ' × ' + cadFmt(c, cadLarg(c, x)) : '') : '').filter(Boolean); return l.length ? 'Medidas: ' + l.join(', ') : 'Desenho sem medidas'; }
   if (d.tipo === 'lista') { const n = linhasLista(pc).length; return (listaPre(pc).chapa || 'chapa não escolhida') + ' · ' + n + (n === 1 ? ' peça' : ' peças'); }
   if (d.tipo === 'area') return fmtM(pc.a) + ' × ' + fmtM(pc.b) + ' m';
@@ -6805,7 +6807,9 @@ function esqCalc(pc) {
   const folhas = e.folhas.map((t, i) => {
     const f = { i, tipo: correr ? t : 'F', w, h, x: correr ? i * (w - aj.transp) : i * (L / n) + aj.desc / 2, furos: [], mao: correr && t === 'M' ? esqMaoQtd(e, i) : 0 };
     if (correr && f.tipo === 'M') {
-      f.furos.push({ k: 'roldana', x: aj.furo, y: emCima ? 35 : h - 35 }, { k: 'roldana', x: w - aj.furo, y: emCima ? 35 : h - 35 });
+      const fr = /2/.test(op.roldFuro || '') ? 2 : 1, ry = emCima ? 35 : h - 35;
+      [aj.furo, w - aj.furo].forEach(rx => { if (fr === 2) f.furos.push({ k: 'roldana', x: rx - 12, y: ry, par: true }, { k: 'roldana', x: rx + 12, y: ry, par: true }); else f.furos.push({ k: 'roldana', x: rx, y: ry }); });
+      f.fecho = esqTemFecho(e, i);
       // puxador e fecho na borda que encosta quando fecha: nas pontas, do lado da parede; no meio, do lado do centro
       const ladoEsq = n === 1 ? false : i === 0 ? true : i === n - 1 ? false : i >= (n - 1) / 2;
       const py = aj.puxAlt > 0 ? Math.min(h - 60, Math.max(60, h - (aj.puxAlt - aj.desc / 2))) : h / 2;
@@ -6813,8 +6817,8 @@ function esqCalc(pc) {
     }
     return f;
   });
-  const moveis = folhas.filter(f => f.tipo === 'M').length, maos = folhas.reduce((t, f) => t + (f.mao || 0), 0);
-  return { modelo: e.modelo, un: e.un, L, H, folhas, moveis, maos, aj, emCima, m2Vidro: Math.round(folhas.reduce((t, f) => t + f.w * f.h, 0) / 1e4) / 100 };
+  const fechos = folhas.filter(f => f.fecho).length, moveis = folhas.filter(f => f.tipo === 'M').length, maos = folhas.reduce((t, f) => t + (f.mao || 0), 0);
+  return { modelo: e.modelo, un: e.un, L, H, folhas, moveis, maos, fechos, furosRold: /2/.test(op.roldFuro || '') ? 2 : 1, aj, emCima, m2Vidro: Math.round(folhas.reduce((t, f) => t + f.w * f.h, 0) / 1e4) / 100 };
 }
 function esqSvg(pc) {
   const c = esqCalc(pc), op = opPeca(pc); if (!(c.L > 0 && c.H > 0)) return '<p class="hint-sm" style="padding:30px;text-align:center">Coloque a largura e a altura do vão.</p>';
@@ -6828,6 +6832,7 @@ function esqSvg(pc) {
       + '<text x="' + (x + w / 2) + '" y="' + (y + h / 2 - 4) + '" fill="#fff" font-size="' + Math.min(13, w / 4.4) + '" font-weight="900" text-anchor="middle" paint-order="stroke" stroke="#0b1c2c" stroke-width="3">' + (mov ? 'MÓVEL' : 'FIXA') + '</text>'
       + '<text x="' + (x + w / 2) + '" y="' + (y + h / 2 + 12) + '" fill="#fff" font-size="' + Math.min(10.5, w / 5.2) + '" font-weight="700" text-anchor="middle" paint-order="stroke" stroke="#0b1c2c" stroke-width="3">' + Math.round(f.w) + '×' + Math.round(f.h) + '</text>'
       + (mov ? '<text x="' + (x + w / 2) + '" y="' + (y + h / 2 + 28) + '" fill="#F4C430" font-size="14" font-weight="900" text-anchor="middle" paint-order="stroke" stroke="#0b1c2c" stroke-width="3">⟷</text>' : '');
+    if (f.fecho) { const p = f.furos.find(u => u.k === 'puxador'); if (p) s += '<text x="' + (x + p.x * k + (p.lado === 'esquerda' ? 4 : -4)) + '" y="' + (y + p.y * k + 30) + '" font-size="13" text-anchor="middle">🔒</text>'; }
     if (f.mao) { const tm = 'M.A.' + (f.mao > 1 ? ' ×' + f.mao : ''), lw = f.mao > 1 ? 46 : 34; s += '<rect x="' + (x + w / 2 - lw / 2) + '" y="' + (y + h - 24) + '" width="' + lw + '" height="18" rx="5" fill="#2BD67B" stroke="#0b1c2c" stroke-width="1.2"/><text x="' + (x + w / 2) + '" y="' + (y + h - 11) + '" fill="#06301A" font-size="10" font-weight="900" text-anchor="middle">' + tm + '</text>'; }
     f.furos.forEach(u => { const fx = x + u.x * k, fy = y + u.y * k; s += u.k === 'roldana' ? '<circle cx="' + fx + '" cy="' + fy + '" r="4.5" fill="#F4C430" stroke="#0b1c2c" stroke-width="1.5"/>' : '<rect x="' + (fx - 3) + '" y="' + (fy - 14) + '" width="6" height="28" rx="3" fill="' + (perfil === '#111827' ? '#e5e7eb' : '#111827') + '"/>'; });
     s += '</g>';
@@ -6837,6 +6842,12 @@ function esqSvg(pc) {
 }
 // quantas mãos amigas a folha tem (antes era sim/não: sim = 1)
 function esqMaoQtd(e, i) { const v = (e.mao || [])[i]; return v === true ? 1 : Math.max(0, Math.min(9, parseInt(v, 10) || 0)); }
+// fechadura / trinco: a pessoa escolhe em quais folhas móveis; se nunca mexeu, vai na primeira móvel
+function esqTemFecho(e, i) {
+  if (e.folhas[i] !== 'M') return false;
+  if (Array.isArray(e.fech)) return !!e.fech[i];
+  return e.folhas.indexOf('M') === i;
+}
 function esqArranjo(e) { const f = e.folhas, n = f.length; if (f.every(x => x === 'M')) return 'nenhum'; if (n > 1 && f[0] === 'F' && f[n - 1] === 'F' && f.slice(1, -1).every(x => x === 'M')) return 'pontas'; if (n > 1 && f[0] === 'M' && f[n - 1] === 'M' && f.slice(1, -1).some(x => x === 'F')) return 'meio'; return ''; }
 function esqFolhasArranjo(n, k) {
   if (k === 'nenhum') return Array(n).fill('M');
@@ -6854,7 +6865,7 @@ function renderEsqPre() {
     + (e.modelo !== 'fixo' && n > 1 ? '<label>Tem vidro fixo?</label><div class="pre-tipos">' + [['pontas', 'Sim, nas pontas'], ['meio', 'Sim, no meio'], ['nenhum', 'Não, todas correm']].map(([k, t]) => '<button type="button" class="pre-tipo' + (esqArranjo(e) === k ? ' on' : '') + '" data-esq-arr="' + k + '">' + t + '</button>').join('') + '</div>' : '')
     + '<div class="pre-desenho esq-desenho" id="esq-desenho"></div>'
     + (e.modelo !== 'fixo' ? '<label>Cada folha</label><div class="esq-folhas">' + e.folhas.map((t, i) => '<div class="esq-fl"><b>' + (i + 1) + '</b><div class="esq-fl-bt"><button type="button" class="' + (t === 'F' ? 'on' : '') + '" data-esq-ft="' + i + ':F">Fixa</button><button type="button" class="' + (t === 'M' ? 'on' : '') + '" data-esq-ft="' + i + ':M">Móvel</button></div>'
-      + (t === 'M' ? (esqMaoQtd(e, i) ? '<div class="esq-mao on esq-mao-n"><button type="button" data-esq-mao="' + i + ':-1" aria-label="Uma mão amiga a menos">−</button><span>🤝 ' + esqMaoQtd(e, i) + '</span><button type="button" data-esq-mao="' + i + ':1" aria-label="Uma mão amiga a mais">＋</button></div>' : '<button type="button" class="esq-mao" data-esq-mao="' + i + ':1">🤝 Mão amiga</button>') : '<span class="esq-mao-v"></span>') + '</div>').join('') + '</div><p class="hint-sm">Mão amiga: ferragem que faz a folha puxar a vizinha junto (comum em 4 folhas).</p>' : '')
+      + (t === 'M' ? (esqMaoQtd(e, i) ? '<div class="esq-mao on esq-mao-n"><button type="button" data-esq-mao="' + i + ':-1" aria-label="Uma mão amiga a menos">−</button><span>🤝 ' + esqMaoQtd(e, i) + '</span><button type="button" data-esq-mao="' + i + ':1" aria-label="Uma mão amiga a mais">＋</button></div>' : '<button type="button" class="esq-mao" data-esq-mao="' + i + ':1">🤝 Mão amiga</button>') + '<button type="button" class="esq-fech' + (esqTemFecho(e, i) ? ' on' : '') + '" data-esq-fech="' + i + '" aria-label="Fechadura nesta folha">🔒</button>' : '<span class="esq-mao-v"></span>') + '</div>').join('') + '</div><p class="hint-sm">🤝 Mão amiga: faz a folha puxar a vizinha junto (comum em 4 folhas). 🔒 Toque no cadeado das folhas que levam fechadura ou trinco.</p>' : '')
     + '<p class="hint-sm esq-leg"><b style="color:#F4C430">●</b> furo de roldana &nbsp; <b>▮</b> furo do puxador &nbsp; <b style="color:#2BD67B">M.A.</b> mão amiga</p>'
     + '<div id="esq-pecas"></div>'
     + '<details class="esq-ajustes"><summary>⚙️ Ajustes do seu padrão (folgas e furos)</summary>'
@@ -6879,7 +6890,8 @@ function esqAtualizar(pc) {
 }
 function esqTextoFuros(c, f) {
   const r = f.furos.filter(u => u.k === 'roldana'), p = f.furos.find(u => u.k === 'puxador'), t = [];
-  if (r.length) t.push(r.length + ' furos de roldana ' + (c.emCima ? 'em cima' : 'embaixo') + ' a ' + esqFmt(c, c.aj.furo) + ' das bordas');
+  if (r.length) { const nr = r.length / c.furosRold; t.push(nr + ' roldanas ' + (c.emCima ? 'em cima' : 'embaixo') + ' a ' + esqFmt(c, c.aj.furo) + ' das bordas, ' + (c.furosRold === 2 ? '2 furos cada (' + r.length + ' furos)' : '1 furo cada')); }
+  if (f.fecho) t.push('fechadura/trinco nesta folha (recorte conforme o modelo)');
   if (f.mao) t.push((f.mao > 1 ? f.mao + ' mãos amigas' : 'mão amiga') + ' (furo conforme o modelo da ferragem)');
   if (p) t.push('puxador à ' + p.lado + ', a ' + esqFmt(c, c.aj.puxBorda) + ' da borda e ' + esqFmt(c, f.h - p.y) + ' da base do vidro');
   return t.join('; ');
@@ -6895,7 +6907,8 @@ document.addEventListener('click', function (e) {
   if (!preAtual || !e.target.closest) return;
   const host = e.target.closest('#pre-esq'); if (!host) return;
   const pc = preAtual.pecas[prePecaIdx], es = esqPre(pc);
-  const arr = e.target.closest('[data-esq-arr]'), ft = e.target.closest('[data-esq-ft]'), ma = e.target.closest('[data-esq-mao]');
+  const arr = e.target.closest('[data-esq-arr]'), ft = e.target.closest('[data-esq-ft]'), ma = e.target.closest('[data-esq-mao]'), fc = e.target.closest('[data-esq-fech]');
+  if (fc) { const i = +fc.dataset.esqFech; if (!Array.isArray(es.fech)) es.fech = es.folhas.map((_, j) => esqTemFecho(es, j)); es.fech[i] = !es.fech[i]; es.mexeu = true; salvarPreAtual(); renderEsqPre(); renderMateriaisPre(); renderPreResumo(); return; }
   if (arr || ft || ma) {
     if (arr) es.folhas = esqFolhasArranjo(es.folhas.length, arr.dataset.esqArr);
     else if (ft) { const [i, t] = ft.dataset.esqFt.split(':'); es.folhas[+i] = t; }
@@ -7071,6 +7084,7 @@ const PRE_OPCOES = {
     { id: 'tipo', rot: 'Tipo do vidro', valores: ['Temperado', 'Laminado', 'Comum'], padrao: 'Temperado' },
     { id: 'perfil', rot: 'Cor dos perfis e ferragens', valores: ['Branco', 'Preto', 'Fosco (natural)', 'Bronze', 'Cromado'], padrao: 'Preto' },
     { id: 'rold', rot: 'Roldanas', valores: ['Em cima (aparente)', 'Embaixo'], padrao: 'Em cima (aparente)' },
+    { id: 'roldFuro', rot: 'Furos de cada roldana', valores: ['1 furo', '2 furos'], padrao: '1 furo' },
     { id: 'fecho', rot: 'Fechamento', valores: ['Trinco', 'Fechadura com chave', 'Só puxador'], padrao: 'Trinco' },
     { id: 'compra', rot: 'Ferragens', valores: ['Kit completo', 'Peças avulsas'], padrao: 'Kit completo' }
   ],
@@ -7152,12 +7166,13 @@ const PRE_MATERIAIS = {
     } else if (op.compra === 'Kit completo') {
       l.push(['Kit ' + md.nome.toLowerCase() + ' ' + c.folhas.length + ' folhas ' + perfil.toLowerCase(), 'un', 1]);
       if (c.maos) l.push(['Mão amiga ' + perfil.toLowerCase(), 'un', c.maos]);
+      if (op.fecho !== 'Só puxador' && c.fechos > 1) l.push([op.fecho + ' (a mais do kit)', 'un', c.fechos - 1]);
     } else {
       l.push(['Trilho superior ' + perfil.toLowerCase(), 'm', up(Lm, 1)], ['Trilho inferior / guia ' + perfil.toLowerCase(), 'm', up(Lm, 1)],
         ['Roldana', 'un', 2 * c.moveis], ['Puxador ' + perfil.toLowerCase(), 'un', c.moveis],
         ['Capuchinho (tampa do trilho)', 'un', 4], ['Escova de vedação', 'm', up(2 * Hm * c.moveis, 1)]);
       if (c.maos) l.push(['Mão amiga ' + perfil.toLowerCase(), 'un', c.maos]);
-      if (op.fecho !== 'Só puxador' && c.moveis) l.push([op.fecho, 'un', 1], ['Contra-fecho / batedor', 'un', 1]);
+      if (op.fecho !== 'Só puxador' && c.fechos) l.push([op.fecho, 'un', c.fechos], ['Contra-fecho / batedor', 'un', c.fechos]);
     }
     l.push(['Silicone (tubo)', 'tubo', Math.max(1, up(2 * (Lm + Hm) / 8))], ['Parafuso e bucha', 'un', Math.ceil(Lm * 4) + 4]);
     return l;
