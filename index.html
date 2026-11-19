@@ -912,6 +912,9 @@ body.light .pp-topo,body.light .pp-nav{background:#fff}
 .esq-man-l .calc-campo em{right:8px;font-size:12px}
 .esq-man-n{width:24px;height:24px;border-radius:50%;background:#F4C430;color:#0B1C2C;display:grid;place-items:center;font-size:12px;font-weight:900;margin-bottom:12px;flex:0 0 auto}
 .esq-man-t{font-size:15px;color:#F4C430;margin-bottom:12px;width:22px;text-align:center;flex:0 0 auto}
+.esq-man-pad{display:flex;align-items:center;gap:6px;margin:6px 0 4px 30px}
+.esq-man-pad span{font-size:11.5px;color:var(--text-secondary);flex:1}
+.esq-man-pad button{width:44px;height:40px;border-radius:10px;border:2px solid #F4C430;background:rgba(244,196,48,.12);color:#F4C430;font-size:20px;font-weight:900;cursor:pointer;font-family:inherit}
 .esq-man-x{width:36px;height:44px;border-radius:10px;border:0;background:rgba(239,68,68,.15);color:#f87171;font-size:22px;cursor:pointer;flex:0 0 auto}
 .esq-mao-pos{flex:1 1 100%;margin:2px 0 6px 42px;padding:10px;border:1px dashed #2BD67B;border-radius:12px;background:rgba(43,214,123,.06)}
 .esq-mp-t{display:block;font-size:13px;font-weight:800;color:#2BD67B;margin-bottom:6px}
@@ -6912,7 +6915,7 @@ function esqFolhasArranjo(n, k) {
   return esqPadraoFolhas(n, 'janela');
 }
 // Furação manual: tipos de furo
-let esqGeo = {}, esqFerr = '1';
+let esqGeo = {}, esqFerr = '1', esqPasso = 10;
 const ESQ_FUROS = { '1': ['●', '1 furo'], '2h': ['●●', '2 furos lado a lado'], '2v': ['⁚', '2 furos um em cima do outro'], 'rec': ['▭', 'Recorte (fechadura)'] };
 function esqFuroSvg(t, cx, cy, entre) {
   const c = (x, y) => '<circle cx="' + x + '" cy="' + y + '" r="3" fill="#F4C430" stroke="#0b1c2c" stroke-width="1.2"/>', d = Math.max(3.4, entre / 2);
@@ -6930,8 +6933,10 @@ function esqManualHtml(pc, e) {
   h += comFuro.length ? comFuro.map(f => '<div class="esq-man-f"><b>Folha ' + (f.i + 1) + ' · ' + (f.tipo === 'M' ? 'móvel' : 'fixa') + '</b>' + f.man.map((u, n) => '<div class="esq-man-l"><span class="esq-man-n">' + (n + 1) + '</span><span class="esq-man-t">' + ESQ_FUROS[u.t][0] + '</span>'
       + '<label>da esquerda<div class="calc-campo"><input type="text" inputmode="decimal" class="esq-man-v" data-j="' + u.j + '" data-k="x" data-mic="0" value="' + num(u.x) + '"><em>' + e.un + '</em></div></label>'
       + '<label>da base<div class="calc-campo"><input type="text" inputmode="decimal" class="esq-man-v" data-j="' + u.j + '" data-k="y" data-mic="0" value="' + num(u.y) + '"><em>' + e.un + '</em></div></label>'
-      + '<button type="button" class="esq-man-x" data-esq-man-x="' + u.j + '" aria-label="Tirar este furo">×</button></div>').join('') + '</div>').join('')
+      + '<button type="button" class="esq-man-x" data-esq-man-x="' + u.j + '" aria-label="Tirar este furo">×</button></div>'
+      + '<div class="esq-man-pad"><span>Mover ' + esqPasso + ' mm:</span><button type="button" data-esq-mv="' + u.j + ':0:1" aria-label="Para cima">↑</button><button type="button" data-esq-mv="' + u.j + ':0:-1" aria-label="Para baixo">↓</button><button type="button" data-esq-mv="' + u.j + ':-1:0" aria-label="Para a esquerda">←</button><button type="button" data-esq-mv="' + u.j + ':1:0" aria-label="Para a direita">→</button></div>').join('') + '</div>').join('')
     : '<p class="hint-sm">Nenhum furo ainda. Escolha o tipo e toque no vidro, no lugar do furo. Depois acerte a medida nos campos.</p>';
+  if (comFuro.length) h += '<label>Quanto cada flecha move</label><div class="pre-tipos">' + [1, 5, 10, 50].map(v => '<button type="button" class="pre-tipo' + (esqPasso === v ? ' on' : '') + '" data-esq-passo="' + v + '">' + v + ' mm</button>').join('') + '</div>';
   return h;
 }
 function esqCampo(id, rot, mm, e, ajuda) { const v = mm ? (e.un === 'cm' ? (Math.round(mm) / 10).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) : String(Math.round(mm))) : ''; return '<div><label for="' + id + '">' + rot + '</label><div class="calc-campo"><input type="text" inputmode="decimal" id="' + id + '" data-mic="0" autocomplete="off" value="' + v + '" placeholder="0"><em>' + e.un + '</em></div>' + (ajuda ? '<small class="esq-aj-h">' + ajuda + '</small>' : '') + '</div>'; }
@@ -7011,6 +7016,17 @@ document.addEventListener('click', function (e) {
   if (fu) { es.furacao = fu.dataset.esqFuracao === 'manual' ? 'manual' : ''; es.mexeu = true; salvarPreAtual(); renderEsqPre(); renderPreResumo(); return; }
   if (fe) { esqFerr = fe.dataset.esqFerr; document.querySelectorAll('#pre-esq [data-esq-ferr]').forEach(b => b.classList.toggle('on', b === fe)); return; }
   if (mx) { es.furosMan.splice(+mx.dataset.esqManX, 1); salvarPreAtual(); renderEsqPre(); return; }
+  const mv = e.target.closest('[data-esq-mv]'), ps = e.target.closest('[data-esq-passo]');
+  if (ps) { esqPasso = +ps.dataset.esqPasso || 10; renderEsqPre(); return; }
+  if (mv) {
+    const [j, dx, dy] = mv.dataset.esqMv.split(':').map(Number), u = (es.furosMan || [])[j]; if (!u) return;
+    const g = esqGeo[u.f] || { w: 99999, h: 99999 };
+    u.x = Math.max(0, Math.min(g.w, (Number(u.x) || 0) + dx * esqPasso)); u.y = Math.max(0, Math.min(g.h, (Number(u.y) || 0) + dy * esqPasso));
+    es.mexeu = true; salvarPreAtual(); esqAtualizar(pc);
+    const num = mm => es.un === 'cm' ? (Math.round(mm) / 10).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) : String(Math.round(mm));
+    const ix = document.querySelector('.esq-man-v[data-j="' + j + '"][data-k="x"]'), iy = document.querySelector('.esq-man-v[data-j="' + j + '"][data-k="y"]');
+    if (ix) ix.value = num(u.x); if (iy) iy.value = num(u.y); return;
+  }
   const ml = e.target.closest('[data-esq-ml]');
   if (ml) { const [i, k] = ml.dataset.esqMl.split(':'); es.maoLado = es.maoLado || []; es.maoLado[+i] = k === 'auto' ? '' : k; es.mexeu = true; salvarPreAtual(); renderEsqPre(); return; }
   if (fc) { const i = +fc.dataset.esqFech; if (!Array.isArray(es.fech)) es.fech = es.folhas.map((_, j) => esqTemFecho(es, j)); es.fech[i] = !es.fech[i]; es.mexeu = true; salvarPreAtual(); renderEsqPre(); renderMateriaisPre(); renderPreResumo(); return; }
