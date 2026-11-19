@@ -885,6 +885,13 @@ body.light .pp-topo,body.light .pp-nav{background:#fff}
 .cad-f.on{border-color:var(--accent,#F4C430);background:rgba(244,196,48,.16);color:var(--accent,#F4C430)}
 .cad-dica{font-size:14px;color:var(--text-secondary);margin:2px 2px 8px;min-height:20px}
 .cad-svg{display:block;width:100%;height:auto;border-radius:12px;border:2px solid #e2d6b5;touch-action:none;-webkit-user-select:none;user-select:none;box-shadow:0 4px 14px rgba(0,0,0,.25)}
+.esq-desenho svg{display:block;width:100%;height:auto}
+.esq-leg{margin:6px 2px 10px}
+.esq-tit{margin:14px 0 4px;font-size:15px}
+.esq-ajustes{margin-top:12px;border:1px dashed var(--border);border-radius:12px;padding:10px 12px}
+.esq-ajustes summary{font-weight:800;cursor:pointer;color:var(--accent,#F4C430)}
+.esq-aj-h{display:block;font-size:11.5px;color:var(--text-secondary);margin-top:3px;line-height:1.25}
+.esq-pedido{margin-top:12px}
 .cad-uns{display:flex;gap:8px;margin:6px 0 10px}
 .cad-un{flex:1;min-height:46px;border-radius:12px;border:2px solid var(--border);background:var(--bg-primary,#0B1C2C);color:var(--text-primary);font-size:16px;font-weight:900;font-family:inherit;cursor:pointer}
 .cad-un.on{border-color:var(--accent,#F4C430);background:var(--accent,#F4C430);color:#0B1C2C}
@@ -6035,6 +6042,7 @@ const PRE_TIPOS = {
   forro:      { nome: 'Forro', tipo: 'area', a: 'Comprimento', b: 'Largura', vis: 'gesso', servico: [/forro/i, /gesso/i, /drywall/i] },
   drywall:    { nome: 'Parede de drywall', tipo: 'area', a: 'Comprimento', b: 'Altura', vis: 'gesso', descontos: true, padrao: [4, 2.7], servico: [/drywall/i, /parede/i, /gesso/i] },
   movel:      { nome: 'Móvel (frente)', tipo: 'area', a: 'Largura', b: 'Altura', vis: 'madeira', padrao: [2, 2.2], servico: [/armário/i, /móvel/i, /cozinha/i, /marcenaria/i] },
+  esquadria:  { nome: '🪟 Janela / porta de correr', tipo: 'esquadria', padrao: [0, 0], servico: [/janela/i, /porta de correr/i, /box/i, /vidro/i] },
   vidro:      { nome: 'Vidro', tipo: 'area', a: 'Largura', b: 'Altura', vis: 'vidro', padrao: [1, 1], servico: [/vidro/i, /janela/i, /box/i, /espelho/i] },
   box:        { nome: 'Box de banheiro', tipo: 'area', a: 'Largura', b: 'Altura', vis: 'vidro', padrao: [1.2, 1.9], servico: [/box/i, /vidro/i] },
   espelho:    { nome: 'Espelho', tipo: 'area', a: 'Largura', b: 'Altura', vis: 'vidro', padrao: [1, 0.8], servico: [/espelho/i, /vidro/i] },
@@ -6092,7 +6100,7 @@ const PRE_PROFISSOES = {
   'Gesseiro': ['forro', 'drywall', 'sanca'],
   'Marceneiro': ['movel', 'prateleira', 'portas_un'],
   'Serralheiro': ['portao', 'grade', 'corrimao', 'metalon'],
-  'Vidraceiro': ['vidro', 'box', 'espelho'],
+  'Vidraceiro': ['esquadria', 'vidro', 'box', 'espelho'],
   'Calheiro': ['calhas_lista', 'calha', 'rufo', 'condutor', 'telhado'],
   'Climatização': ['aparelhos_ar', 'tubo_cobre'],
   'Inst. Câmeras': ['cameras', 'cabeamento'],
@@ -6107,7 +6115,7 @@ const PRE_PROFISSOES = {
   'Outro': []
 };
 const PRE_GERAIS = ['outro', 'metros', 'unidades', 'volume'];
-const PRE_UNIDADE = { area: 'm²', linear: 'm', un: 'un', volume: 'm³', lista: 'm', caderno: 'm²' };
+const PRE_UNIDADE = { area: 'm²', linear: 'm', un: 'un', volume: 'm³', lista: 'm', caderno: 'm²', esquadria: 'm²' };
 // ---- Lista por cartões (Calheiro): tipo de chapa + cartões com corte e metragem ----
 const PRE_ICONES = {
   moldura: 'M6 6v11h11l2-3', redonda: 'M4 8a8 8 0 0 0 16 0', coxo: 'M6 6v11h12V6', agua: 'M3 7l9 10 9-10', chale: 'M4 8l5 9h11',
@@ -6178,7 +6186,7 @@ function preTemPro() { return typeof usuarioTemPro === 'function' && usuarioTemP
 function preTemConteudo(pr) {
   return !!((pr.cliente || '').trim() || (pr.local || '').trim() || (pr.notas || '').trim() || (pr.pecas || []).some(pc => {
     const n = novaPecaPre(pc.tipo, pc.prof);
-    return (pc.nome || '').trim() || (pc.descontos || []).length || linhasLista(pc).length || ((pc.cad && pc.cad.linhas) || []).length || pc.a !== n.a || pc.b !== n.b || (pc.c || 0) !== (n.c || 0);
+    return (pc.nome || '').trim() || (pc.descontos || []).length || linhasLista(pc).length || ((pc.cad && pc.cad.linhas) || []).length || (pc.esq && pc.esq.mexeu) || pc.a !== n.a || pc.b !== n.b || (pc.c || 0) !== (n.c || 0);
   }));
 }
 function contarPreSePreciso(pr) {
@@ -6207,6 +6215,7 @@ function novaPecaPre(tipo, prof) {
 }
 // Resultado da medida: m², metros, unidades ou m³
 function medidaPeca(pc) {
+  if (defPre(pc).tipo === 'esquadria') { const c = esqCalc(pc), t = Math.round(c.L * c.H / 1e4) / 100; return { bruta: t, desc: 0, liquida: t, final: t }; }
   if (defPre(pc).tipo === 'caderno') { const t = statsCaderno(pc).area; return { bruta: t, desc: 0, liquida: t, final: Math.round(t * 100) / 100 }; }
   if (defPre(pc).tipo === 'lista') { const t = linhasLista(pc).reduce((s, x) => s + x.q, 0); return { bruta: t, desc: 0, liquida: t, final: Math.round(t * 100) / 100 }; }
   const d = defPre(pc), A = Number(pc.a) || 0, B = Number(pc.b) || 0, C = Number(pc.c) || 0, perda = Number(pc.perda) || 0;
@@ -6225,6 +6234,7 @@ function fmtMedida(pc, n) { if (defPre(pc).tipo === 'lista') return pc.lista ? t
 function nomePeca(pc, i) { return (pc.nome || '').trim() || (defPre(pc).nome + ' ' + (i + 1)); }
 function textoMedidas(pc) {
   const d = defPre(pc), un = unPre(pc);
+  if (d.tipo === 'esquadria') { const c = esqCalc(pc), md = ESQ_MODELOS[c.modelo]; return md.nome + ' ' + c.folhas.length + (c.folhas.length === 1 ? ' folha' : ' folhas') + ' · vão ' + esqFmt(c, c.L) + ' × ' + esqFmt(c, c.H) + (c.modelo !== 'fixo' ? ' (' + (c.folhas.length - c.moveis) + ' fixa' + (c.folhas.length - c.moveis === 1 ? '' : 's') + ', ' + c.moveis + ' móve' + (c.moveis === 1 ? 'l' : 'is') + ')' : ''); }
   if (d.tipo === 'caderno') { const c = cadPre(pc), l = c.linhas.map((x, i) => x.cm > 0 ? cadLetra(i) + ' ' + cadFmt(c, x.cm) + (cadLarg(c, x) > 0 ? ' × ' + cadFmt(c, cadLarg(c, x)) : '') : '').filter(Boolean); return l.length ? 'Medidas: ' + l.join(', ') : 'Desenho sem medidas'; }
   if (d.tipo === 'lista') { const n = linhasLista(pc).length; return (listaPre(pc).chapa || 'chapa não escolhida') + ' · ' + n + (n === 1 ? ' peça' : ' peças'); }
   if (d.tipo === 'area') return fmtM(pc.a) + ' × ' + fmtM(pc.b) + ' m';
@@ -6293,8 +6303,8 @@ function aplicarPassoPre() {
   const passos = passosPre(); if (!passos.includes(prePasso)) prePasso = passos.includes('materiais') && prePasso === 'detalhes' ? 'materiais' : 'medidas';
   const i = passos.indexOf(prePasso), info = PRE_PASSOS[prePasso], pc = preAtual.pecas[prePecaIdx];
   tela.querySelectorAll('[data-passo]').forEach(el => el.classList.toggle('pp-esc', el.dataset.passo !== prePasso));
-  const lista = prePasso === 'medidas' && pc && defPre(pc).tipo === 'lista', cadq = prePasso === 'medidas' && pc && defPre(pc).tipo === 'caderno';
-  const q = document.getElementById('pp-q'); if (q) q.innerHTML = esc(lista ? 'O que vai fazer?' : cadq ? 'Desenhe como no caderno' : info[1]) + '<small>' + esc(lista ? 'Escolha a chapa e coloque o corte e a metragem de cada peça. Deslize os cartões para o lado.' : cadq ? 'Risque com o dedo: vira linha reta e ganha uma letra (A, B, C…). Embaixo, coloque a medida de cada letra e a largura.' : info[2]) + '</small>';
+  const lista = prePasso === 'medidas' && pc && defPre(pc).tipo === 'lista', cadq = prePasso === 'medidas' && pc && defPre(pc).tipo === 'caderno', esqq = prePasso === 'medidas' && pc && defPre(pc).tipo === 'esquadria';
+  const q = document.getElementById('pp-q'); if (q) q.innerHTML = esc(lista ? 'O que vai fazer?' : cadq ? 'Desenhe como no caderno' : esqq ? 'Vão, folhas e furos' : info[1]) + '<small>' + esc(lista ? 'Escolha a chapa e coloque o corte e a metragem de cada peça. Deslize os cartões para o lado.' : cadq ? 'Risque com o dedo: vira linha reta e ganha uma letra (A, B, C…). Embaixo, coloque a medida de cada letra e a largura.' : esqq ? 'Coloque a medida do vão e quantas folhas. Toque numa folha do desenho para trocar entre fixa e móvel.' : info[2]) + '</small>';
   const cab = tela.querySelector('.app-header');
   const topo = document.getElementById('pp-topo');
   if (topo) {
@@ -6380,11 +6390,12 @@ function renderPrePeca() {
     + '<label for="pre-nome">Nome desta medida <span class="pre-opc">(opcional)</span></label><input type="text" id="pre-nome" autocomplete="off" placeholder="Ex.: Sala, Parede da frente · ' + esc(nomePeca(pc, prePecaIdx)) + '">';
   if (d.tipo === 'lista') h += '<div id="pre-cat"></div>';
   else if (d.tipo === 'caderno') h += '<div id="pre-cad"></div>';
+  else if (d.tipo === 'esquadria') h += '<div id="pre-esq"></div>';
   else if (d.tipo === 'area') h += '<div class="pre-med">' + campoPre('pre-a', d.a, pc.a, 'm') + campoPre('pre-b', d.b, pc.b, 'm') + '</div>';
   else if (d.tipo === 'linear') h += '<div class="pre-med">' + campoPre('pre-a', 'Comprimento', pc.a, unPre(pc)) + campoPre('pre-b', d.bRot || 'Quantas vezes', pc.b, '×', true) + '</div>';
   else if (d.tipo === 'un') h += '<div class="pre-med">' + campoPre('pre-a', 'Quantidade', pc.a, 'un', true) + '<div></div></div>';
   else h += '<div class="pre-med pre-med3">' + campoPre('pre-a', d.a, pc.a, 'm') + campoPre('pre-b', d.b, pc.b, 'm') + campoPre('pre-c', d.c, pc.c, 'm') + '</div>';
-  if (d.tipo !== 'lista' && d.tipo !== 'caderno') h += '<div class="pre-desenho" id="pre-desenho"></div>';
+  if (d.tipo !== 'lista' && d.tipo !== 'caderno' && d.tipo !== 'esquadria') h += '<div class="pre-desenho" id="pre-desenho"></div>';
   if (d.tipo === 'area' && d.descontos) h += '<label>Descontar portas e janelas</label><div id="pre-descs"></div><div class="pre-desc-bts"><button type="button" class="btn-dark-sm" data-add="Porta">+ Porta</button><button type="button" class="btn-dark-sm" data-add="Janela">+ Janela</button><button type="button" class="btn-dark-sm" data-add="Vão">+ Outro vão</button></div>';
   if ((d.tipo === 'area' || d.tipo === 'linear') && (d.perda != null || pc.perda)) h += '<div class="pre-med" style="margin-top:8px">' + campoPre('pre-perda', d.tipo === 'linear' ? 'Sobra / perda' : 'Perda e recorte', pc.perda, '%') + '<div></div></div>';
   h += '<div class="pre-area"><span id="pre-area-rot"></span><b id="pre-area-v"></b></div></div>';
@@ -6398,7 +6409,7 @@ function renderPrePeca() {
   host.innerHTML = h;
   document.getElementById('pre-nome').value = pc.nome || '';
   const sv = document.getElementById('pre-servico'); if (sv) sv.value = pc.servico || '';
-  renderCatalogoPre(); renderCadernoPre(); renderOpcoesPre(); renderPreDescontos(); desenharPre(); atualizarAreaPre();
+  renderCatalogoPre(); renderCadernoPre(); renderEsqPre(); renderOpcoesPre(); renderPreDescontos(); desenharPre(); atualizarAreaPre();
 }
 // ---- Caderno: desenho à mão que vira linhas retas, com medidas em cm ----
 const CAD_W = 360, CAD_H = 300, CAD_G = 15;
@@ -6702,6 +6713,122 @@ document.addEventListener('click', function (e) {
   if (a.dataset.cadA === 'desfazer') { const u = cad.hist.pop(); if (!u) return; Object.assign(cad, JSON.parse(u)); cadSalvo(pc); }
   else orcaonConfirmar('Apagar todo o desenho?', 'Apagar').then(ok => { if (!ok) return; cadGuardar(pc); cad.linhas = []; cad.cubas = []; cad.textos = []; cadSalvo(pc); });
 });
+// ---- Vidraceiro: janela / porta / box de correr e vidro fixo (temperado) ----
+const ESQ_MODELOS = {
+  janela: { nome: 'Janela de correr', L: 1500, H: 1200, n: 2, desc: 40, pux: 'meio' },
+  porta:  { nome: 'Porta de correr', L: 1600, H: 2100, n: 2, desc: 50, pux: 1000 },
+  box:    { nome: 'Box de correr', L: 1200, H: 1900, n: 2, desc: 20, pux: 1000 },
+  fixo:   { nome: 'Vidro fixo', L: 1000, H: 1000, n: 1, desc: 10, pux: 0 }
+};
+const ESQ_CORES = { 'Incolor': 'rgba(150,210,255,.35)', 'Fumê': 'rgba(70,80,90,.55)', 'Verde': 'rgba(60,170,120,.45)', 'Bronze': 'rgba(150,100,50,.5)', 'Refletivo prata': 'rgba(200,210,220,.75)', 'Jateado': 'rgba(235,240,245,.85)', 'Mini boreal': 'rgba(225,235,245,.8)' };
+const ESQ_PERFIL = { 'Branco': '#f1f5f9', 'Preto': '#111827', 'Fosco (natural)': '#9ca3af', 'Bronze': '#78502c', 'Cromado': '#cbd5e1' };
+function esqPadraoFolhas(n, modelo) {
+  if (modelo === 'fixo') return Array(n).fill('F');
+  return n === 1 ? ['M'] : n === 2 ? ['F', 'M'] : n === 3 ? ['F', 'M', 'F'] : n === 4 ? ['F', 'M', 'M', 'F'] : ['F'].concat(Array(n - 2).fill('M'), ['F']);
+}
+function esqPre(pc) {
+  if (!pc.esq || typeof pc.esq !== 'object') { const md = ESQ_MODELOS.janela; pc.esq = { modelo: 'janela', un: 'mm', L: md.L, H: md.H, folhas: esqPadraoFolhas(md.n, 'janela'), aj: {} }; }
+  if (!ESQ_MODELOS[pc.esq.modelo]) pc.esq.modelo = 'janela';
+  if (!Array.isArray(pc.esq.folhas) || !pc.esq.folhas.length) pc.esq.folhas = esqPadraoFolhas(ESQ_MODELOS[pc.esq.modelo].n, pc.esq.modelo);
+  pc.esq.aj = pc.esq.aj || {}; return pc.esq;
+}
+function esqAj(e) { const md = ESQ_MODELOS[e.modelo], a = e.aj || {}; const v = (k, d) => (a[k] != null && a[k] !== '' && !isNaN(a[k])) ? Number(a[k]) : d; return { transp: v('transp', 50), desc: v('desc', md.desc), furo: v('furo', 50), puxBorda: v('puxBorda', 60), puxAlt: v('puxAlt', md.pux === 'meio' ? 0 : md.pux) }; }
+function esqFmt(e, mm) { return e.un === 'cm' ? (Math.round(mm) / 10).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + ' cm' : Math.round(mm).toLocaleString('pt-BR') + ' mm'; }
+// tamanhos dos vidros e furos (tudo em mm)
+function esqCalc(pc) {
+  const e = esqPre(pc), aj = esqAj(e), L = Math.max(0, Number(e.L) || 0), H = Math.max(0, Number(e.H) || 0), n = e.folhas.length, op = opPeca(pc);
+  const correr = e.modelo !== 'fixo';
+  const w = correr ? Math.round((L + aj.transp * (n - 1)) / n) : Math.round(L / n - aj.desc), h = Math.round(H - aj.desc);
+  const emCima = !/embaixo/i.test(op.rold || '');
+  const folhas = e.folhas.map((t, i) => {
+    const f = { i, tipo: correr ? t : 'F', w, h, x: correr ? i * (w - aj.transp) : i * (L / n) + aj.desc / 2, furos: [] };
+    if (correr && f.tipo === 'M') {
+      f.furos.push({ k: 'roldana', x: aj.furo, y: emCima ? 35 : h - 35 }, { k: 'roldana', x: w - aj.furo, y: emCima ? 35 : h - 35 });
+      // puxador e fecho na borda que encosta quando fecha: nas pontas, do lado da parede; no meio, do lado do centro
+      const ladoEsq = n === 1 ? false : i === 0 ? true : i === n - 1 ? false : i >= (n - 1) / 2;
+      const py = aj.puxAlt > 0 ? Math.min(h - 60, Math.max(60, h - (aj.puxAlt - aj.desc / 2))) : h / 2;
+      f.furos.push({ k: 'puxador', x: ladoEsq ? aj.puxBorda : w - aj.puxBorda, y: Math.round(py), lado: ladoEsq ? 'esquerda' : 'direita' });
+    }
+    return f;
+  });
+  const moveis = folhas.filter(f => f.tipo === 'M').length;
+  return { modelo: e.modelo, un: e.un, L, H, folhas, moveis, aj, emCima, m2Vidro: Math.round(folhas.reduce((t, f) => t + f.w * f.h, 0) / 1e4) / 100 };
+}
+function esqSvg(pc) {
+  const c = esqCalc(pc), op = opPeca(pc); if (!(c.L > 0 && c.H > 0)) return '<p class="hint-sm" style="padding:30px;text-align:center">Coloque a largura e a altura do vão.</p>';
+  const W = 340, Hh = 270, k = Math.min((W - 110) / c.L, (Hh - 70) / c.H), ox = 22 + (W - 110 - c.L * k) / 2, oy = 38 + (Hh - 70 - c.H * k) / 2;
+  const vidro = ESQ_CORES[op.cor] || ESQ_CORES.Incolor, perfil = ESQ_PERFIL[op.perfil] || '#111827';
+  let s = defsPre(k) + '<rect width="' + W + '" height="' + Hh + '" rx="10" fill="#dfe6ee"/><rect x="' + (ox - 6) + '" y="' + (oy - 6) + '" width="' + (c.L * k + 12) + '" height="' + (c.H * k + 12) + '" fill="none" stroke="' + perfil + '" stroke-width="6" rx="2"/>';
+  const ordem = c.folhas.slice().sort((a, b) => (a.tipo === 'M') - (b.tipo === 'M'));
+  ordem.forEach(f => {
+    const x = ox + f.x * k, y = oy + (c.H - f.h) / 2 * k, w = f.w * k, h = f.h * k, mov = f.tipo === 'M';
+    s += '<g class="esq-folha" data-f="' + f.i + '" style="cursor:pointer"><rect x="' + x + '" y="' + y + '" width="' + w + '" height="' + h + '" fill="' + vidro + '" stroke="' + (mov ? '#F4C430' : '#e5edf5') + '" stroke-width="' + (mov ? 2.5 : 1.5) + '"/>'
+      + '<text x="' + (x + w / 2) + '" y="' + (y + h / 2 - 4) + '" fill="#fff" font-size="' + Math.min(13, w / 4.4) + '" font-weight="900" text-anchor="middle" paint-order="stroke" stroke="#0b1c2c" stroke-width="3">' + (mov ? 'MÓVEL' : 'FIXA') + '</text>'
+      + '<text x="' + (x + w / 2) + '" y="' + (y + h / 2 + 12) + '" fill="#fff" font-size="' + Math.min(10.5, w / 5.2) + '" font-weight="700" text-anchor="middle" paint-order="stroke" stroke="#0b1c2c" stroke-width="3">' + Math.round(f.w) + '×' + Math.round(f.h) + '</text>'
+      + (mov ? '<text x="' + (x + w / 2) + '" y="' + (y + h / 2 + 28) + '" fill="#F4C430" font-size="14" font-weight="900" text-anchor="middle" paint-order="stroke" stroke="#0b1c2c" stroke-width="3">⟷</text>' : '');
+    f.furos.forEach(u => { const fx = x + u.x * k, fy = y + u.y * k; s += u.k === 'roldana' ? '<circle cx="' + fx + '" cy="' + fy + '" r="4.5" fill="#F4C430" stroke="#0b1c2c" stroke-width="1.5"/>' : '<rect x="' + (fx - 3) + '" y="' + (fy - 14) + '" width="6" height="28" rx="3" fill="' + (perfil === '#111827' ? '#e5e7eb' : '#111827') + '"/>'; });
+    s += '</g>';
+  });
+  s += cotaPre(ox, oy - 20, ox + c.L * k, oy - 20, esqFmt(c, c.L)) + cotaPre(ox + c.L * k + 46, oy, ox + c.L * k + 46, oy + c.H * k, esqFmt(c, c.H), true);
+  return '<svg viewBox="0 0 ' + W + ' ' + Hh + '" xmlns="http://www.w3.org/2000/svg">' + s + '</svg>';
+}
+function esqCampo(id, rot, mm, e, ajuda) { const v = mm ? (e.un === 'cm' ? (Math.round(mm) / 10).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) : String(Math.round(mm))) : ''; return '<div><label for="' + id + '">' + rot + '</label><div class="calc-campo"><input type="text" inputmode="decimal" id="' + id + '" data-mic="0" autocomplete="off" value="' + v + '" placeholder="0"><em>' + e.un + '</em></div>' + (ajuda ? '<small class="esq-aj-h">' + ajuda + '</small>' : '') + '</div>'; }
+function renderEsqPre() {
+  const host = document.getElementById('pre-esq'); if (!host) return;
+  const pc = preAtual.pecas[prePecaIdx], e = esqPre(pc), aj = esqAj(e), n = e.folhas.length;
+  let h = '<label>O que vai fazer</label><div class="pre-tipos">' + Object.keys(ESQ_MODELOS).map(k => '<button type="button" class="pre-tipo esq-mod' + (k === e.modelo ? ' on' : '') + '" data-esq-mod="' + k + '">' + ESQ_MODELOS[k].nome + '</button>').join('') + '</div>'
+    + '<label>Unidade</label><div class="cad-uns">' + ['mm', 'cm'].map(u => '<button type="button" class="cad-un' + (u === e.un ? ' on' : '') + '" data-esq-un="' + u + '">' + u + '</button>').join('') + '</div>'
+    + '<div class="pre-med">' + esqCampo('esq-L', 'Largura do vão', e.L, e) + esqCampo('esq-H', 'Altura do vão', e.H, e) + '</div>'
+    + '<label>Quantas folhas</label><div class="pre-tipos">' + [1, 2, 3, 4, 6].map(k => '<button type="button" class="pre-tipo esq-n' + (k === n ? ' on' : '') + '" data-esq-n="' + k + '">' + k + '</button>').join('') + '</div>'
+    + '<div class="pre-desenho esq-desenho" id="esq-desenho"></div>'
+    + '<p class="hint-sm esq-leg"><b style="color:#F4C430">●</b> furo de roldana &nbsp; <b>▮</b> furo do puxador &nbsp; Toque numa folha para trocar fixa ⟷ móvel.</p>'
+    + '<div id="esq-pecas"></div>'
+    + '<details class="esq-ajustes"><summary>⚙️ Ajustes do seu padrão (folgas e furos)</summary>'
+    + '<div class="pre-med">' + esqCampo('esq-transp', 'Transpasse entre folhas', aj.transp, e, 'Quanto uma folha passa da outra') + esqCampo('esq-desc', 'Desconto na altura', aj.desc, e, 'Vão − isto = altura do vidro') + '</div>'
+    + '<div class="pre-med">' + esqCampo('esq-furo', 'Furo da roldana', aj.furo, e, 'Distância da borda lateral') + esqCampo('esq-puxBorda', 'Furo do puxador', aj.puxBorda, e, 'Distância da borda lateral') + '</div>'
+    + '<div class="pre-med">' + esqCampo('esq-puxAlt', 'Altura do puxador', aj.puxAlt, e, 'Do chão. Vazio = meio da folha') + '<div></div></div>'
+    + '<p class="hint-sm">Valores comuns de mercado. Ajuste para o seu jeito: o app usa nas próximas contas desta medida.</p></details>'
+    + '<button type="button" class="btn-outline-lg esq-pedido" data-esq-pedido="1">📋 Enviar pedido do vidro (WhatsApp)</button>';
+  host.innerHTML = h; esqAtualizar(pc);
+  const num = t => { const v = parseFloat(String(t).replace(/[^0-9.,]/g, '').replace(',', '.')); return isNaN(v) ? null : (e.un === 'cm' ? v * 10 : v); };
+  host.querySelectorAll('input[id^="esq-"]').forEach(inp => inp.oninput = () => {
+    const k = inp.id.slice(4), v = num(inp.value); e.mexeu = true;
+    if (k === 'L' || k === 'H') e[k] = v || 0; else { if (v == null) delete e.aj[k]; else e.aj[k] = v; }
+    salvarPreAtual(); esqAtualizar(pc); atualizarAreaPre();
+  });
+}
+function esqAtualizar(pc) {
+  const d = document.getElementById('esq-desenho'); if (d) d.innerHTML = esqSvg(pc);
+  const l = document.getElementById('esq-pecas'); if (!l) return;
+  const c = esqCalc(pc);
+  l.innerHTML = c.L > 0 && c.H > 0 ? '<h4 class="esq-tit">Vidros para pedir (' + c.folhas.length + ') · ' + fmtM(c.m2Vidro) + ' m²</h4>' + c.folhas.map(f => '<div class="pre-res-linha"><span>Folha ' + (f.i + 1) + ' · ' + (f.tipo === 'M' ? 'móvel' : 'fixa') + (f.furos.length ? '<br><small class="hint-sm">' + esqTextoFuros(c, f) + '</small>' : '') + '</span><b>' + esqFmt(c, f.w) + ' × ' + esqFmt(c, f.h) + '</b></div>').join('') : '';
+}
+function esqTextoFuros(c, f) {
+  const r = f.furos.filter(u => u.k === 'roldana'), p = f.furos.find(u => u.k === 'puxador'), t = [];
+  if (r.length) t.push(r.length + ' furos de roldana ' + (c.emCima ? 'em cima' : 'embaixo') + ' a ' + esqFmt(c, c.aj.furo) + ' das bordas');
+  if (p) t.push('puxador à ' + p.lado + ', a ' + esqFmt(c, c.aj.puxBorda) + ' da borda e ' + esqFmt(c, f.h - p.y) + ' da base do vidro');
+  return t.join('; ');
+}
+function esqPedidoTexto(pc) {
+  const c = esqCalc(pc), op = opPeca(pc), md = ESQ_MODELOS[c.modelo], pr = preAtual || {};
+  const linhas = ['Pedido de vidro' + (pr.cliente ? ' — ' + pr.cliente : ''), md.nome + ' · vão ' + esqFmt(c, c.L) + ' × ' + esqFmt(c, c.H), 'Vidro ' + op.tipo.toLowerCase() + ' ' + op.esp + ' ' + op.cor.toLowerCase(), ''];
+  c.folhas.forEach(f => { linhas.push('• Folha ' + (f.i + 1) + ' (' + (f.tipo === 'M' ? 'móvel' : 'fixa') + '): ' + esqFmt(c, f.w) + ' × ' + esqFmt(c, f.h)); if (f.furos.length) linhas.push('   ' + esqTextoFuros(c, f)); });
+  linhas.push('', 'Total: ' + c.folhas.length + (c.folhas.length === 1 ? ' peça' : ' peças') + ' · ' + fmtM(c.m2Vidro) + ' m²', 'Ferragens: ' + op.perfil.toLowerCase() + (c.modelo !== 'fixo' ? ' · roldanas ' + (c.emCima ? 'em cima' : 'embaixo') : ''));
+  return linhas.join('\n');
+}
+document.addEventListener('click', function (e) {
+  if (!preAtual || !e.target.closest) return;
+  const host = e.target.closest('#pre-esq'); if (!host) return;
+  const pc = preAtual.pecas[prePecaIdx], es = esqPre(pc);
+  const mod = e.target.closest('[data-esq-mod]'), un = e.target.closest('[data-esq-un]'), nb = e.target.closest('[data-esq-n]'), fo = e.target.closest('.esq-folha'), pd = e.target.closest('[data-esq-pedido]');
+  if (mod) { const k = mod.dataset.esqMod, md = ESQ_MODELOS[k]; if (k === es.modelo) return; if (!es.mexeu) { es.L = md.L; es.H = md.H; } es.modelo = k; es.folhas = esqPadraoFolhas(k === 'fixo' ? 1 : md.n, k); es.aj = {}; es.mexeu = true; }
+  else if (un) { es.un = un.dataset.esqUn; }
+  else if (nb) { es.folhas = esqPadraoFolhas(+nb.dataset.esqN, es.modelo); es.mexeu = true; }
+  else if (fo) { if (es.modelo === 'fixo') return; const i = +fo.dataset.f; es.folhas[i] = es.folhas[i] === 'M' ? 'F' : 'M'; es.mexeu = true; salvarPreAtual(); esqAtualizar(pc); renderMateriaisPre(); renderPreResumo(); return; }
+  else if (pd) { const t = esqPedidoTexto(pc); window.open('https://wa.me/?text=' + encodeURIComponent(t + '\n\n(feito no app OrçaOn)'), '_blank'); return; }
+  else return;
+  salvarPreAtual(); renderEsqPre(); atualizarAreaPre(); renderPreTabs(); renderPreResumo();
+});
 function svgIconePre(k) { return '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="' + (PRE_ICONES[k] || PRE_ICONES.peca) + '"/></svg>'; }
 function renderCatalogoPre() {
   const host = document.getElementById('pre-cat'); if (!host) return;
@@ -6758,13 +6885,14 @@ function renderPreDescontos() {
 function sugestoesPre(pc) { const l = (SUGESTOES[profPre(pc)] || []).concat(listaSugestoes(profPre(pc))); return l.filter((n, i) => l.indexOf(n) === i); }
 function servicoPadraoPre(pc) {
   const d = defPre(pc), lista = sugestoesPre(pc);
+  if (d.tipo === 'esquadria') { const m = esqPre(pc).modelo, re = { janela: [/janela/i], porta: [/porta de correr/i, /porta/i], box: [/box/i], fixo: [/fixo/i, /vidro/i] }[m] || []; for (const r of re) { const x = lista.find(n => r.test(n)); if (x) return x; } return ESQ_MODELOS[m].nome; }
   for (const re of (d.servico || [])) { const s = lista.find(n => re.test(n)); if (s) return s; }
   return d.nome;
 }
 function atualizarAreaPre() {
   const pc = preAtual.pecas[prePecaIdx], d = defPre(pc), m = medidaPeca(pc);
   const rot = document.getElementById('pre-area-rot'), v = document.getElementById('pre-area-v');
-  let r = d.tipo === 'caderno' ? (statsCaderno(pc).area > 0 ? 'Área calculada pelo desenho' : 'Área') : d.tipo === 'lista' ? 'Total' : d.tipo === 'area' ? 'Área' : d.tipo === 'linear' ? (unPre(pc) === 'km' ? 'Distância total' : 'Metragem total') : d.tipo === 'un' ? 'Quantidade' : 'Volume';
+  let r = d.tipo === 'esquadria' ? 'Área do vão' : d.tipo === 'caderno' ? (statsCaderno(pc).area > 0 ? 'Área calculada pelo desenho' : 'Área') : d.tipo === 'lista' ? 'Total' : d.tipo === 'area' ? 'Área' : d.tipo === 'linear' ? (unPre(pc) === 'km' ? 'Distância total' : 'Metragem total') : d.tipo === 'un' ? 'Quantidade' : 'Volume';
   if (d.tipo === 'area' && m.desc > 0) r += ' (já sem portas/janelas)';
   if ((d.tipo === 'area' || d.tipo === 'linear') && pc.perda) r += ' com ' + fmtNum(pc.perda) + '% de ' + (d.tipo === 'linear' ? 'sobra' : 'perda');
   if (d.tipo === 'volume' && pc.tipo === 'piscina') r += ' · ' + Math.round(m.final * 1000).toLocaleString('pt-BR') + ' litros';
@@ -6854,6 +6982,15 @@ const up = (n, casas) => { const f = Math.pow(10, casas || 0); return Math.ceil(
 const numOp = (t, padrao) => { const n = parseFloat(String(t == null ? '' : t).replace(/\./g, '').replace(',', '.').replace(/[^0-9.]/g, '')); return n > 0 ? n : padrao; };
 // Especificações que a pessoa pode trocar (bitola, diâmetro, espessura, tipo…). "✎ Outro" deixa digitar.
 const PRE_OPCOES = {
+  'esquadria': [
+    { id: 'cor', rot: 'Cor do vidro', valores: ['Incolor', 'Fumê', 'Verde', 'Bronze', 'Refletivo prata', 'Jateado', 'Mini boreal'], padrao: 'Incolor' },
+    { id: 'esp', rot: 'Espessura do vidro', valores: ['6 mm', '8 mm', '10 mm'], padrao: '8 mm' },
+    { id: 'tipo', rot: 'Tipo do vidro', valores: ['Temperado', 'Laminado', 'Comum'], padrao: 'Temperado' },
+    { id: 'perfil', rot: 'Cor dos perfis e ferragens', valores: ['Branco', 'Preto', 'Fosco (natural)', 'Bronze', 'Cromado'], padrao: 'Preto' },
+    { id: 'rold', rot: 'Roldanas', valores: ['Em cima (aparente)', 'Embaixo'], padrao: 'Em cima (aparente)' },
+    { id: 'fecho', rot: 'Fechamento', valores: ['Trinco', 'Fechadura com chave', 'Só puxador'], padrao: 'Trinco' },
+    { id: 'compra', rot: 'Ferragens', valores: ['Kit completo', 'Peças avulsas'], padrao: 'Kit completo' }
+  ],
   'caderno': [{ id: 'pedra', rot: 'Pedra', valores: ['Granito', 'Mármore', 'Quartzo', 'Porcelanato'], padrao: 'Granito' }, { id: 'esp', rot: 'Espessura', valores: ['2 cm', '3 cm'], padrao: '2 cm' }],
   'Pedreiro:parede': [{ id: 'esp', rot: 'Espessura do reboco', valores: ['1,5 cm', '2 cm', '2,5 cm', '3 cm'], padrao: '2 cm' }],
   'Pedreiro:teto': [{ id: 'esp', rot: 'Espessura do reboco', valores: ['1,5 cm', '2 cm', '2,5 cm'], padrao: '1,5 cm' }],
@@ -6924,6 +7061,22 @@ const REBOCO_MAT = (A, op) => {
   ];
 };
 const PRE_MATERIAIS = {
+  'esquadria': (m) => {
+    const c = esqCalc(m.pc), op = m.op, md = ESQ_MODELOS[c.modelo], perfil = op.perfil, Lm = c.L / 1000, Hm = c.H / 1000;
+    const l = [['Vidro ' + op.tipo.toLowerCase() + ' ' + op.esp + ' ' + op.cor.toLowerCase() + ' (' + c.folhas.length + (c.folhas.length === 1 ? ' peça' : ' peças') + ')', 'm²', c.m2Vidro]];
+    if (c.modelo === 'fixo') {
+      l.push(['Perfil U ' + perfil.toLowerCase(), 'm', up(2 * (Lm + Hm), 1)], ['Calço de apoio', 'un', 2 * c.folhas.length]);
+    } else if (op.compra === 'Kit completo') {
+      l.push(['Kit ' + md.nome.toLowerCase() + ' ' + c.folhas.length + ' folhas ' + perfil.toLowerCase(), 'un', 1]);
+    } else {
+      l.push(['Trilho superior ' + perfil.toLowerCase(), 'm', up(Lm, 1)], ['Trilho inferior / guia ' + perfil.toLowerCase(), 'm', up(Lm, 1)],
+        ['Roldana', 'un', 2 * c.moveis], ['Puxador ' + perfil.toLowerCase(), 'un', c.moveis],
+        ['Capuchinho (tampa do trilho)', 'un', 4], ['Escova de vedação', 'm', up(2 * Hm * c.moveis, 1)]);
+      if (op.fecho !== 'Só puxador' && c.moveis) l.push([op.fecho, 'un', 1], ['Contra-fecho / batedor', 'un', 1]);
+    }
+    l.push(['Silicone (tubo)', 'tubo', Math.max(1, up(2 * (Lm + Hm) / 8))], ['Parafuso e bucha', 'un', Math.ceil(Lm * 4) + 4]);
+    return l;
+  },
   'caderno': (m) => {
     const st = statsCaderno(m.pc);
     return [
@@ -7362,7 +7515,7 @@ document.addEventListener('click', async function (e) {
     let v = opb.dataset.val;
     if (opb.dataset.outro) { v = await orcaonPerguntar(o.rot + ' (digite como quiser):', opPeca(pc)[id] || ''); if (v == null) return; v = v.trim(); if (!v) return; }
     pc.op = pc.op || {}; pc.op[id] = v;
-    salvarPreAtual(); renderOpcoesPre(); renderMateriaisPre(); renderPreResumo(); return;
+    salvarPreAtual(); renderOpcoesPre(); renderMateriaisPre(); renderPreResumo(); if (defPre(pc).tipo === 'esquadria') esqAtualizar(pc); return;
   }
   const cb = e.target.closest && e.target.closest('#pre-cat [data-chapa], #pre-cat [data-chapa-outra], #pre-cat [data-zerar], #pre-cat [data-mais], #pre-cat [data-tira]');
   if (cb) {
