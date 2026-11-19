@@ -6894,6 +6894,7 @@ function esqSvg(pc) {
     f.maoPos.forEach(q => { const d = c.aj.maoEntre / 2, fx = x + (q.lado === 'esquerda' ? c.aj.maoBorda : f.w - c.aj.maoBorda) * k, r = 2.6, sep = Math.max(3.4, d * k);
       [-sep, sep].forEach(o => { s += '<circle cx="' + fx + '" cy="' + (y + q.y * k + o) + '" r="' + r + '" fill="#2BD67B" stroke="#0b1c2c" stroke-width="1.2"/>'; }); });
     f.furos.forEach(u => { const fx = x + u.x * k, fy = y + u.y * k; s += u.k === 'roldana' ? (u.n === 2 ? '<circle cx="' + (fx - 3.4) + '" cy="' + fy + '" r="3" fill="#F4C430" stroke="#0b1c2c" stroke-width="1.2"/><circle cx="' + (fx + 3.4) + '" cy="' + fy + '" r="3" fill="#F4C430" stroke="#0b1c2c" stroke-width="1.2"/>' : '<circle cx="' + fx + '" cy="' + fy + '" r="3.4" fill="#F4C430" stroke="#0b1c2c" stroke-width="1.2"/>') : '<rect x="' + (fx - 3) + '" y="' + (fy - 14) + '" width="6" height="28" rx="3" fill="' + (perfil === '#111827' ? '#e5e7eb' : '#111827') + '"/>'; });
+    if (c.manual && esqAlvo === f.i) s += '<rect x="' + (x + 1) + '" y="' + (y + 1) + '" width="' + (w - 2) + '" height="' + (h - 2) + '" fill="none" stroke="#ef4444" stroke-width="2" stroke-dasharray="6 4"/>';
     (f.man || []).forEach((u, n) => {
       const cx = x + u.x * k, cy = y + (f.h - u.y) * k, sel = u.j === esqSel;
       if (sel) s += '<circle cx="' + cx + '" cy="' + cy + '" r="10" fill="none" stroke="#ef4444" stroke-width="2.2"/>'
@@ -6934,7 +6935,7 @@ function esqFolhasArranjo(n, k) {
   return esqPadraoFolhas(n, 'janela');
 }
 // Furação manual: tipos de furo
-let esqGeo = {}, esqFerr = '1', esqPasso = 10, esqSel = -1;
+let esqGeo = {}, esqFerr = '1', esqPasso = 10, esqSel = -1, esqAlvo = -1;
 // Painel logo abaixo do desenho: mover o furo escolhido com as flechas, vendo a medida
 function esqMoverHtml(pc) {
   const e = esqPre(pc), u = (e.furosMan || [])[esqSel]; if (!u) return (e.furosMan || []).length ? '<p class="hint-sm esq-mv-dica">👆 Toque num furo do desenho para escolher qual mover.</p>' : '';
@@ -6953,8 +6954,9 @@ function esqFuroSvg(t, cx, cy, entre) {
   if (t === 'rec') return '<rect x="' + (cx - 5) + '" y="' + (cy - 9) + '" width="10" height="18" rx="2" fill="rgba(244,196,48,.35)" stroke="#0b1c2c" stroke-width="1.2"/>';
   return '<circle cx="' + cx + '" cy="' + cy + '" r="3.6" fill="#F4C430" stroke="#0b1c2c" stroke-width="1.2"/>';
 }
-function esqFerrHtml() {
-  return '<label>Tipo de furo <span class="pre-opc">(escolha e toque no vidro)</span></label><div class="esq-ferrs">'
+function esqFerrHtml(n) {
+  return (n > 1 ? '<label>Colocar o furo na folha <span class="pre-opc">(para as folhas que ficam por baixo)</span></label><div class="pre-tipos">' + [-1].concat(Array.from({ length: n }, (_, i) => i)).map(i => '<button type="button" class="pre-tipo' + (esqAlvo === i ? ' on' : '') + '" data-esq-alvo="' + i + '">' + (i < 0 ? 'Onde eu tocar' : 'Folha ' + (i + 1)) + '</button>').join('') + '</div>' : '')
+    + '<label>Tipo de furo <span class="pre-opc">(escolha e toque no vidro)</span></label><div class="esq-ferrs">'
     + Object.keys(ESQ_FUROS).map(k => '<button type="button" class="' + (esqFerr === k ? 'on' : '') + '" data-esq-ferr="' + k + '"><b>' + ESQ_FUROS[k][0] + '</b>' + ESQ_FUROS[k][1] + '</button>').join('')
     + '<button type="button" class="' + (esqFerr === 'ver' ? 'on' : '') + '" data-esq-ferr="ver"><b>👆</b>Escolher furo</button></div>';
 }
@@ -6980,7 +6982,7 @@ function renderEsqPre() {
     + '<label>Quantas folhas</label><div class="pre-tipos">' + [1, 2, 3, 4, 6].map(k => '<button type="button" class="pre-tipo esq-n' + (k === n ? ' on' : '') + '" data-esq-n="' + k + '">' + k + '</button>').join('') + '</div>'
     + (e.modelo !== 'fixo' && n > 1 ? '<label>Tem vidro fixo?</label><div class="pre-tipos">' + [['pontas', 'Sim, nas pontas'], ['meio', 'Sim, no meio'], ['nenhum', 'Não, todas correm']].map(([k, t]) => '<button type="button" class="pre-tipo' + (esqArranjo(e) === k ? ' on' : '') + '" data-esq-arr="' + k + '">' + t + '</button>').join('') + '</div>' : '')
     + (true ? '<label>Furação</label><div class="pre-tipos">' + [['auto', 'Automática'], ['manual', '✍️ Eu coloco os furos']].map(([k, t]) => '<button type="button" class="pre-tipo' + ((e.furacao === 'manual' ? 'manual' : 'auto') === k ? ' on' : '') + '" data-esq-furacao="' + k + '">' + t + '</button>').join('') + '</div>' : '')
-    + (e.furacao === 'manual' ? '<div id="esq-man-ferr">' + esqFerrHtml() + '</div>' : '')
+    + (e.furacao === 'manual' ? '<div id="esq-man-ferr">' + esqFerrHtml(n) + '</div>' : '')
     + '<div class="pre-desenho esq-desenho" id="esq-desenho"></div>'
     + (e.furacao === 'manual' ? '<div id="esq-mover">' + esqMoverHtml(pc) + '</div><div id="esq-man">' + esqManualHtml(pc, e) + '</div>' : '')
     + (e.modelo !== 'fixo' && e.furacao !== 'manual' ? opcoesPeca(pc).filter(o => o.noDesenho).map(o => { const v = opPeca(pc)[o.id]; return '<label>' + esc(o.rot) + '</label><div class="pre-tipos pre-ops-chips">' + o.valores.map(x => '<button type="button" class="pre-tipo pre-op' + (x === v ? ' on' : '') + '" data-op="' + esc(o.id) + '" data-val="' + esc(x) + '">' + esc(x) + '</button>').join('') + '</div>'; }).join('') : '')
@@ -7050,6 +7052,8 @@ document.addEventListener('click', function (e) {
   if (mx) { const j = +mx.dataset.esqManX; es.furosMan.splice(j, 1); if (esqSel === j) esqSel = -1; else if (esqSel > j) esqSel--; salvarPreAtual(); renderEsqPre(); return; }
   const mv = e.target.closest('[data-esq-mv]'), ps = e.target.closest('[data-esq-passo]');
   if (ps) { esqPasso = +ps.dataset.esqPasso || 10; esqMoverAtualizar(pc); return; }
+  const al = e.target.closest('[data-esq-alvo]');
+  if (al) { esqAlvo = +al.dataset.esqAlvo; if (esqAlvo >= es.folhas.length) esqAlvo = -1; renderEsqPre(); return; }
   const sl = e.target.closest('[data-esq-sel]');
   if (sl) { esqSel = +sl.dataset.esqSel; renderEsqPre(); try { document.getElementById('esq-desenho').scrollIntoView({ block: 'center', behavior: 'smooth' }); } catch (_) {} return; }
   if (mv) {
@@ -7082,6 +7086,9 @@ document.addEventListener('click', function (e) {
     (es.furosMan || []).forEach((u, j) => { const gg = esqGeo[u.f]; if (!gg) return; const d = Math.hypot(gg.x + u.x * gg.k - sx, gg.y + (gg.h - u.y) * gg.k - sy); if (d < pd) { pd = d; perto = j; } });
     if (perto >= 0) { esqSel = perto; renderEsqPre(); return; }
     if (esqFerr === 'ver') return;
+    // folha escolhida: o furo vai nela, mesmo se outra folha estiver por cima
+    const ia = esqAlvo >= 0 && esqGeo[esqAlvo] ? esqAlvo : i, ga = esqGeo[ia];
+    if (ia !== i) { const r5 = v => Math.round(v / 5) * 5; es.furosMan = es.furosMan || []; es.furosMan.push({ f: ia, t: esqFerr, x: Math.max(0, Math.min(ga.w, r5((sx - ga.x) / ga.k))), y: Math.max(0, Math.min(ga.h, r5(ga.h - (sy - ga.y) / ga.k))) }); esqSel = es.furosMan.length - 1; es.mexeu = true; salvarPreAtual(); renderEsqPre(); return; }
     const r5 = v => Math.round(v / 5) * 5, mmx = Math.max(0, Math.min(g.w, r5((sx - g.x) / g.k))), mmy = Math.max(0, Math.min(g.h, r5(g.h - (sy - g.y) / g.k)));
     es.furosMan = es.furosMan || []; es.furosMan.push({ f: i, t: esqFerr, x: mmx, y: mmy }); esqSel = es.furosMan.length - 1; es.mexeu = true;
     salvarPreAtual(); renderEsqPre(); return;
